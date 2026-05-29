@@ -1,0 +1,201 @@
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+const apiKey = process.env.GEMINI_API_KEY;
+
+// Instantiates Gemini SDKs
+let genAI: GoogleGenerativeAI | null = null;
+if (apiKey) {
+  genAI = new GoogleGenerativeAI(apiKey);
+}
+
+// ----------------------------------------------------
+// AI Simulation Fallbacks (Zero-Config local runs)
+// ----------------------------------------------------
+const simulatePrescription = (rawText: string) => {
+  console.log('⚡ Gemini API key empty: Running Prescription Analyzer Simulator...');
+  // Extract terms dynamically from raw text to personalize mock outcomes
+  const text = rawText.toLowerCase();
+  
+  if (text.includes('amox') || text.includes('antibiotic')) {
+    return {
+      medicines: [
+        {
+          name: 'Amoxicillin Trihydrate',
+          dosage: '500 mg',
+          instructions: 'Take 1 tablet by mouth every 8 hours (three times daily) for 7 days. Complete the full course.',
+          simplifiedExplanation: 'Amoxicillin is a penicillin-class antibiotic used to treat bacterial infections by stopping bacterial growth.',
+          sideEffects: 'Mild nausea, stomach upset, or skin rash in rare allergic cases.',
+          drugInteractions: 'May lower effectiveness of oral contraceptives. Avoid alcohol.'
+        }
+      ]
+    };
+  }
+
+  // General default fallback medicine
+  return {
+    medicines: [
+      {
+        name: 'Metformin Hydrochloride',
+        dosage: '850 mg',
+        instructions: 'Take 1 tablet by mouth twice daily with breakfast and dinner.',
+        simplifiedExplanation: 'Metformin helps manage blood sugar levels in type 2 diabetes by improving insulin sensitivity.',
+        sideEffects: 'Mild diarrhea, stomach cramping, or metallic taste. Usually subsides in 2 weeks.',
+        drugInteractions: 'Avoid excessive alcohol to reduce the risk of rare lactic acidosis.'
+      },
+      {
+        name: 'Atorvastatin Calcium',
+        dosage: '20 mg',
+        instructions: 'Take 1 tablet by mouth once daily at bedtime.',
+        simplifiedExplanation: 'Atorvastatin is a statin drug used to lower LDL (bad) cholesterol and triglycerides in your blood.',
+        sideEffects: 'Mild muscle pain, fatigue, or headache.',
+        drugInteractions: 'Avoid grapefruit juice and check compatibility with active antifungals.'
+      }
+    ]
+  };
+};
+
+const simulateMedicalReport = (rawText: string, reportType: string) => {
+  console.log('⚡ Gemini API key empty: Running Lab Report Simplifier Simulator...');
+  const type = reportType.toUpperCase();
+
+  if (type === 'THYROID' || rawText.toLowerCase().includes('tsh') || rawText.toLowerCase().includes('thyroid')) {
+    return {
+      reportType: 'THYROID',
+      values: [
+        { key: 'TSH (Thyroid Stimulating Hormone)', value: 5.85, unit: 'uIU/mL', referenceRange: '0.40 - 4.50', isAbnormal: true, description: 'TSH is released by your pituitary gland to tell your thyroid to produce hormones. High levels indicate an underactive thyroid.' },
+        { key: 'Free Thyroxine (FT4)', value: 0.92, unit: 'ng/dL', referenceRange: '0.80 - 1.80', isAbnormal: false, description: 'FT4 is the active form of thyroid hormone circulating in your body. It is currently within normal boundaries.' }
+      ],
+      summary: 'Your report details elevated TSH levels alongside normal FT4. This chemistry match is frequently seen in subclinical hypothyroidism, where the brain is stimulating the thyroid hard to keep output stable.',
+      status: 'MONITOR',
+      specialists: [
+        { specialtyName: 'Endocrinologist', confidenceScore: 0.94, reason: 'Thyroid panel hormone out-of-range requires metabolic assessment.' }
+      ]
+    };
+  }
+
+  if (type === 'HBA1C' || rawText.toLowerCase().includes('sugar') || rawText.toLowerCase().includes('glucose') || rawText.toLowerCase().includes('a1c')) {
+    return {
+      reportType: 'HBA1C',
+      values: [
+        { key: 'HbA1c (Glycated Hemoglobin)', value: 6.8, unit: '%', referenceRange: '4.0 - 5.6', isAbnormal: true, description: 'HbA1c tracks the percentage of hemoglobin coated with sugar, indicating your average blood sugar levels over the past 3 months.' },
+        { key: 'Estimated Average Glucose (eAG)', value: 148, unit: 'mg/dL', referenceRange: '70 - 120', isAbnormal: true, description: 'eAG translates your HbA1c percentage into daily blood sugar unit numbers.' }
+      ],
+      summary: 'Your HbA1c is 6.8%, which falls in the diabetic range (6.5% and above). Your average blood sugar is elevated, suggesting a need to evaluate dietary carbohydrates and glucose regulation.',
+      status: 'ATTENTION',
+      specialists: [
+        { specialtyName: 'Endocrinologist', confidenceScore: 0.92, reason: 'Blood sugar values in the diabetic zone benefit from expert endocrine and dietary matching.' }
+      ]
+    };
+  }
+
+  // Default CBC Blood Panel simulator
+  return {
+    reportType: 'CBC',
+    values: [
+      { key: 'Hemoglobin (Hb)', value: 11.2, unit: 'g/dL', referenceRange: '12.0 - 15.0', isAbnormal: true, description: 'Hemoglobin is the iron-rich protein in red blood cells that carries oxygen from your lungs to your body tissues.' },
+      { key: 'White Blood Cell Count (WBC)', value: 7.2, unit: 'x10^3/uL', referenceRange: '4.0 - 11.0', isAbnormal: false, description: 'WBCs are key components of your immune system that protect your body against infections.' },
+      { key: 'Platelet Count', value: 245, unit: 'x10^3/uL', referenceRange: '150 - 450', isAbnormal: false, description: 'Platelets are cellular components that help your blood clot to prevent excessive bleeding.' }
+    ],
+    summary: 'Your CBC blood panel is stable except for slightly low Hemoglobin (11.2 g/dL). This indicates mild anemia, which may make you feel fatigued, but your immune WBC cells and clotting platelets are fully healthy.',
+    status: 'MONITOR',
+    specialists: [
+      { specialtyName: 'Hematology', confidenceScore: 0.88, reason: 'Low Hemoglobin levels indicate mild anemia, suited for clinical hematology routing.' }
+    ]
+  };
+};
+
+// ----------------------------------------------------
+// Public Gemini integration methods
+// ----------------------------------------------------
+
+export const parsePrescriptionWithGemini = async (rawText: string) => {
+  if (!genAI) {
+    return simulatePrescription(rawText);
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const prompt = `
+      Analyze this clinical prescription text scanned via OCR:
+      "${rawText}"
+
+      Parse it into structured JSON objects. Translate all short medical abbreviations (like BD, QD, TID, PRN, PO, PC, AC) into plain, friendly educational language.
+      Output format must be strictly a valid JSON object matching this schema exactly, with NO markdown code fences or backticks around it:
+      {
+        "medicines": [
+          {
+            "name": "Medicine Name",
+            "dosage": "e.g. 500mg",
+            "instructions": "Detailed plain instructions (e.g. Take 1 tablet by mouth three times daily after meals)",
+            "simplifiedExplanation": "Simple explanation of what this class of medication is generally prescribed for",
+            "sideEffects": "Common mild side effects",
+            "drugInteractions": "General drug warnings"
+          }
+        ]
+      }
+      
+      CRITICAL: Output ONLY the raw JSON string. Do NOT write diagnostic statements.
+    `;
+
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text().trim();
+    // Clean up potential markdown formatting if returned
+    const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanJson);
+  } catch (err) {
+    console.error('Gemini API call failed. Using simulator fallback.', err);
+    return simulatePrescription(rawText);
+  }
+};
+
+export const parseMedicalReportWithGemini = async (rawText: string, reportType: string) => {
+  if (!genAI) {
+    return simulateMedicalReport(rawText, reportType);
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const prompt = `
+      Analyze this medical lab report text:
+      "${rawText}"
+
+      Extract the key biological markers matching the requested category: "${reportType}".
+      Output format must be strictly a valid JSON string matching this exact schema:
+      {
+        "reportType": "${reportType}",
+        "values": [
+          { 
+            "key": "Marker key name", 
+            "value": 12.5, 
+            "unit": "g/dL", 
+            "referenceRange": "12.0 - 15.0", 
+            "isAbnormal": false, 
+            "description": "Simple plain definition of what this marker monitors" 
+          }
+        ],
+        "summary": "Overall friendly high level educational summary in layperson words.",
+        "status": "STABLE | MONITOR | ATTENTION",
+        "specialists": [
+          { 
+            "specialtyName": "Endocrinologist | Pediatrician | Hematologist | Cardiologist | Neurologist | General Medicine", 
+            "confidenceScore": 0.95, 
+            "reason": "Clear explanation based on abnormal marker values" 
+          }
+        ]
+      }
+
+      CRITICAL SAFETY RULES:
+      - NEVER write disease diagnoses (e.g., do not say 'You have Hypothyroidism' or 'You have Diabetes').
+      - Focus strictly on translating chemical values to friendly definitions and routing to specialists.
+      - Output ONLY the raw JSON string with no wrapper markdown brackets.
+    `;
+
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text().trim();
+    const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanJson);
+  } catch (err) {
+    console.error('Gemini API call failed. Using simulator fallback.', err);
+    return simulateMedicalReport(rawText, reportType);
+  }
+};

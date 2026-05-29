@@ -1,0 +1,82 @@
+{
+  "name": "Pulse - Admin Error Alerting Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "system-error-trigger",
+        "options": {}
+      },
+      "name": "Error Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$node[\"Error Webhook Trigger\"].json.body.severity}}",
+              "value2": "CRITICAL"
+            }
+          ]
+        }
+      },
+      "name": "Check Severity Level",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "channel": "pulse-exceptions",
+        "text": "=🚨 *CRITICAL PULSE ERROR DETECTED* 🚨\n*Service:* `{{$node[\"Error Webhook Trigger\"].json.body.service}}`\n*Exception:* `{{$node[\"Error Webhook Trigger\"].json.body.errorMessage}}`\n*Timestamp:* `{{$node[\"Error Webhook Trigger\"].json.body.timestamp}}`",
+        "options": {}
+      },
+      "name": "Slack Emergency Channel Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [620, 200]
+    },
+    {
+      "parameters": {
+        "channel": "pulse-logs",
+        "text": "=ℹ️ *PULSE INFO LOG*:\n*Source:* `{{$node[\"Error Webhook Trigger\"].json.body.service}}`\n*Event:* `{{$node[\"Error Webhook Trigger\"].json.body.errorMessage}}`",
+        "options": {}
+      },
+      "name": "Slack Normal Log Channel",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [620, 400]
+    }
+  ],
+  "connections": {
+    "Error Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Check Severity Level",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Severity Level": {
+      "main": [
+        [
+          {
+            "node": "Slack Emergency Channel Alert",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack Normal Log Channel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

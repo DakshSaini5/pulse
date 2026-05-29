@@ -1,0 +1,137 @@
+{
+  "name": "Pulse - Prescription Upload Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "prescription-uploaded",
+        "options": {}
+      },
+      "name": "Webhook Upload Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5000/api/prescriptions/upload",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "value": "={{$node[\"Webhook Upload Trigger\"].binary.file}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "HTTP Run Tesseract OCR",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gemini-2.5-flash",
+        "prompt": "Analyze this raw extracted prescription text and format as JSON: {{$node[\"HTTP Run Tesseract OCR\"].data.ocrResult.rawText}}",
+        "options": {}
+      },
+      "name": "Gemini 2.5 Flash Parser",
+      "type": "n8n-nodes-base.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://localhost:5000/api/prescriptions/{{$node[\"HTTP Run Tesseract OCR\"].data.id}}/verify",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "verifiedData",
+              "value": "={{$node[\"Gemini 2.5 Flash Parser\"].data}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "HTTP Save Database Results",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        850,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "alerts@pulse.com",
+        "toEmail": "={{$node[\"Webhook Upload Trigger\"].data.userEmail}}",
+        "subject": "Pulse AI — Prescription Scan Analysis is Ready!",
+        "html": "<h3>Your Prescription is fully parsed!</h3><p>Log in to your Pulse premium dashboard to review drug frequency lists, side effects, and warning schedules.</p>",
+        "options": {}
+      },
+      "name": "Send Email Notification",
+      "type": "n8n-nodes-base.email",
+      "typeVersion": 1,
+      "position": [
+        1050,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Upload Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Run Tesseract OCR",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Run Tesseract OCR": {
+      "main": [
+        [
+          {
+            "node": "Gemini 2.5 Flash Parser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini 2.5 Flash Parser": {
+      "main": [
+        [
+          {
+            "node": "HTTP Save Database Results",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Save Database Results": {
+      "main": [
+        [
+          {
+            "node": "Send Email Notification",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

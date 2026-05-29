@@ -1,0 +1,132 @@
+{
+  "name": "Pulse - Lab Report Specialist Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "report-uploaded",
+        "options": {}
+      },
+      "name": "Webhook Report Upload",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5000/api/reports/upload",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "value": "={{$node[\"Webhook Report Upload\"].binary.file}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "HTTP Run Tesseract OCR",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [380, 300]
+    },
+    {
+      "parameters": {
+        "model": "gemini-2.5-flash",
+        "prompt": "Extract lab markers and map to specialties for: {{$node[\"HTTP Run Tesseract OCR\"].data.ocrResult.rawText}}",
+        "options": {}
+      },
+      "name": "Gemini Specialty Mapper",
+      "type": "n8n-nodes-base.googleGemini",
+      "typeVersion": 1,
+      "position": [560, 300]
+    },
+    {
+      "parameters": {
+        "url": "=http://localhost:5000/api/hospitals",
+        "method": "GET",
+        "qs": {
+          "parameters": [
+            {
+              "name": "specialty",
+              "value": "={{$node[\"Gemini Specialty Mapper\"].data.specialists[0].specialtyName}}"
+            },
+            {
+              "name": "maxDistance",
+              "value": "20"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "HTTP Query Recommended Hospitals",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [740, 300]
+    },
+    {
+      "parameters": {
+        "url": "=http://localhost:5000/api/reports/{{$node[\"HTTP Run Tesseract OCR\"].data.id}}/verify",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "verifiedData",
+              "value": "={{$node[\"Gemini Specialty Mapper\"].data}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "HTTP Update Report DB",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [920, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Report Upload": {
+      "main": [
+        [
+          {
+            "node": "HTTP Run Tesseract OCR",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Run Tesseract OCR": {
+      "main": [
+        [
+          {
+            "node": "Gemini Specialty Mapper",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Specialty Mapper": {
+      "main": [
+        [
+          {
+            "node": "HTTP Query Recommended Hospitals",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Query Recommended Hospitals": {
+      "main": [
+        [
+          {
+            "node": "HTTP Update Report DB",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

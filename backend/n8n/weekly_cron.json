@@ -1,0 +1,89 @@
+{
+  "name": "Pulse - Weekly Health Summary Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyWeek",
+              "hour": 8
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Cron Trigger Monday 8AM",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5000/api/trends",
+        "method": "GET",
+        "options": {}
+      },
+      "name": "HTTP Fetch User Trends",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [380, 300]
+    },
+    {
+      "parameters": {
+        "model": "gemini-2.5-flash",
+        "prompt": "Synthesize a friendly weekly educational medical timeline overview based on this historical data: {{$node[\"HTTP Fetch User Trends\"].data}}",
+        "options": {}
+      },
+      "name": "Gemini Health Summarizer",
+      "type": "n8n-nodes-base.googleGemini",
+      "typeVersion": 1,
+      "position": [560, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "digest@pulse.com",
+        "toEmail": "user@pulse.com",
+        "subject": "Pulse AI — Your Weekly Health Trend Digest",
+        "html": "<h3>Weekly Health Trend Digest</h3><p>{{$node[\"Gemini Health Summarizer\"].data.text}}</p>",
+        "options": {}
+      },
+      "name": "Send Digest Email",
+      "type": "n8n-nodes-base.email",
+      "typeVersion": 1,
+      "position": [740, 300]
+    }
+  ],
+  "connections": {
+    "Cron Trigger Monday 8AM": {
+      "main": [
+        [
+          {
+            "node": "HTTP Fetch User Trends",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Fetch User Trends": {
+      "main": [
+        [
+          {
+            "node": "Gemini Health Summarizer",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Health Summarizer": {
+      "main": [
+        [
+          {
+            "node": "Send Digest Email",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
