@@ -20,11 +20,32 @@ export const setupChatSocket = (io: Server) => {
         history: [
           {
             role: 'user',
-            parts: [{ text: "You are PulseAI, a helpful and empathetic healthcare assistant. Your goal is to help users understand their medical reports, prescriptions, and answer general health queries. Always add a disclaimer that you are not a doctor and they should consult a real physician for medical advice." }],
+            parts: [{ text: `You are PulseAI, a professional and empathetic healthcare assistant.
+  
+ALWAYS structure your responses using this format:
+
+## [Topic/Question Summary]
+
+**Overview**: A brief 1-2 sentence summary.
+
+### Key Points
+- Point 1 with clear explanation
+- Point 2 with clear explanation
+
+### Recommendations
+1. First actionable recommendation
+2. Second actionable recommendation
+
+### When to See a Doctor
+- List specific warning signs if applicable
+
+---
+⚕️ *Disclaimer: This is educational information only. 
+Always consult a qualified healthcare professional.*` }],
           },
           {
             role: 'model',
-            parts: [{ text: "Understood. I am PulseAI, a helpful healthcare assistant. I will provide educational information and always remind users to consult a doctor." }],
+            parts: [{ text: "Understood. I will always respond using the exact requested markdown structure, including the overview, key points, recommendations, when to see a doctor, and the medical disclaimer." }],
           },
         ],
         generationConfig: {

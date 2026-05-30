@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { MedicalDisclaimer, AIModalDisclaimer } from '../components/MedicalDisclaimer';
 
 const parseReportValuesFromRawText = (text: string, category: string): Array<{ key: string; value: number; unit: string; referenceRange: string; isAbnormal: boolean; description?: string; category: string }> => {
   if (!text) return [{ key: '', value: 0, unit: '', referenceRange: '', isAbnormal: false, description: '', category }];
@@ -77,6 +78,8 @@ export const ReportCenter: React.FC = () => {
   const [reportValues, setReportValues] = useState<Array<{ key: string; value: number; unit: string; referenceRange: string; isAbnormal: boolean; description?: string; category: string }>>([]);
   const [verifying, setVerifying] = useState(false);
   const [matchedHospitals, setMatchedHospitals] = useState<Hospital[]>([]);
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [hasAcknowledgedAi, setHasAcknowledgedAi] = useState(false);
 
   const fetchReports = async () => {
     if (!user) {
@@ -185,6 +188,20 @@ export const ReportCenter: React.FC = () => {
     });
   };
 
+  const initiateVerifySubmit = () => {
+    if (!hasAcknowledgedAi) {
+      setShowAiModal(true);
+    } else {
+      handleVerifySubmit();
+    }
+  };
+
+  const handleAcknowledgeAi = () => {
+    setHasAcknowledgedAi(true);
+    setShowAiModal(false);
+    handleVerifySubmit();
+  };
+
   const handleVerifySubmit = async () => {
     if (!activeReport) return;
     setVerifying(true);
@@ -211,6 +228,8 @@ export const ReportCenter: React.FC = () => {
 
   return (
     <div className="space-y-8 pb-16 text-left">
+      {showAiModal && <AIModalDisclaimer onAcknowledge={handleAcknowledgeAi} />}
+      
       <div className="text-left space-y-2">
         <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
           <FileText className="text-primary w-8 h-8 animate-pulse" />
@@ -462,7 +481,7 @@ export const ReportCenter: React.FC = () => {
 
                   <div className="pt-4 border-t border-slate-200 flex justify-end">
                     <button
-                      onClick={handleVerifySubmit}
+                      onClick={initiateVerifySubmit}
                       disabled={verifying}
                       className="px-6 py-3 bg-primary hover:bg-primary-hover text-slate-900 text-xs font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center gap-1.5"
                     >
@@ -474,6 +493,8 @@ export const ReportCenter: React.FC = () => {
               ) : (
                 /* Analyzed Interactive dashboard view */
                 <div className="space-y-6 text-left">
+                  <MedicalDisclaimer />
+                  
                   {/* Summary Box */}
                   <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200 space-y-4 relative overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100/50">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none" />
@@ -628,17 +649,6 @@ export const ReportCenter: React.FC = () => {
                       </div>
                     </div>
                   )}
-
-                  {/* Mandatory Safety Alert banner */}
-                  <div className="p-4 bg-danger/10 border border-danger/25 rounded-2xl flex items-start gap-3">
-                    <AlertTriangle className="w-5 h-5 text-danger shrink-0 mt-0.5 animate-bounce" />
-                    <div>
-                      <span className="text-xs font-bold text-danger block uppercase">Mandatory Health Disclaimer</span>
-                      <p className="text-[10px] text-slate-500 leading-relaxed font-light mt-1">
-                        AI-generated information is for educational purposes only and should not replace professional medical advice. Pulse does not dispense diagnoses or clinical guidance. Always consult with a licensed primary care practitioner or physician before making changes to medications or regimens.
-                      </p>
-                    </div>
-                  </div>
                 </div>
               )}
             </>

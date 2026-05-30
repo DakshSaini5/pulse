@@ -6,6 +6,7 @@ import { prisma } from '../db';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { performOCR } from '../services/ocr';
 import { parsePrescriptionWithGemini, enrichMedicinesWithGemini } from '../services/ai';
+import { uploadLimiter, aiLimiter } from '../middleware/rateLimiter';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import cloudinary from '../config/cloudinary';
 
@@ -38,19 +39,37 @@ const upload = multer({
   },
 });
 
-// GET /api/prescriptions (Guarded - list user scans)
+// GET /api/prescriptions (Guarded - list user scans with pagination)
 router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 10));
+  const skip = (page - 1) * limit;
+
   try {
-    const list = await prisma.prescription.findMany({
-      where: { userId },
-      include: {
-        ocrResult: true,
-        prescriptionAnalysis: true,
+    const [list, total] = await Promise.all([
+      prisma.prescription.findMany({
+        where: { userId },
+        include: {
+          ocrResult: true,
+          prescriptionAnalysis: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.prescription.count({ where: { userId } }),
+    ]);
+
+    return res.json({
+      data: list,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: { createdAt: 'desc' },
     });
-    return res.json(list);
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: 'Error retrieving prescriptions.' });
@@ -82,8 +101,8 @@ router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Res
   }
 });
 
-// POST /api/prescriptions/upload (Guarded - upload file & run Tesseract OCR)
-router.post('/upload', authenticateToken, upload.single('file'), async (req: AuthenticatedRequest, res: Response) => {
+// POST /api/prescriptions/upload (Guarded - upload file & run OCR)
+router.post('/upload', authenticateToken, uploadLimiter, upload.single('file'), async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
 
   if (!req.file) {
@@ -135,7 +154,7 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req: Aut
 });
 
 // POST /api/prescriptions/:id/verify (Guarded - submit verification details to Gemini AI)
-router.post('/:id/verify', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/:id/verify', authenticateToken, aiLimiter, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
   const { id } = req.params;
   const { verifiedData } = req.body; // Can contain corrected manual fields or updated raw text
@@ -153,14 +172,16 @@ router.post('/:id/verify', authenticateToken, async (req: AuthenticatedRequest, 
     const textToAnalyze = verifiedData?.rawText || pres.ocrResult?.rawText || '';
 
     let medicinesData: any[] = [];
+    let totalTokensUsed = 0;
 
     // Check if the user manually added/verified medicines in verifiedData
     if (verifiedData?.medicines && Array.isArray(verifiedData.medicines) && verifiedData.medicines.length > 0 && verifiedData.medicines.some((m: any) => m.name && m.name.trim() !== '')) {
       console.log(`Enriching user-verified medicine fields for prescription ${id}`);
       const validMedicines = verifiedData.medicines.filter((m: any) => m.name && m.name.trim() !== '');
-      const enrichedMedicines = await enrichMedicinesWithGemini(validMedicines);
+      const enrichResult = await enrichMedicinesWithGemini(validMedicines);
+      totalTokensUsed = enrichResult.tokensUsed;
       
-      medicinesData = enrichedMedicines.map((m: any) => ({
+      medicinesData = enrichResult.medicines.map((m: any) => ({
         prescriptionId: id,
         medicineName: m.name,
         chemicalCompound: m.chemicalCompound || null,
@@ -173,7 +194,9 @@ router.post('/:id/verify', authenticateToken, async (req: AuthenticatedRequest, 
       }));
     } else {
       console.log(`Running standard raw text parser for prescription ${id}`);
-      const analysis = await parsePrescriptionWithGemini(textToAnalyze);
+      const parseResult = await parsePrescriptionWithGemini(textToAnalyze);
+      const analysis = parseResult.result;
+      totalTokensUsed = parseResult.tokensUsed;
       
       medicinesData = analysis.medicines.map((m: any) => ({
         prescriptionId: id,
@@ -215,12 +238,12 @@ router.post('/:id/verify', authenticateToken, async (req: AuthenticatedRequest, 
       },
     });
 
-    // Log admin usage track
+    // Log admin usage track with real token count
     await prisma.aIUsage.create({
       data: {
         userId,
         feature: 'PRESCRIPTION_GEMINI_ANALYSIS',
-        tokensUsed: 620,
+        tokensUsed: totalTokensUsed || 620,
         modelName: 'Gemini 2.5 Flash'
       }
     });

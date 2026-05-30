@@ -8,11 +8,12 @@ export interface OCRResult {
   confidence: number;
 }
 
-const apiKey = process.env.GEMINI_API_KEY;
-let genAI: GoogleGenerativeAI | null = null;
-if (apiKey) {
-  genAI = new GoogleGenerativeAI(apiKey);
-}
+// Instantiates Gemini SDKs lazily
+const getGenAI = (): GoogleGenerativeAI | null => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+  return new GoogleGenerativeAI(apiKey);
+};
 
 async function getFileBuffer(filePath: string): Promise<Buffer> {
   if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
@@ -49,6 +50,7 @@ async function fileToGenerativePart(filePath: string, mimeType: string) {
 }
 
 export const performOCR = async (filePath: string): Promise<OCRResult> => {
+  const genAI = getGenAI();
   // 1. Try Gemini Multimodal OCR (Primary)
   if (genAI) {
     try {

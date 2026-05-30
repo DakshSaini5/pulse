@@ -3,16 +3,17 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   Activity, Search, Heart, FileText, ClipboardList, TrendingUp, 
-  LogOut, LogIn, UserPlus, Menu, X, Bell, User as UserIcon, ShieldAlert
+  LogOut, LogIn, UserPlus, Menu, X, Bell, User as UserIcon, ShieldAlert, Settings
 } from 'lucide-react';
 import ChatAssistant from './ChatAssistant';
+import { NotificationCenter } from './NotificationCenter';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -85,55 +86,48 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 )}
 
                 {/* Notifications Button */}
-                <div className="relative">
+                <NotificationCenter />
+
+                {/* Profile card summary and dropdown */}
+                <div className="relative hidden sm:flex items-center gap-3 pl-4 border-l border-slate-200">
                   <button 
-                    onClick={() => setNotificationsOpen(!notificationsOpen)}
-                    className="p-2.5 rounded-xl border border-slate-200 hover:border-slate-200 bg-slate-50 hover:bg-slate-100 transition-all text-slate-500 hover:text-slate-900"
+                    onClick={() => setProfileOpen(!profileOpen)}
+                    className="flex items-center gap-3 text-left focus:outline-none group"
                   >
-                    <Bell className="w-5 h-5" />
-                    <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-danger animate-pulse" />
+                    <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 text-primary font-extrabold text-sm group-hover:bg-primary/20 transition-colors">
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="hidden md:block">
+                      <p className="text-xs font-semibold text-slate-900 leading-3 group-hover:text-primary transition-colors">{user.name}</p>
+                      <span className="text-[10px] text-slate-500">{user.email}</span>
+                    </div>
                   </button>
 
-                  {/* Dropdown menu */}
-                  {notificationsOpen && (
-                    <div className="absolute right-0 mt-3 w-80 glass-panel border border-slate-200 rounded-2xl p-4 shadow-xl z-50 text-slate-700">
-                      <div className="flex justify-between items-center pb-3 border-b border-slate-200 mb-3">
-                        <span className="font-semibold text-sm">Notifications</span>
-                        <span className="text-[10px] bg-primary/20 text-primary font-bold px-2 py-0.5 rounded-full">New Alerts</span>
-                      </div>
-                      <div className="space-y-3">
-                        <div className="p-2 bg-success/10 border border-success/20 rounded-lg text-xs">
-                          <p className="font-medium text-slate-900 mb-0.5">Analysis Ready</p>
-                          <p className="text-slate-500">Medical Report CBC analysis parsed perfectly. Route specialist updated.</p>
-                        </div>
-                        <div className="p-2 bg-primary/10 border border-primary/20 rounded-lg text-xs">
-                          <p className="font-medium text-slate-900 mb-0.5">Welcome to Pulse</p>
-                          <p className="text-slate-500">Start discovering hospitals near your location.</p>
-                        </div>
+                  {profileOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-slate-200 shadow-xl shadow-slate-200/50 rounded-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="py-2">
+                        <Link 
+                          to="/profile"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 hover:text-primary transition-colors"
+                        >
+                          <UserIcon className="w-4 h-4" />
+                          My Profile
+                        </Link>
+                        <button
+                          onClick={() => {
+                            setProfileOpen(false);
+                            handleLogout();
+                          }}
+                          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-danger hover:bg-danger/5 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Log out
+                        </button>
                       </div>
                     </div>
                   )}
                 </div>
-
-                {/* Profile card summary */}
-                <div className="hidden sm:flex items-center gap-3 pl-4 border-l border-slate-200">
-                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 text-primary font-extrabold text-sm">
-                    {user.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="text-left">
-                    <p className="text-xs font-semibold text-slate-900 leading-3">{user.name}</p>
-                    <span className="text-[10px] text-slate-500">{user.email}</span>
-                  </div>
-                </div>
-
-                {/* Logout Button */}
-                <button
-                  onClick={handleLogout}
-                  className="p-2.5 rounded-xl border border-slate-200 hover:border-danger/20 bg-slate-50 hover:bg-danger/10 hover:text-danger transition-all text-slate-500"
-                  title="Logout"
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
               </>
             ) : (
               <div className="flex items-center gap-2">

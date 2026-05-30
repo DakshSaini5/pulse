@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { hospitalAPI, Hospital } from '../services/api';
 import { Map } from '../components/Map';
 import { 
-  Search as SearchIcon, MapPin, Star, AlertCircle, Heart, 
+  Search as SearchIcon, MapPin, Star, AlertCircle, Heart, Phone,
   Activity, ArrowRight, ShieldCheck, HelpCircle, Layers, CheckSquare, Square
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -17,6 +17,7 @@ export const Search: React.FC = () => {
   const [specialty, setSpecialty] = useState('');
   const [radius, setRadius] = useState(15); // max distance in km
   const [emergencyOnly, setEmergencyOnly] = useState(false);
+  const [sortBy, setSortBy] = useState('match'); // match, rating, distance
 
   // Map user coordinates
   const [lat, setLat] = useState(28.6139);
@@ -45,7 +46,20 @@ export const Search: React.FC = () => {
     try {
       const data = await hospitalAPI.search(query, specialty, radius, lat, lng);
       // Client-side emergency filter if checked
-      const filtered = emergencyOnly ? data.filter(h => h.emergencyAvailable) : data;
+      let filtered = emergencyOnly ? data.filter(h => h.emergencyAvailable) : data;
+      
+      // Sort
+      if (sortBy === 'rating') {
+        filtered = filtered.sort((a, b) => b.rating - a.rating);
+      } else if (sortBy === 'distance') {
+        // We don't have distance in the Hospital interface explicitly exposed from API, but if we did, we would sort by it.
+        // Assuming the API returns sorted by distance by default if query is empty, or we rely on recommendationScore.
+        // Let's just sort by rating as fallback or keep order.
+      } else {
+        // match
+        filtered = filtered.sort((a, b) => b.recommendationScore - a.recommendationScore);
+      }
+      
       setHospitals(filtered);
       
       // Auto highlight first search match if available
@@ -73,7 +87,7 @@ export const Search: React.FC = () => {
   useEffect(() => {
     fetchHospitals();
     fetchSaved();
-  }, [specialty, radius, emergencyOnly]);
+  }, [specialty, radius, emergencyOnly, sortBy]);
 
   // Request browser geolocation on mount
   useEffect(() => {
@@ -187,7 +201,19 @@ export const Search: React.FC = () => {
           />
         </div>
 
-        <div className="md:col-span-3 grid grid-cols-2 gap-3">
+        <div className="md:col-span-2 space-y-1">
+          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sort By</label>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="w-full px-3 py-2.5 rounded-xl glass-input text-xs text-slate-900"
+          >
+            <option value="match">Best Match</option>
+            <option value="rating">Highest Rated</option>
+          </select>
+        </div>
+
+        <div className="md:col-span-2 grid grid-cols-2 gap-3">
           <button
             type="button"
             onClick={() => setEmergencyOnly(!emergencyOnly)}
@@ -248,6 +274,11 @@ export const Search: React.FC = () => {
                   }`}
                 >
                   <div className="space-y-3">
+                    {hosp.photoUrl && (
+                      <div className="w-full h-32 rounded-xl overflow-hidden mb-3">
+                        <img src={hosp.photoUrl} alt={hosp.name} className="w-full h-full object-cover" />
+                      </div>
+                    )}
                     <div className="flex justify-between items-start gap-4">
                       <div>
                         <h3 className="font-bold text-slate-900 text-base leading-snug">{hosp.name}</h3>
@@ -255,6 +286,12 @@ export const Search: React.FC = () => {
                           <MapPin className="w-3.5 h-3.5 text-slate-500" />
                           {hosp.address}
                         </p>
+                        {hosp.phone && (
+                          <p className="text-xs text-slate-500 flex items-center gap-1 mt-1.5 leading-none">
+                            <Phone className="w-3.5 h-3.5 text-slate-500" />
+                            <a href={`tel:${hosp.phone}`} className="hover:text-primary transition-colors">{hosp.phone}</a>
+                          </p>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-1.5">

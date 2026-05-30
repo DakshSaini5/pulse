@@ -10,9 +10,12 @@ generator client {
 model User {
   id              String           @id @default(uuid())
   email           String           @unique
-  passwordHash    String
+  passwordHash    String?
   name            String
   role            String           @default("USER") // USER, ADMIN
+  googleId        String?          @unique
+  avatar          String?
+  authProvider    String           @default("EMAIL") // EMAIL, GOOGLE
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   
@@ -39,8 +42,10 @@ model Hospital {
   phone               String?
   email               String?
   website             String?
-  workingHours        String
+  workingHours        String?
   emergencyAvailable  Boolean            @default(false)
+  photoUrl            String?
+  externalId          String?            @unique // For Google Place ID or other provider IDs
   recommendationScore Float              @default(0.0)
   createdAt           DateTime           @default(now())
   
@@ -82,6 +87,9 @@ model HospitalReview {
   
   hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([hospitalId])
+  @@index([userId])
 }
 
 model SavedHospital {
@@ -104,6 +112,8 @@ model SearchHistory {
   createdAt DateTime @default(now())
   
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Recommendation {
@@ -133,6 +143,8 @@ model Prescription {
   user                 User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   ocrResult            OCRResult?
   prescriptionAnalysis PrescriptionAnalysis[]
+
+  @@index([userId, createdAt])
 }
 
 model MedicalReport {
@@ -150,6 +162,8 @@ model MedicalReport {
   values         MedicalReportValue[]
   summary        MedicalReportSummary?
   specialists    SpecialistRecommendation[]
+
+  @@index([userId, createdAt])
 }
 
 model OCRResult {
@@ -229,6 +243,8 @@ model HealthTrend {
   recordedAt DateTime
   
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, recordedAt])
 }
 
 model SpecialistRecommendation {

@@ -16,18 +16,20 @@ export const HospitalDetail: React.FC = () => {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
   const [reviews, setReviews] = useState<any[]>([]);
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [totalReviews, setTotalReviews] = useState(0);
 
   const fetchDetails = async () => {
     if (!id) return;
     setLoading(true);
     try {
-      const data = await hospitalAPI.getById(id);
-      setHospital(data);
-      // Setup mock reviews for immediate visual aesthetics
-      setReviews([
-        { id: '1', rating: 5, reviewText: 'Exceptional cardiac staff. The emergency routing was incredibly fast.', user: { name: 'Sophia Miller' }, createdAt: '2026-05-12' },
-        { id: '2', rating: 4, reviewText: 'Clean facility, friendly consultants. The pediatric queue was handled smoothly.', user: { name: 'David Chen' }, createdAt: '2026-05-18' }
+      const [hospitalData, reviewsData] = await Promise.all([
+        hospitalAPI.getById(id),
+        hospitalAPI.getReviews(id)
       ]);
+      setHospital(hospitalData);
+      setReviews(reviewsData.reviews);
+      setTotalReviews(reviewsData.pagination.total);
     } catch (err) {
       console.error(err);
     } finally {
@@ -39,21 +41,30 @@ export const HospitalDetail: React.FC = () => {
     fetchDetails();
   }, [id]);
 
-  const handleAddReview = (e: React.FormEvent) => {
+  const handleAddReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reviewText.trim()) return;
+    if (!reviewText.trim() || !id) return;
     
-    const newRev = {
-      id: Date.now().toString(),
-      rating: reviewRating,
-      reviewText,
-      user: { name: user?.name || 'Pulse Guest' },
-      createdAt: new Date().toISOString().split('T')[0]
-    };
-
-    setReviews(prev => [newRev, ...prev]);
-    setReviewText('');
-    setReviewRating(5);
+    if (!user) {
+      alert("Please login to submit a review.");
+      return;
+    }
+    
+    setSubmittingReview(true);
+    try {
+      const newRev = await hospitalAPI.postReview(id, reviewRating, reviewText);
+      setReviews(prev => [newRev, ...prev]);
+      setTotalReviews(prev => prev + 1);
+      setReviewText('');
+      setReviewRating(5);
+      
+      // Update hospital rating visually
+      fetchDetails(); // Refetch to get updated hospital rating
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to submit review');
+    } finally {
+      setSubmittingReview(false);
+    }
   };
 
   if (loading) {
@@ -143,7 +154,7 @@ export const HospitalDetail: React.FC = () => {
 
           {/* Review List block */}
           <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200 space-y-6">
-            <h2 className="text-lg font-bold text-slate-900 border-b border-slate-200 pb-3">Patient Reviews ({reviews.length})</h2>
+            <h2 className="text-lg font-bold text-slate-900 border-b border-slate-200 pb-3">Patient Reviews ({totalReviews})</h2>
 
             {/* Compose Review form */}
             <form onSubmit={handleAddReview} className="space-y-4 bg-slate-50 border border-slate-200 p-4 rounded-2xl">
@@ -176,9 +187,10 @@ export const HospitalDetail: React.FC = () => {
 
               <button
                 type="submit"
-                className="px-4 py-2 bg-primary hover:bg-primary-hover text-slate-900 text-xs font-bold rounded-xl shadow-md"
+                disabled={submittingReview}
+                className="px-4 py-2 bg-primary hover:bg-primary-hover text-slate-900 text-xs font-bold rounded-xl shadow-md disabled:opacity-50"
               >
-                Submit Review
+                {submittingReview ? 'Submitting...' : 'Submit Review'}
               </button>
             </form>
 
@@ -192,7 +204,7 @@ export const HospitalDetail: React.FC = () => {
                       </div>
                       <span className="text-xs font-semibold text-slate-900">{rev.user.name}</span>
                     </div>
-                    <span className="text-[10px] text-slate-500">{rev.createdAt}</span>
+                    <span className="text-[10px] text-slate-500">{new Date(rev.createdAt).toLocaleDateString()}</span>
                   </div>
                   <div className="flex gap-0.5">
                     {[1, 2, 3, 4, 5].map(n => (

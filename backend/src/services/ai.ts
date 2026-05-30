@@ -1,12 +1,56 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const apiKey = process.env.GEMINI_API_KEY;
+// Instantiates Gemini SDKs lazily to ensure env vars are loaded
+const getGenAI = (): GoogleGenerativeAI | null => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+  return new GoogleGenerativeAI(apiKey);
+};
 
-// Instantiates Gemini SDKs
-let genAI: GoogleGenerativeAI | null = null;
-if (apiKey) {
-  genAI = new GoogleGenerativeAI(apiKey);
-}
+// Circuit breaker: if Gemini fails too many times, auto-fallback to simulator
+let failureCount = 0;
+let lastFailureReset = Date.now();
+const MAX_FAILURES = 5;
+const FAILURE_WINDOW_MS = 60 * 1000; // 1 minute
+
+const isCircuitOpen = (): boolean => {
+  // Reset failure count if window has passed
+  if (Date.now() - lastFailureReset > FAILURE_WINDOW_MS) {
+    failureCount = 0;
+    lastFailureReset = Date.now();
+  }
+  return failureCount >= MAX_FAILURES;
+};
+
+const recordFailure = () => {
+  failureCount++;
+  console.warn(`[Circuit Breaker] Gemini failure ${failureCount}/${MAX_FAILURES}`);
+};
+
+// Helper to safely parse JSON from Gemini responses
+const safeParseJSON = (text: string): any => {
+  const cleanJson = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+  try {
+    return JSON.parse(cleanJson);
+  } catch (err) {
+    console.error('[AI] Failed to parse Gemini JSON response:', cleanJson.substring(0, 200));
+    return null;
+  }
+};
+
+// Helper to extract actual token usage from Gemini response
+export const extractTokenUsage = (result: any): { inputTokens: number; outputTokens: number; totalTokens: number } => {
+  try {
+    const usage = result.response?.usageMetadata;
+    return {
+      inputTokens: usage?.promptTokenCount || 0,
+      outputTokens: usage?.candidatesTokenCount || 0,
+      totalTokens: (usage?.promptTokenCount || 0) + (usage?.candidatesTokenCount || 0),
+    };
+  } catch {
+    return { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+  }
+};
 
 // ----------------------------------------------------
 // AI Simulation Fallbacks (Zero-Config local runs)
@@ -109,33 +153,40 @@ const simulateMedicalReport = (rawText: string, reportType: string) => {
 // ----------------------------------------------------
 
 export const parsePrescriptionWithGemini = async (rawText: string) => {
-  if (!genAI) {
-    return simulatePrescription(rawText);
+  const genAI = getGenAI();
+  if (!genAI || isCircuitOpen()) {
+    if (isCircuitOpen()) console.warn('[Circuit Breaker] Gemini circuit open — using simulator.');
+    return { result: simulatePrescription(rawText), tokensUsed: 0 };
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.0-flash',
+      generationConfig: { responseMimeType: "application/json" }
+    });
     const prompt = `
       You are an expert clinical pharmacist and pharmacologist. Analyze this clinical prescription text scanned via OCR:
       "${rawText}"
 
-      Your task is to parse this prescription with the highest level of clinical precision, matching the structured data models used by top-tier medical apps like Tata 1mg. 
+      Your task is to parse this prescription with the highest level of precision.
+      You must extract EVERY single prescribed item on the list. Do NOT filter out any items.
+      This includes clinical medications, but ALSO strictly includes skincare products, face washes, lotions, topical creams, supplements, and vitamins.
+      
+      For each item found, identify its purpose, active ingredients (if applicable), and precise instructions.
       You must expand all Latin/medical abbreviations (e.g., BD, QD, TID, PRN, PO, PC, AC) into exact dosing schedules.
       
-      For each medication found, you must identify its true chemical compound/active ingredient, standard drug class, and precise instructions.
-      
-      Output format must be strictly a valid JSON object matching this schema exactly, with NO markdown code fences or backticks around it:
+      Output format must be strictly a valid JSON object matching this schema exactly:
       {
         "medicines": [
           {
-            "name": "Brand Name or Prescribed Name (e.g., Augmentin 625 Duo)",
-            "chemicalCompound": "Exact Chemical/Active Ingredient (e.g., Amoxicillin 500mg + Clavulanic Acid 125mg)",
-            "drugClass": "Pharmacological Class (e.g., Penicillin Antibiotic)",
-            "dosage": "Exact Dosage (e.g., 625mg)",
-            "instructions": "Detailed clinical instructions (e.g., Take 1 tablet by mouth twice daily, after meals)",
-            "simplifiedExplanation": "Patient-friendly explanation of exactly what this medicine treats",
-            "sideEffects": "Top 3 most common side effects to watch out for",
-            "drugInteractions": "Critical food or drug interactions (e.g., Avoid dairy, Do not take with antacids)"
+            "name": "Brand Name or Prescribed Name (e.g., Augmentin 625 Duo or Cerave Cleanser)",
+            "chemicalCompound": "Exact Chemical/Active Ingredient (or 'Topical Product' / 'Supplement' if not applicable)",
+            "drugClass": "Pharmacological Class or Category (e.g., Penicillin Antibiotic, or Skincare/Moisturizer)",
+            "dosage": "Exact Dosage (e.g., 625mg, or 'As needed', or 'Apply topically')",
+            "instructions": "Detailed clinical instructions (e.g., Take 1 tablet twice daily, or Apply to face twice a day)",
+            "simplifiedExplanation": "Patient-friendly explanation of exactly what this item is used for",
+            "sideEffects": "Top common side effects (or 'No major side effects' for basic lotions)",
+            "drugInteractions": "Critical interactions (or 'None' for basic topical products)"
           }
         ]
       }
@@ -151,27 +202,42 @@ export const parsePrescriptionWithGemini = async (rawText: string) => {
 
     const result = await model.generateContent(prompt);
     const responseText = result.response.text().trim();
-    // Clean up potential markdown formatting if returned
-    const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(cleanJson);
+    const parsed = safeParseJSON(responseText);
+    const tokenUsage = extractTokenUsage(result);
+    
+    if (!parsed || !parsed.medicines) {
+      console.warn('[AI] Gemini returned unparseable response for prescription. Using simulator.');
+      recordFailure();
+      return { result: simulatePrescription(rawText), tokensUsed: tokenUsage.totalTokens };
+    }
+    
+    return { result: parsed, tokensUsed: tokenUsage.totalTokens };
   } catch (err) {
     console.error('Gemini API call failed. Using simulator fallback.', err);
-    return simulatePrescription(rawText);
+    recordFailure();
+    return { result: simulatePrescription(rawText), tokensUsed: 0 };
   }
 };
 
 export const enrichMedicinesWithGemini = async (medicines: Array<{ name: string; dosage: string; instructions: string }>) => {
-  if (!genAI || medicines.length === 0) {
-    return medicines.map(m => ({
-      ...m,
-      simplifiedExplanation: m.name ? `${m.name} is a medication used as instructed.` : 'No description available.',
-      sideEffects: 'Mild nausea, headache, or stomach upset in some patients.',
-      drugInteractions: 'Consult your doctor or check with your pharmacy for compatibility.'
-    }));
+  const genAI = getGenAI();
+  if (!genAI || isCircuitOpen() || medicines.length === 0) {
+    return {
+      medicines: medicines.map(m => ({
+        ...m,
+        simplifiedExplanation: m.name ? `${m.name} is a medication used as instructed.` : 'No description available.',
+        sideEffects: 'Mild nausea, headache, or stomach upset in some patients.',
+        drugInteractions: 'Consult your doctor or check with your pharmacy for compatibility.'
+      })),
+      tokensUsed: 0,
+    };
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.0-flash',
+      generationConfig: { responseMimeType: "application/json" }
+    });
     const prompt = `
       You are an expert clinical pharmacologist.
       A user has verified or manually entered the following medicine list from a medical prescription:
@@ -207,26 +273,50 @@ export const enrichMedicinesWithGemini = async (medicines: Array<{ name: string;
 
     const result = await model.generateContent(prompt);
     const responseText = result.response.text().trim();
-    const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(cleanJson).medicines;
+    const parsed = safeParseJSON(responseText);
+    const tokenUsage = extractTokenUsage(result);
+    
+    if (!parsed || !parsed.medicines) {
+      recordFailure();
+      return {
+        medicines: medicines.map(m => ({
+          ...m,
+          simplifiedExplanation: `${m.name} is prescribed for health management under guidance.`,
+          sideEffects: 'Stomach irritation, dizziness, or mild dry mouth.',
+          drugInteractions: 'Verify compatibility with other active medications.'
+        })),
+        tokensUsed: tokenUsage.totalTokens,
+      };
+    }
+    
+    return { medicines: parsed.medicines, tokensUsed: tokenUsage.totalTokens };
   } catch (err) {
     console.error('Gemini drug enrichment failed. Falling back to default descriptions.', err);
-    return medicines.map(m => ({
-      ...m,
-      simplifiedExplanation: `${m.name} is prescribed for health management under guidance.`,
-      sideEffects: 'Stomach irritation, dizziness, or mild dry mouth.',
-      drugInteractions: 'Verify compatibility with other active medications.'
-    }));
+    recordFailure();
+    return {
+      medicines: medicines.map(m => ({
+        ...m,
+        simplifiedExplanation: `${m.name} is prescribed for health management under guidance.`,
+        sideEffects: 'Stomach irritation, dizziness, or mild dry mouth.',
+        drugInteractions: 'Verify compatibility with other active medications.'
+      })),
+      tokensUsed: 0,
+    };
   }
 };
 
 export const parseMedicalReportWithGemini = async (rawText: string, reportType: string) => {
-  if (!genAI) {
-    return simulateMedicalReport(rawText, reportType);
+  const genAI = getGenAI();
+  if (!genAI || isCircuitOpen()) {
+    if (isCircuitOpen()) console.warn('[Circuit Breaker] Gemini circuit open — using simulator.');
+    return { result: simulateMedicalReport(rawText, reportType), tokensUsed: 0 };
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.0-flash',
+      generationConfig: { responseMimeType: "application/json" }
+    });
     const prompt = `
       Analyze this medical lab report text:
       "${rawText}"
@@ -265,10 +355,19 @@ export const parseMedicalReportWithGemini = async (rawText: string, reportType: 
 
     const result = await model.generateContent(prompt);
     const responseText = result.response.text().trim();
-    const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(cleanJson);
+    const parsed = safeParseJSON(responseText);
+    const tokenUsage = extractTokenUsage(result);
+    
+    if (!parsed || !parsed.values) {
+      console.warn('[AI] Gemini returned unparseable response for report. Using simulator.');
+      recordFailure();
+      return { result: simulateMedicalReport(rawText, reportType), tokensUsed: tokenUsage.totalTokens };
+    }
+    
+    return { result: parsed, tokensUsed: tokenUsage.totalTokens };
   } catch (err) {
     console.error('Gemini API call failed. Using simulator fallback.', err);
-    return simulateMedicalReport(rawText, reportType);
+    recordFailure();
+    return { result: simulateMedicalReport(rawText, reportType), tokensUsed: 0 };
   }
 };

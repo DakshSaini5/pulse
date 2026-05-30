@@ -2,17 +2,21 @@ import { Router, Response } from 'express';
 import { prisma } from '../db';
 import { scoreHospital, calculateDistance } from '../services/recommendation';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
+import { searchLimiter } from '../middleware/rateLimiter';
+import { hospitalService } from '../services/HospitalService';
 
 const router = Router();
 
-// GET /api/hospitals (Public - search hospitals)
-router.get('/', async (req: AuthenticatedRequest, res: Response) => {
-  const { query, specialty, maxDistance, lat, lng } = req.query;
+// GET /api/hospitals (Public - search hospitals with pagination)
+router.get('/', searchLimiter, async (req: AuthenticatedRequest, res: Response) => {
+  const { query, specialty, maxDistance, lat, lng, page: pageStr, limit: limitStr } = req.query;
 
   // Defaults user to Delhi region coordinates if geolocation is not shared
   const userLat = lat ? parseFloat(lat as string) : 28.6139;
   const userLng = lng ? parseFloat(lng as string) : 77.2090;
   const radius = maxDistance ? parseFloat(maxDistance as string) : 15; // default 15km
+  const page = Math.max(1, parseInt(pageStr as string) || 1);
+  const limit = Math.min(50, Math.max(1, parseInt(limitStr as string) || 20));
 
   try {
     // Search history logging if logged in
@@ -26,10 +30,10 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
       });
     }
 
-    // Load hospitals with specialties and specialties metadata
-    const hospitalsList = await prisma.hospital.findMany({
+    // Load hospitals with specialties — case-insensitive search
+    let hospitalsList = await prisma.hospital.findMany({
       where: query
-        ? { name: { contains: query as string } }
+        ? { name: { contains: query as string, mode: 'insensitive' } }
         : {},
       include: {
         specialties: {
@@ -39,6 +43,27 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
         },
       },
     });
+
+    // Smart Cache Strategy: If we have very few results locally, ask our Provider (Google Places)
+    // and cache them for the future.
+    if (hospitalsList.length < 3) {
+      const searchKeyword = (query as string) || (specialty as string) || 'Hospital';
+      await hospitalService.ensureHospitalsCached(userLat, userLng, searchKeyword, radius);
+
+      // Re-fetch from our DB now that the cache is populated
+      hospitalsList = await prisma.hospital.findMany({
+        where: query
+          ? { name: { contains: query as string, mode: 'insensitive' } }
+          : {},
+        include: {
+          specialties: {
+            include: {
+              specialty: true,
+            },
+          },
+        },
+      });
+    }
 
     // Score and filter by distance radius
     const scored = hospitalsList
@@ -61,7 +86,20 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
     // Sort by recommendation score descending
     scored.sort((a, b) => b.recommendationScore - a.recommendationScore);
 
-    return res.json(scored);
+    // Apply pagination after scoring and filtering
+    const total = scored.length;
+    const start = (page - 1) * limit;
+    const paginated = scored.slice(start, start + limit);
+
+    return res.json({
+      data: paginated,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: 'Error retrieving hospital records.' });
@@ -218,6 +256,41 @@ router.delete('/:id/save', authenticateToken, async (req: AuthenticatedRequest, 
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: 'Error removing saved bookmark.' });
+  }
+});
+
+// POST /api/hospitals (Admin Only - Add new hospital)
+router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  const user = req.user!;
+  if (user.role !== 'ADMIN') {
+    return res.status(403).json({ message: 'Only admins can add hospitals.' });
+  }
+
+  try {
+    const { 
+      name, address, latitude, longitude, phone, email, website, 
+      workingHours, emergencyAvailable, rating 
+    } = req.body;
+
+    const newHospital = await prisma.hospital.create({
+      data: {
+        name,
+        address,
+        latitude: parseFloat(latitude),
+        longitude: parseFloat(longitude),
+        phone,
+        email,
+        website,
+        workingHours: workingHours || '9:00 AM - 5:00 PM',
+        emergencyAvailable: Boolean(emergencyAvailable),
+        rating: rating ? parseFloat(rating) : 0,
+      }
+    });
+
+    return res.status(201).json(newHospital);
+  } catch (err) {
+    console.error('Failed to add hospital:', err);
+    return res.status(500).json({ message: 'Error adding new hospital.' });
   }
 });
 

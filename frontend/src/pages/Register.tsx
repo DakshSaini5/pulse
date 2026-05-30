@@ -1,16 +1,31 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { GoogleLogin } from '@react-oauth/google';
 import { Activity, UserPlus, Mail, Lock, User, ShieldAlert } from 'lucide-react';
 
 export const Register: React.FC = () => {
-  const { register } = useAuth();
+  const { register, googleLogin } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    if (!credentialResponse.credential) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await googleLogin(credentialResponse.credential);
+      navigate('/search');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Google Sign-Up failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,6 +135,26 @@ export const Register: React.FC = () => {
             {loading ? 'Registering Account...' : 'Create Account'}
           </button>
         </form>
+
+        <div className="space-y-3 pt-2">
+          <div className="relative flex py-2 items-center">
+            <div className="flex-grow border-t border-slate-200"></div>
+            <span className="flex-shrink mx-4 text-[10px] text-slate-500 font-bold uppercase tracking-wider">OR CONTINUE WITH</span>
+            <div className="flex-grow border-t border-slate-200"></div>
+          </div>
+
+          <div className="flex justify-center w-full">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setError('Google Sign-Up failed. Please try again.')}
+              useOneTap
+              theme="outline"
+              size="large"
+              shape="pill"
+              text="continue_with"
+            />
+          </div>
+        </div>
 
         <div className="text-center pt-2">
           <p className="text-xs text-slate-500">
