@@ -30,7 +30,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0B0F19]">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="w-12 h-12 rounded-full border-4 border-slate-800 border-t-primary animate-spin" />
       </div>
     );
@@ -49,7 +49,7 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0B0F19]">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="w-12 h-12 rounded-full border-4 border-slate-800 border-t-primary animate-spin" />
       </div>
     );

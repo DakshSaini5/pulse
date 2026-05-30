@@ -135,11 +135,11 @@ export const Map: React.FC<MapProps> = ({
   }, [hospitals, selectedHospitalId, userLat, userLng]);
 
   return (
-    <div className="w-full h-full relative rounded-2xl overflow-hidden border border-white/5 shadow-2xl min-h-[350px]">
-      <div ref={mapContainerRef} className="w-full h-full absolute inset-0 bg-[#0B0F19]" />
+    <div className="w-full h-full relative rounded-2xl overflow-hidden border border-slate-200 shadow-2xl min-h-[350px]">
+      <div ref={mapContainerRef} className="w-full h-full absolute inset-0 bg-slate-50" />
       
       {/* Floating coordinates indicator */}
-      <div className="absolute bottom-3 left-3 z-[1000] bg-[#111827]/80 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-lg text-[9px] text-slate-400 font-semibold uppercase tracking-wider">
+      <div className="absolute bottom-3 left-3 z-[1000] bg-[#111827]/80 backdrop-blur-md border border-slate-200 px-2.5 py-1 rounded-lg text-[9px] text-slate-500 font-semibold uppercase tracking-wider">
         📍 Center: {userLat.toFixed(4)}, {userLng.toFixed(4)}
       </div>
     </div>

@@ -36,15 +36,15 @@ export const Register: React.FC = () => {
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 glass-panel border border-white/5 p-8 sm:p-10 rounded-3xl shadow-2xl relative overflow-hidden bg-gradient-to-b from-white/[0.01] to-transparent">
+      <div className="max-w-md w-full space-y-8 glass-panel border border-slate-200 p-8 sm:p-10 rounded-3xl shadow-2xl relative overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100/50">
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] pointer-events-none" />
 
         <div className="text-center space-y-3">
           <div className="mx-auto w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary to-blue-500 flex items-center justify-center shadow-lg shadow-primary/20">
-            <Activity className="w-6 h-6 text-white animate-pulse" />
+            <Activity className="w-6 h-6 text-slate-900 animate-pulse" />
           </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Join Pulse Platform</h2>
-          <p className="text-xs text-slate-400">Unlock your interactive clinical reports and specialist routers</p>
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">Join Pulse Platform</h2>
+          <p className="text-xs text-slate-500">Unlock your interactive clinical reports and specialist routers</p>
         </div>
 
         {error && (
@@ -57,7 +57,7 @@ export const Register: React.FC = () => {
         <form className="space-y-5" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div className="space-y-1 text-left">
-              <label htmlFor="name" className="text-xs font-semibold text-slate-400">Full Name</label>
+              <label htmlFor="name" className="text-xs font-semibold text-slate-500">Full Name</label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
                   <User className="w-4 h-4" />
@@ -68,14 +68,14 @@ export const Register: React.FC = () => {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-xs text-white placeholder-slate-500 font-medium"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-xs text-slate-900 placeholder-slate-500 font-medium"
                   placeholder="John Doe"
                 />
               </div>
             </div>
 
             <div className="space-y-1 text-left">
-              <label htmlFor="email" className="text-xs font-semibold text-slate-400">Email Address</label>
+              <label htmlFor="email" className="text-xs font-semibold text-slate-500">Email Address</label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
                   <Mail className="w-4 h-4" />
@@ -86,14 +86,14 @@ export const Register: React.FC = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-xs text-white placeholder-slate-500 font-medium"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-xs text-slate-900 placeholder-slate-500 font-medium"
                   placeholder="john@example.com"
                 />
               </div>
             </div>
 
             <div className="space-y-1 text-left">
-              <label htmlFor="password" className="text-xs font-semibold text-slate-400">Password</label>
+              <label htmlFor="password" className="text-xs font-semibold text-slate-500">Password</label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
                   <Lock className="w-4 h-4" />
@@ -104,7 +104,7 @@ export const Register: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-xs text-white placeholder-slate-500 font-medium"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-xs text-slate-900 placeholder-slate-500 font-medium"
                   placeholder="Min 6 characters"
                 />
               </div>
@@ -114,7 +114,7 @@ export const Register: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3.5 rounded-xl bg-primary hover:bg-primary-hover text-slate-900 text-xs font-bold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <UserPlus className="w-4 h-4" />
             {loading ? 'Registering Account...' : 'Create Account'}
@@ -122,7 +122,7 @@ export const Register: React.FC = () => {
         </form>
 
         <div className="text-center pt-2">
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500">
             Already have a login?{' '}
             <Link to="/login" className="text-primary hover:underline font-bold">Sign In Instead</Link>
           </p>

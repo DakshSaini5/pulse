@@ -148,6 +148,62 @@ export const parsePrescriptionWithGemini = async (rawText: string) => {
   }
 };
 
+export const enrichMedicinesWithGemini = async (medicines: Array<{ name: string; dosage: string; instructions: string }>) => {
+  if (!genAI || medicines.length === 0) {
+    return medicines.map(m => ({
+      ...m,
+      simplifiedExplanation: m.name ? `${m.name} is a medication used as instructed.` : 'No description available.',
+      sideEffects: 'Mild nausea, headache, or stomach upset in some patients.',
+      drugInteractions: 'Consult your doctor or check with your pharmacy for compatibility.'
+    }));
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const prompt = `
+      You are an expert clinical pharmacologist.
+      A user has verified or manually entered the following medicine list from a medical prescription:
+      ${JSON.stringify(medicines, null, 2)}
+
+      For each medicine, please provide:
+      1. A friendly, layperson simplified educational explanation of what this medicine is generally used for (simplifiedExplanation).
+      2. Key mild side effects (sideEffects).
+      3. Important drug warnings or interactions (drugInteractions).
+
+      Keep the exact "name", "dosage", and "instructions" fields as provided by the user. Do not change them.
+
+      Output must be strictly a valid JSON object matching this schema exactly, with NO markdown code fences or backticks:
+      {
+        "medicines": [
+          {
+            "name": "Medicine Name",
+            "dosage": "Dosage",
+            "instructions": "Instructions",
+            "simplifiedExplanation": "Friendly simplified explanation",
+            "sideEffects": "Common mild side effects",
+            "drugInteractions": "General drug warnings"
+          }
+        ]
+      }
+
+      CRITICAL: Output ONLY the raw JSON string. Do NOT write diagnostic statements.
+    `;
+
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text().trim();
+    const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanJson).medicines;
+  } catch (err) {
+    console.error('Gemini drug enrichment failed. Falling back to default descriptions.', err);
+    return medicines.map(m => ({
+      ...m,
+      simplifiedExplanation: `${m.name} is prescribed for health management under guidance.`,
+      sideEffects: 'Stomach irritation, dizziness, or mild dry mouth.',
+      drugInteractions: 'Verify compatibility with other active medications.'
+    }));
+  }
+};
+
 export const parseMedicalReportWithGemini = async (rawText: string, reportType: string) => {
   if (!genAI) {
     return simulateMedicalReport(rawText, reportType);
