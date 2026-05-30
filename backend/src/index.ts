@@ -5,6 +5,9 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
+import http from 'http';
+import { Server as SocketIOServer } from 'socket.io';
+import { setupChatSocket } from './services/chatSocket';
 
 // Routes imports
 import authRouter from './routes/auth';
@@ -63,8 +66,18 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
+// Setup Socket.IO Server
+const httpServer = http.createServer(app);
+const io = new SocketIOServer(httpServer, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
+setupChatSocket(io);
+
 // Listen
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`====================================================`);
   console.log(`  💖 PULSE CORE SERVICE RUNNING ON PORT ${PORT}      `);
   console.log(`  🚀 API gateway: http://localhost:${PORT}/api        `);

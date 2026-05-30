@@ -5,6 +5,7 @@ import {
   Activity, Search, Heart, FileText, ClipboardList, TrendingUp, 
   LogOut, LogIn, UserPlus, Menu, X, Bell, User as UserIcon, ShieldAlert
 } from 'lucide-react';
+import ChatAssistant from './ChatAssistant';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuth();
@@ -207,6 +208,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           </div>
         </div>
       </footer>
+      {/* Floating AI Chat Assistant */}
+      <ChatAssistant />
     </div>
   );
 };
