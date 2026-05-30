@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import Tesseract from 'tesseract.js';
+import { generateContentWithFallback } from './gemini';
 
 export interface OCRResult {
   text: string;
@@ -75,8 +76,6 @@ export const performOCR = async (filePath: string): Promise<OCRResult> => {
       else if (ext === '.webp') mimeType = 'image/webp';
 
       const imagePart = await fileToGenerativePart(filePath, mimeType);
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-
       const prompt = `You are a medical document OCR scanner. Extract ALL text from this medical document image.
 
 OUTPUT FORMAT: Return a JSON object with this exact structure:
@@ -91,7 +90,11 @@ RULES:
 - For tabular data, combine columns into a single string per row (e.g. "TSH 5.85 uIU/mL 0.40 - 4.50").
 - Do NOT add any commentary, explanation, or markdown formatting. Return ONLY the raw JSON object.`;
 
-      const result = await model.generateContent([prompt, imagePart]);
+      const { result, modelName } = await generateContentWithFallback(genAI, [prompt, imagePart], {
+        responseMimeType: "application/json",
+        maxOutputTokens: 8192
+      });
+      console.log(`[OCR] Extracted using model: ${modelName}`);
       let responseText = result.response.text().trim();
       
       // Strip markdown code fences if present

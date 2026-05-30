@@ -292,7 +292,9 @@ export const prescriptionAPI = {
     return res.data as Prescription;
   },
   verify: async (id: string, verifiedData: any) => {
-    const res = await api.post(`/api/prescriptions/${id}/verify`, { verifiedData });
+    const res = await api.post(`/api/prescriptions/${id}/verify`, { verifiedData }, {
+      timeout: 60000, // 60 seconds for detailed AI analysis
+    });
     return res.data as Prescription;
   },
   getAll: async () => {
@@ -316,7 +318,9 @@ export const reportAPI = {
     return res.data as MedicalReport;
   },
   verify: async (id: string, verifiedData: any) => {
-    const res = await api.post(`/api/reports/${id}/verify`, { verifiedData });
+    const res = await api.post(`/api/reports/${id}/verify`, { verifiedData }, {
+      timeout: 60000, // 60 seconds for detailed AI analysis
+    });
     return res.data as MedicalReport;
   },
   getAll: async () => {

@@ -1,5 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { getWorkingModelName } from './gemini';
 
 export const setupChatSocket = (io: Server) => {
   // Read key after dotenv has initialized in index.ts
@@ -15,12 +16,14 @@ export const setupChatSocket = (io: Server) => {
     let chatSession: any = null;
 
     if (genAI) {
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-      chatSession = model.startChat({
-        history: [
-          {
-            role: 'user',
-            parts: [{ text: `You are PulseAI, a professional and empathetic healthcare assistant.
+      getWorkingModelName(genAI).then((modelName) => {
+        console.log(`[Socket.io] Starting chat session with model: ${modelName}`);
+        const model = genAI!.getGenerativeModel({ model: modelName });
+        chatSession = model.startChat({
+          history: [
+            {
+              role: 'user',
+              parts: [{ text: `You are PulseAI, a professional and empathetic healthcare assistant.
   
 ALWAYS structure your responses using this format:
 
@@ -42,15 +45,18 @@ ALWAYS structure your responses using this format:
 ---
 ⚕️ *Disclaimer: This is educational information only. 
 Always consult a qualified healthcare professional.*` }],
+            },
+            {
+              role: 'model',
+              parts: [{ text: "Understood. I will always respond using the exact requested markdown structure, including the overview, key points, recommendations, when to see a doctor, and the medical disclaimer." }],
+            },
+          ],
+          generationConfig: {
+            maxOutputTokens: 1000,
           },
-          {
-            role: 'model',
-            parts: [{ text: "Understood. I will always respond using the exact requested markdown structure, including the overview, key points, recommendations, when to see a doctor, and the medical disclaimer." }],
-          },
-        ],
-        generationConfig: {
-          maxOutputTokens: 1000,
-        },
+        });
+      }).catch(err => {
+        console.error('[Socket.io] Failed to load working model name:', err);
       });
     }
 

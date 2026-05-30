@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { generateContentWithFallback } from './gemini';
 
 // Instantiates Gemini SDKs lazily to ensure env vars are loaded
 const getGenAI = (): GoogleGenerativeAI | null => {
@@ -160,10 +161,6 @@ export const parsePrescriptionWithGemini = async (rawText: string) => {
   }
 
   try {
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.0-flash',
-      generationConfig: { responseMimeType: "application/json" }
-    });
     const prompt = `
       You are an expert clinical pharmacist and pharmacologist. Analyze this clinical prescription text scanned via OCR:
       "${rawText}"
@@ -179,14 +176,14 @@ export const parsePrescriptionWithGemini = async (rawText: string) => {
       {
         "medicines": [
           {
-            "name": "Brand Name or Prescribed Name (e.g., Augmentin 625 Duo or Cerave Cleanser)",
-            "chemicalCompound": "Exact Chemical/Active Ingredient (or 'Topical Product' / 'Supplement' if not applicable)",
-            "drugClass": "Pharmacological Class or Category (e.g., Penicillin Antibiotic, or Skincare/Moisturizer)",
-            "dosage": "Exact Dosage (e.g., 625mg, or 'As needed', or 'Apply topically')",
-            "instructions": "Detailed clinical instructions (e.g., Take 1 tablet twice daily, or Apply to face twice a day)",
-            "simplifiedExplanation": "Patient-friendly explanation of exactly what this item is used for",
-            "sideEffects": "Top common side effects (or 'No major side effects' for basic lotions)",
-            "drugInteractions": "Critical interactions (or 'None' for basic topical products)"
+            "name": "Brand Name or Prescribed Name (e.g., Augmentin 625 Duo)",
+            "chemicalCompound": "Exact Chemical/Active Ingredient (or 'Topical Product' / 'Supplement')",
+            "drugClass": "Pharmacological Class or Category (e.g., Penicillin Antibiotic)",
+            "dosage": "Exact Dosage (e.g., 625mg)",
+            "instructions": "Detailed clinical instructions (e.g., Take 1 tablet twice daily)",
+            "simplifiedExplanation": "Extremely concise 1-sentence layperson explanation of purpose",
+            "sideEffects": "Extremely concise list of 2-3 main side effects (max 5 words, e.g., 'Nausea, stomach upset')",
+            "drugInteractions": "Extremely concise warning or key interaction (max 5 words, e.g., 'Avoid alcohol')"
           }
         ]
       }
@@ -200,7 +197,11 @@ export const parsePrescriptionWithGemini = async (rawText: string) => {
       - If a medication cannot be confidently identified, use your best clinical judgment to extract the closest matching valid pharmaceutical.
     `;
 
-    const result = await model.generateContent(prompt);
+    const { result, modelName } = await generateContentWithFallback(genAI, prompt, {
+      responseMimeType: "application/json",
+      maxOutputTokens: 8192
+    });
+    console.log(`[AI] Parsed prescription using model: ${modelName}`);
     const responseText = result.response.text().trim();
     const parsed = safeParseJSON(responseText);
     const tokenUsage = extractTokenUsage(result);
@@ -234,10 +235,6 @@ export const enrichMedicinesWithGemini = async (medicines: Array<{ name: string;
   }
 
   try {
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.0-flash',
-      generationConfig: { responseMimeType: "application/json" }
-    });
     const prompt = `
       You are an expert clinical pharmacologist.
       A user has verified or manually entered the following medicine list from a medical prescription:
@@ -257,9 +254,9 @@ export const enrichMedicinesWithGemini = async (medicines: Array<{ name: string;
             "name": "Medicine Name",
             "dosage": "Dosage",
             "instructions": "Instructions",
-            "simplifiedExplanation": "Friendly simplified explanation",
-            "sideEffects": "Common mild side effects",
-            "drugInteractions": "General drug warnings"
+            "simplifiedExplanation": "Extremely concise 1-sentence layperson explanation of purpose",
+            "sideEffects": "Extremely concise list of 2-3 main side effects (max 5 words, e.g., 'Nausea, stomach upset')",
+            "drugInteractions": "Extremely concise warning or key interaction (max 5 words, e.g., 'Avoid alcohol')"
           }
         ]
       }
@@ -271,7 +268,11 @@ export const enrichMedicinesWithGemini = async (medicines: Array<{ name: string;
       - Output ONLY the raw JSON string.
     `;
 
-    const result = await model.generateContent(prompt);
+    const { result, modelName } = await generateContentWithFallback(genAI, prompt, {
+      responseMimeType: "application/json",
+      maxOutputTokens: 8192
+    });
+    console.log(`[AI] Enriched medicines using model: ${modelName}`);
     const responseText = result.response.text().trim();
     const parsed = safeParseJSON(responseText);
     const tokenUsage = extractTokenUsage(result);
@@ -313,10 +314,6 @@ export const parseMedicalReportWithGemini = async (rawText: string, reportType: 
   }
 
   try {
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.0-flash',
-      generationConfig: { responseMimeType: "application/json" }
-    });
     const prompt = `
       Analyze this medical lab report text:
       "${rawText}"
@@ -332,10 +329,10 @@ export const parseMedicalReportWithGemini = async (rawText: string, reportType: 
             "unit": "g/dL", 
             "referenceRange": "12.0 - 15.0", 
             "isAbnormal": false, 
-            "description": "Simple plain definition of what this marker monitors" 
+            "description": "Extremely concise 1-sentence plain explanation of what this marker monitors" 
           }
         ],
-        "summary": "Overall friendly high level educational summary in layperson words.",
+        "summary": "Extremely concise friendly high level educational summary (max 2 sentences).",
         "status": "STABLE | MONITOR | ATTENTION",
         "specialists": [
           { 
@@ -353,7 +350,11 @@ export const parseMedicalReportWithGemini = async (rawText: string, reportType: 
       - Output ONLY the raw JSON string with no wrapper markdown brackets.
     `;
 
-    const result = await model.generateContent(prompt);
+    const { result, modelName } = await generateContentWithFallback(genAI, prompt, {
+      responseMimeType: "application/json",
+      maxOutputTokens: 8192
+    });
+    console.log(`[AI] Parsed report using model: ${modelName}`);
     const responseText = result.response.text().trim();
     const parsed = safeParseJSON(responseText);
     const tokenUsage = extractTokenUsage(result);
