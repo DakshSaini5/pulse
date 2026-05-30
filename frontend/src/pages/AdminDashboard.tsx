@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { adminAPI, AdminStats } from '../services/api';
+import { adminAPI, hospitalAPI, AdminStats } from '../services/api';
 import { 
   ShieldAlert, Users, Activity, FileText, 
-  Coins, Database, AlertCircle, RefreshCw 
+  Coins, Database, AlertCircle, RefreshCw, PlusCircle, Save
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +13,14 @@ export const AdminDashboard: React.FC = () => {
 
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // New Hospital Form State
+  const [showAddHospital, setShowAddHospital] = useState(false);
+  const [addingHospital, setAddingHospital] = useState(false);
+  const [hospForm, setHospForm] = useState({
+    name: '', address: '', latitude: '', longitude: '', phone: '',
+    email: '', website: '', workingHours: '9:00 AM - 5:00 PM', emergencyAvailable: false, rating: '0'
+  });
 
   const fetchStats = async () => {
     if (!user || user.role !== 'ADMIN') {
@@ -33,6 +41,25 @@ export const AdminDashboard: React.FC = () => {
   useEffect(() => {
     fetchStats();
   }, []);
+
+  const handleAddHospital = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddingHospital(true);
+    try {
+      await hospitalAPI.addHospital(hospForm);
+      alert('Hospital added successfully');
+      setShowAddHospital(false);
+      setHospForm({
+        name: '', address: '', latitude: '', longitude: '', phone: '',
+        email: '', website: '', workingHours: '9:00 AM - 5:00 PM', emergencyAvailable: false, rating: '0'
+      });
+      fetchStats();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to add hospital');
+    } finally {
+      setAddingHospital(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -70,14 +97,93 @@ export const AdminDashboard: React.FC = () => {
           <p className="text-xs text-slate-500">Review real-time system performance indexings, Tesseract queues, and Gemini API cost charts.</p>
         </div>
 
-        <button 
-          onClick={fetchStats}
-          className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 transition-all flex items-center gap-2 text-xs font-bold"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Refresh Stats
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={() => setShowAddHospital(!showAddHospital)}
+            className="p-2.5 rounded-xl border border-slate-200 bg-primary hover:bg-primary-hover text-slate-900 transition-all flex items-center gap-2 text-xs font-bold shadow-md shadow-primary/20"
+          >
+            <PlusCircle className="w-4 h-4" />
+            Add Hospital
+          </button>
+          <button 
+            onClick={fetchStats}
+            className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 transition-all flex items-center gap-2 text-xs font-bold"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh Stats
+          </button>
+        </div>
       </div>
+
+      {showAddHospital && (
+        <div className="glass-panel rounded-3xl p-6 border border-primary/30 bg-primary/5 space-y-6 animate-in fade-in slide-in-from-top-4">
+          <div className="flex justify-between items-center pb-3 border-b border-primary/20">
+            <h3 className="font-bold text-slate-900 flex items-center gap-2">
+              <Database className="w-5 h-5 text-primary" />
+              Ingest New Hospital
+            </h3>
+            <button onClick={() => setShowAddHospital(false)} className="text-xs text-slate-500 hover:text-slate-900">Cancel</button>
+          </div>
+          
+          <form onSubmit={handleAddHospital} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Hospital Name *</label>
+                <input required type="text" value={hospForm.name} onChange={e => setHospForm({...hospForm, name: e.target.value})} className="w-full px-3 py-2 rounded-xl glass-input text-xs text-slate-900" />
+              </div>
+              <div className="space-y-1 lg:col-span-2">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Address *</label>
+                <input required type="text" value={hospForm.address} onChange={e => setHospForm({...hospForm, address: e.target.value})} className="w-full px-3 py-2 rounded-xl glass-input text-xs text-slate-900" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Latitude *</label>
+                <input required type="number" step="any" value={hospForm.latitude} onChange={e => setHospForm({...hospForm, latitude: e.target.value})} className="w-full px-3 py-2 rounded-xl glass-input text-xs text-slate-900" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Longitude *</label>
+                <input required type="number" step="any" value={hospForm.longitude} onChange={e => setHospForm({...hospForm, longitude: e.target.value})} className="w-full px-3 py-2 rounded-xl glass-input text-xs text-slate-900" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Phone</label>
+                <input type="text" value={hospForm.phone} onChange={e => setHospForm({...hospForm, phone: e.target.value})} className="w-full px-3 py-2 rounded-xl glass-input text-xs text-slate-900" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Email</label>
+                <input type="email" value={hospForm.email} onChange={e => setHospForm({...hospForm, email: e.target.value})} className="w-full px-3 py-2 rounded-xl glass-input text-xs text-slate-900" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Website</label>
+                <input type="text" value={hospForm.website} onChange={e => setHospForm({...hospForm, website: e.target.value})} className="w-full px-3 py-2 rounded-xl glass-input text-xs text-slate-900" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Working Hours</label>
+                <input type="text" value={hospForm.workingHours} onChange={e => setHospForm({...hospForm, workingHours: e.target.value})} className="w-full px-3 py-2 rounded-xl glass-input text-xs text-slate-900" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Initial Rating (0-5)</label>
+                <input type="number" min="0" max="5" step="0.1" value={hospForm.rating} onChange={e => setHospForm({...hospForm, rating: e.target.value})} className="w-full px-3 py-2 rounded-xl glass-input text-xs text-slate-900" />
+              </div>
+              <div className="space-y-1 flex items-center pt-5">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+                  <input type="checkbox" checked={hospForm.emergencyAvailable} onChange={e => setHospForm({...hospForm, emergencyAvailable: e.target.checked})} className="rounded text-primary focus:ring-primary w-4 h-4" />
+                  24/7 Emergency Available
+                </label>
+              </div>
+            </div>
+            
+            <div className="flex justify-end pt-2">
+              <button 
+                type="submit" 
+                disabled={addingHospital}
+                className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-slate-900 text-xs font-bold rounded-xl shadow-md disabled:opacity-50 flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                {addingHospital ? 'Saving...' : 'Save Hospital Record'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Metrics Cards Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

@@ -2,17 +2,16 @@ import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../db';
+import { validate, registerSchema, loginSchema } from '../middleware/validate';
+import { authLimiter } from '../middleware/rateLimiter';
+import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'pulse_premium_healthcare_security_secret_2894_7421';
+const JWT_SECRET = process.env.JWT_SECRET!;
 
 // POST /api/auth/register
-router.post('/register', async (req: Request, res: Response) => {
+router.post('/register', authLimiter, validate(registerSchema), async (req: Request, res: Response) => {
   const { name, email, passwordHash } = req.body;
-
-  if (!name || !email || !passwordHash) {
-    return res.status(400).json({ message: 'Missing required account details.' });
-  }
 
   try {
     const existing = await prisma.user.findUnique({ where: { email } });
@@ -21,15 +20,14 @@ router.post('/register', async (req: Request, res: Response) => {
     }
 
     const hashed = await bcrypt.hash(passwordHash, 10);
-    // Assign ADMIN role to a designated default email for testing convenience
-    const role = email.toLowerCase() === 'admin@pulse.com' ? 'ADMIN' : 'USER';
 
     const user = await prisma.user.create({
       data: {
         name,
         email,
         passwordHash: hashed,
-        role,
+        role: 'USER',
+        authProvider: 'EMAIL',
         notifications: {
           create: {
             title: 'Welcome to Pulse!',
@@ -60,17 +58,20 @@ router.post('/register', async (req: Request, res: Response) => {
 });
 
 // POST /api/auth/login
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', authLimiter, validate(loginSchema), async (req: Request, res: Response) => {
   const { email, passwordHash } = req.body;
-
-  if (!email || !passwordHash) {
-    return res.status(400).json({ message: 'Please provide credentials.' });
-  }
 
   try {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials. User does not exist.' });
+    }
+
+    // Google OAuth users don't have a password
+    if (!user.passwordHash) {
+      return res.status(400).json({ 
+        message: 'This account uses Google Sign-In. Please log in with Google.' 
+      });
     }
 
     const matches = await bcrypt.compare(passwordHash, user.passwordHash);
@@ -89,11 +90,39 @@ router.post('/login', async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        avatar: user.avatar,
       },
     });
   } catch (err) {
     console.error('Login error:', err);
     return res.status(500).json({ message: 'Internal server error during login.' });
+  }
+});
+
+// GET /api/auth/me — Verify token and return current user data
+router.get('/me', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        avatar: true,
+        authProvider: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User account not found.' });
+    }
+
+    return res.json(user);
+  } catch (err) {
+    console.error('Me endpoint error:', err);
+    return res.status(500).json({ message: 'Error retrieving user data.' });
   }
 });
 

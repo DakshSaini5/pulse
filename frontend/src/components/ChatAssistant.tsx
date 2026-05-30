@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send, User, Bot, Loader2 } from 'lucide-react';
 import io, { Socket } from 'socket.io-client';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ChatMessage {
   id: string;
@@ -137,7 +139,27 @@ const ChatAssistant: React.FC = () => {
                       ? 'bg-red-500/20 border border-red-500/30 text-red-200 rounded-tl-sm'
                       : 'bg-white/10 text-gray-200 rounded-tl-sm'
                 }`}>
-                  {msg.text}
+                  {msg.role === 'user' ? (
+                    msg.text
+                  ) : (
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        h2: ({children}) => <h2 className="text-blue-400 font-semibold text-sm mt-2 mb-1">{children}</h2>,
+                        h3: ({children}) => <h3 className="text-blue-300 font-medium text-xs mt-2 mb-1">{children}</h3>,
+                        p: ({children}) => <p className="text-gray-200 text-sm mb-1.5 leading-relaxed">{children}</p>,
+                        ul: ({children}) => <ul className="list-disc list-inside text-gray-300 text-sm space-y-0.5 ml-1">{children}</ul>,
+                        ol: ({children}) => <ol className="list-decimal list-inside text-gray-300 text-sm space-y-0.5 ml-1">{children}</ol>,
+                        li: ({children}) => <li className="text-sm">{children}</li>,
+                        strong: ({children}) => <strong className="text-white font-semibold">{children}</strong>,
+                        em: ({children}) => <em className="text-gray-400 italic">{children}</em>,
+                        hr: () => <hr className="border-white/10 my-2" />,
+                        code: ({children}) => <code className="bg-white/10 px-1 py-0.5 rounded text-blue-300 text-xs">{children}</code>,
+                      }}
+                    >
+                      {msg.text}
+                    </ReactMarkdown>
+                  )}
                 </div>
 
                 {msg.role === 'user' && (

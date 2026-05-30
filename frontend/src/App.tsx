@@ -14,6 +14,7 @@ import { HealthTrends } from './pages/HealthTrends';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { Profile } from './pages/Profile';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -107,6 +108,14 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedRoute>
                     <HealthTrends />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/profile" 
+                element={
+                  <ProtectedRoute>
+                    <Profile />
                   </ProtectedRoute>
                 } 
               />

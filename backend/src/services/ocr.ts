@@ -8,11 +8,12 @@ export interface OCRResult {
   confidence: number;
 }
 
-const apiKey = process.env.GEMINI_API_KEY;
-let genAI: GoogleGenerativeAI | null = null;
-if (apiKey) {
-  genAI = new GoogleGenerativeAI(apiKey);
-}
+// Instantiates Gemini SDKs lazily
+const getGenAI = (): GoogleGenerativeAI | null => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+  return new GoogleGenerativeAI(apiKey);
+};
 
 async function getFileBuffer(filePath: string): Promise<Buffer> {
   if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
@@ -49,6 +50,7 @@ async function fileToGenerativePart(filePath: string, mimeType: string) {
 }
 
 export const performOCR = async (filePath: string): Promise<OCRResult> => {
+  const genAI = getGenAI();
   // 1. Try Gemini Multimodal OCR (Primary)
   if (genAI) {
     try {
@@ -77,49 +79,24 @@ export const performOCR = async (filePath: string): Promise<OCRResult> => {
 
       const prompt = `
         You are an expert medical OCR data extractor.
-        Analyze the attached medical document (image or PDF) and transcribe all of its text content.
+        Analyze the attached medical document (image or PDF).
         
-        CRITICAL INSTRUCTION TO BYPASS RECITATION AND SECURITY FILTERS:
-        To prevent triggering automated recitation blocks on standard medical templates and terminology, you MUST output the transcribed text with a pipe character "|" between every single letter, and use double pipes "||" for spaces between words.
-        For example:
-        - The phrase "Tab Augmentin 625mg" MUST be output as: T|a|b||A|u|g|m|e|n|t|i|n||6|2|5|m|g
-        - The phrase "TSH 5.85 uIU/mL" MUST be output as: T|S|H||5|.|8|5||u|I|U|/|m|L
-        - The phrase "Daksh" MUST be output as: D|a|k|s|h
+        Your task is to transcribe the ENTIRE document from top to bottom.
+        - Include ALL text: Clinic headers, doctor names, patient details, dates, vital signs, and doctor notes.
+        - Carefully read and transcribe all prescribed medications, dosages, frequencies, and instructions.
+        - Do NOT skip, filter, or summarize any part of the document. Read every single word.
+        - Format the text cleanly with proper line breaks so it is highly legible.
         
-        Transcribe all lines, headings, values, and sections of the document using this exact pipe-separated format.
-        Do not include any conversational filler or explanation. Output ONLY the pipe-separated transcribed text.
+        Do not include any conversational filler. Output ONLY the transcribed text.
       `;
 
       const result = await model.generateContent([prompt, imagePart]);
       const responseText = result.response.text().trim();
       
-      // Clean up spaces around pipes to normalize (e.g. "T | a | b" becomes "T|a|b")
-      const normalizedText = responseText.replace(/\s*\|\s*/g, '|');
-      
-      // Reconstruct the text line by line
-      const lines = normalizedText.split('\n');
-      const reconstructedLines = lines.map(line => {
-        // If a line has no pipes, use it as-is
-        if (!line.includes('|')) {
-          return line.trim();
-        }
-        
-        // Split words by double pipes "||" or multiple spaces
-        const words = line.split(/\|\|+/);
-        const cleanedWords = words.map(word => {
-          // Remove all single pipes, and trim spaces
-          return word.replace(/\|/g, '').trim();
-        });
-        
-        return cleanedWords.filter(w => w.length > 0).join(' ');
-      });
-      
-      const finalReconstructedText = reconstructedLines.join('\n').trim();
-      
-      console.log("Successfully reconstructed OCR output from pipe-separated tokens.");
+      console.log("Successfully extracted OCR text via Gemini.");
 
       return {
-        text: finalReconstructedText || responseText,
+        text: responseText,
         confidence: 99.5
       };
     } catch (err) {

@@ -6,6 +6,7 @@ import { prisma } from '../db';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { performOCR } from '../services/ocr';
 import { parseMedicalReportWithGemini } from '../services/ai';
+import { uploadLimiter, aiLimiter } from '../middleware/rateLimiter';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import cloudinary from '../config/cloudinary';
 
@@ -38,21 +39,39 @@ const upload = multer({
   },
 });
 
-// GET /api/reports (Guarded - list reports)
+// GET /api/reports (Guarded - list reports with pagination)
 router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 10));
+  const skip = (page - 1) * limit;
+
   try {
-    const list = await prisma.medicalReport.findMany({
-      where: { userId },
-      include: {
-        ocrResult: true,
-        values: true,
-        summary: true,
-        specialists: true,
+    const [list, total] = await Promise.all([
+      prisma.medicalReport.findMany({
+        where: { userId },
+        include: {
+          ocrResult: true,
+          values: true,
+          summary: true,
+          specialists: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.medicalReport.count({ where: { userId } }),
+    ]);
+
+    return res.json({
+      data: list,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: { createdAt: 'desc' },
     });
-    return res.json(list);
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: 'Error loading medical reports.' });
@@ -86,8 +105,8 @@ router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Res
   }
 });
 
-// POST /api/reports/upload (Guarded - upload file & run Tesseract OCR)
-router.post('/upload', authenticateToken, upload.single('file'), async (req: AuthenticatedRequest, res: Response) => {
+// POST /api/reports/upload (Guarded - upload file & run OCR)
+router.post('/upload', authenticateToken, uploadLimiter, upload.single('file'), async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
 
   if (!req.file) {
@@ -141,7 +160,7 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req: Aut
 });
 
 // POST /api/reports/:id/verify (Guarded - submit verified values to Gemini AI)
-router.post('/:id/verify', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/:id/verify', authenticateToken, aiLimiter, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
   const { id } = req.params;
   const { verifiedData } = req.body;
@@ -160,7 +179,9 @@ router.post('/:id/verify', authenticateToken, async (req: AuthenticatedRequest, 
     const activeType = verifiedData?.reportType || report.reportType;
 
     // Run Gemini analysis (simulates results gracefully if no key is stored)
-    const analysis = await parseMedicalReportWithGemini(textToAnalyze, activeType);
+    const parseResult = await parseMedicalReportWithGemini(textToAnalyze, activeType);
+    const analysis = parseResult.result;
+    const totalTokensUsed = parseResult.tokensUsed;
 
     // Clean up past database references
     await prisma.medicalReportValue.deleteMany({ where: { medicalReportId: id } });
@@ -262,7 +283,7 @@ router.post('/:id/verify', authenticateToken, async (req: AuthenticatedRequest, 
       data: {
         userId,
         feature: 'REPORT_GEMINI_ANALYSIS',
-        tokensUsed: 840,
+        tokensUsed: totalTokensUsed || 840,
         modelName: 'Gemini 2.5 Flash'
       }
     });

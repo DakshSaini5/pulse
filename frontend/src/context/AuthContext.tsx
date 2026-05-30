@@ -12,6 +12,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, passwordHash: string) => Promise<void>;
+  googleLogin: (credential: string) => Promise<void>;
   register: (name: string, email: string, passwordHash: string) => Promise<void>;
   logout: () => void;
 }
@@ -23,17 +24,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = authAPI.getCurrentUser();
-    if (storedUser) {
-      setUser(storedUser);
-    }
-    setLoading(false);
+    const initAuth = async () => {
+      const storedToken = localStorage.getItem('pulse_token');
+      if (storedToken) {
+        try {
+          // Actually verify the token with the backend
+          const userData = await authAPI.verifyToken();
+          setUser(userData);
+        } catch (err) {
+          // Token is invalid/expired
+          authAPI.logout();
+        }
+      }
+      setLoading(false);
+    };
+    
+    initAuth();
   }, []);
 
   const login = async (email: string, passwordHash: string) => {
     setLoading(true);
     try {
       const data = await authAPI.login(email, passwordHash);
+      setUser(data.user);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const googleLogin = async (credential: string) => {
+    setLoading(true);
+    try {
+      const data = await authAPI.googleAuth(credential);
       setUser(data.user);
     } finally {
       setLoading(false);
@@ -56,7 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, googleLogin, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
