@@ -116,29 +116,37 @@ export const parsePrescriptionWithGemini = async (rawText: string) => {
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const prompt = `
-      Analyze this clinical prescription text scanned via OCR:
+      You are an expert clinical pharmacist and pharmacologist. Analyze this clinical prescription text scanned via OCR:
       "${rawText}"
 
-      Parse it into structured JSON objects. Translate all short medical abbreviations (like BD, QD, TID, PRN, PO, PC, AC) into plain, friendly educational language.
+      Your task is to parse this prescription with the highest level of clinical precision, matching the structured data models used by top-tier medical apps like Tata 1mg. 
+      You must expand all Latin/medical abbreviations (e.g., BD, QD, TID, PRN, PO, PC, AC) into exact dosing schedules.
+      
+      For each medication found, you must identify its true chemical compound/active ingredient, standard drug class, and precise instructions.
+      
       Output format must be strictly a valid JSON object matching this schema exactly, with NO markdown code fences or backticks around it:
       {
         "medicines": [
           {
-            "name": "Medicine Name",
-            "dosage": "e.g. 500mg",
-            "instructions": "Detailed plain instructions (e.g. Take 1 tablet by mouth three times daily after meals)",
-            "simplifiedExplanation": "Simple explanation of what this class of medication is generally prescribed for",
-            "sideEffects": "Common mild side effects",
-            "drugInteractions": "General drug warnings"
+            "name": "Brand Name or Prescribed Name (e.g., Augmentin 625 Duo)",
+            "chemicalCompound": "Exact Chemical/Active Ingredient (e.g., Amoxicillin 500mg + Clavulanic Acid 125mg)",
+            "drugClass": "Pharmacological Class (e.g., Penicillin Antibiotic)",
+            "dosage": "Exact Dosage (e.g., 625mg)",
+            "instructions": "Detailed clinical instructions (e.g., Take 1 tablet by mouth twice daily, after meals)",
+            "simplifiedExplanation": "Patient-friendly explanation of exactly what this medicine treats",
+            "sideEffects": "Top 3 most common side effects to watch out for",
+            "drugInteractions": "Critical food or drug interactions (e.g., Avoid dairy, Do not take with antacids)"
           }
         ]
       }
       
-      CRITICAL RECITATION-BYPASS SAFETY INSTRUCTIONS:
+      CRITICAL SAFETY RULES & RECITATION-BYPASS SAFETY INSTRUCTIONS:
       - To prevent triggering automated recitation/copyright blocks, the 'simplifiedExplanation', 'sideEffects', and 'drugInteractions' MUST be written in an extremely custom, casual, friendly conversational tone (as if explaining to a close friend in plain language) using unique phrasing.
       - Do NOT copy or write academic, textbook, or dictionary definitions. Avoid formal pharmaceutical phrasing.
       - NEVER write disease diagnoses or definitive statements. Focus purely on friendly definitions.
-      - Output ONLY the raw JSON string.
+      - Output ONLY the raw JSON string. Do NOT use markdown formatting (\`\`\`json).
+      - Do NOT write diagnostic assumptions about the patient.
+      - If a medication cannot be confidently identified, use your best clinical judgment to extract the closest matching valid pharmaceutical.
     `;
 
     const result = await model.generateContent(prompt);

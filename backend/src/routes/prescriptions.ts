@@ -6,23 +6,20 @@ import { prisma } from '../db';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { performOCR } from '../services/ocr';
 import { parsePrescriptionWithGemini, enrichMedicinesWithGemini } from '../services/ai';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import cloudinary from '../config/cloudinary';
 
 const router = Router();
 
-// Ensure local uploads directory exists
-const uploadsDir = path.join(__dirname, '../../uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Multer disk storage setup
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `pres-${Date.now()}${ext}`);
+// Cloudinary storage setup
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
+    return {
+      folder: 'pulse_prescriptions',
+      format: 'jpg', // auto-convert to jpg for optimized OCR
+      public_id: `pres-${Date.now()}`,
+    };
   },
 });
 
@@ -30,7 +27,7 @@ const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // Max 5MB
   fileFilter: (req, file, cb) => {
-    const allowed = /jpeg|jpg|png|pdf/;
+    const allowed = /jpeg|jpg|png|webp|pdf/;
     const extname = allowed.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowed.test(file.mimetype);
     if (extname && mimetype) {
@@ -93,12 +90,13 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req: Aut
     return res.status(400).json({ message: 'Please attach a prescription image/PDF file.' });
   }
 
-  const fileUrl = `/uploads/${req.file.filename}`;
-  const filePath = req.file.path;
-
+  const fileUrl = req.file.path; // Cloudinary returns the secure URL in req.file.path
+  
+  // Since we are doing Tesseract locally right now, we need to fetch the image from Cloudinary to OCR it.
+  // Alternatively, Tesseract.js accepts a URL directly in Node!
   try {
-    // Triggers Tesseract scanning asynchronously or inline
-    const ocr = await performOCR(filePath);
+    // Triggers Tesseract scanning asynchronously
+    const ocr = await performOCR(fileUrl);
 
     // Save record to database
     const prescription = await prisma.prescription.create({
@@ -165,6 +163,8 @@ router.post('/:id/verify', authenticateToken, async (req: AuthenticatedRequest, 
       medicinesData = enrichedMedicines.map((m: any) => ({
         prescriptionId: id,
         medicineName: m.name,
+        chemicalCompound: m.chemicalCompound || null,
+        drugClass: m.drugClass || null,
         dosage: m.dosage || '',
         instructions: m.instructions || '',
         simplifiedExplanation: m.simplifiedExplanation || `${m.name} is a medication used as instructed.`,
@@ -178,6 +178,8 @@ router.post('/:id/verify', authenticateToken, async (req: AuthenticatedRequest, 
       medicinesData = analysis.medicines.map((m: any) => ({
         prescriptionId: id,
         medicineName: m.name,
+        chemicalCompound: m.chemicalCompound || null,
+        drugClass: m.drugClass || null,
         dosage: m.dosage || '',
         instructions: m.instructions || '',
         simplifiedExplanation: m.simplifiedExplanation || '',

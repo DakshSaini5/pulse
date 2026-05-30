@@ -169,6 +169,8 @@ model PrescriptionAnalysis {
   id                   String       @id @default(uuid())
   prescriptionId       String
   medicineName         String
+  chemicalCompound     String?
+  drugClass            String?
   dosage               String
   instructions         String
   simplifiedExplanation String

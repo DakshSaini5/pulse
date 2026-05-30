@@ -6,23 +6,20 @@ import { prisma } from '../db';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { performOCR } from '../services/ocr';
 import { parseMedicalReportWithGemini } from '../services/ai';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import cloudinary from '../config/cloudinary';
 
 const router = Router();
 
-// Ensure local uploads directory exists
-const uploadsDir = path.join(__dirname, '../../uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Multer Disk storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `rep-${Date.now()}${ext}`);
+// Cloudinary storage setup
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
+    return {
+      folder: 'pulse_reports',
+      format: 'jpg', // auto-convert to jpg for optimized OCR
+      public_id: `rep-${Date.now()}`,
+    };
   },
 });
 
@@ -30,7 +27,7 @@ const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowed = /jpeg|jpg|png|pdf/;
+    const allowed = /jpeg|jpg|png|webp|pdf/;
     const extname = allowed.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowed.test(file.mimetype);
     if (extname && mimetype) {
@@ -97,11 +94,10 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req: Aut
     return res.status(400).json({ message: 'Please attach a report image/PDF file.' });
   }
 
-  const fileUrl = `/uploads/${req.file.filename}`;
-  const filePath = req.file.path;
+  const fileUrl = req.file.path; // Cloudinary secure URL
 
   try {
-    const ocr = await performOCR(filePath);
+    const ocr = await performOCR(fileUrl);
     const text = ocr.text.toLowerCase();
 
     // Proactive report category detector

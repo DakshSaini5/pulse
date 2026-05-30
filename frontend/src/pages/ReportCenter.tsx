@@ -8,6 +8,57 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
+const parseReportValuesFromRawText = (text: string, category: string): Array<{ key: string; value: number; unit: string; referenceRange: string; isAbnormal: boolean; description?: string; category: string }> => {
+  if (!text) return [{ key: '', value: 0, unit: '', referenceRange: '', isAbnormal: false, description: '', category }];
+  
+  const lines = text.split('\n');
+  const found: Array<{ key: string; value: number; unit: string; referenceRange: string; isAbnormal: boolean; description?: string; category: string }> = [];
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    
+    // Matches marker key name, numeric value, unit, and reference range
+    // e.g. "TSH (Thyroid Stimulating Hormone): 5.85 uIU/mL (Reference: 0.40 - 4.50)"
+    const match = trimmed.match(/^([A-Za-z\s\(\)\-\/0-9]+?)\s*:\s*(\d+(?:\.\d+)?)\s*([A-Za-z\/\^\d%]+)\s*(?:\(Reference:?\s*([^\)]+)\)|\(([^\)]+)\))?/i);
+    if (match) {
+      const key = match[1].trim();
+      const value = parseFloat(match[2]);
+      const unit = match[3].trim();
+      const referenceRange = (match[4] || match[5] || '').trim();
+      
+      let isAbnormal = false;
+      if (referenceRange) {
+        const rangeMatch = referenceRange.match(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)/);
+        if (rangeMatch) {
+          const min = parseFloat(rangeMatch[1]);
+          const max = parseFloat(rangeMatch[2]);
+          if (value < min || value > max) {
+            isAbnormal = true;
+          }
+        }
+      }
+      
+      if (key && !isNaN(value)) {
+        found.push({
+          key,
+          value,
+          unit,
+          referenceRange,
+          isAbnormal,
+          description: '',
+          category
+        });
+      }
+    }
+  }
+  
+  if (found.length === 0) {
+    return [{ key: '', value: 0, unit: '', referenceRange: '', isAbnormal: false, description: '', category }];
+  }
+  return found;
+};
+
 export const ReportCenter: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -61,9 +112,15 @@ export const ReportCenter: React.FC = () => {
 
   const selectReport = (rep: MedicalReport) => {
     setActiveReport(rep);
-    setRawText(rep.ocrResult?.rawText || '');
+    const rawOcrText = rep.ocrResult?.rawText || '';
+    setRawText(rawOcrText);
     setReportType(rep.reportType);
-    setReportValues(rep.values);
+    
+    if (rep.values && rep.values.length > 0) {
+      setReportValues(rep.values);
+    } else {
+      setReportValues(parseReportValuesFromRawText(rawOcrText, rep.reportType));
+    }
     
     if (rep.specialists && rep.specialists.length > 0) {
       fetchMatchedHospitals(rep.specialists[0].specialtyName);

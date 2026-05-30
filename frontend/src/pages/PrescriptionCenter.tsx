@@ -7,6 +7,36 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
+const parseMedicinesFromRawText = (text: string): Array<{ name: string; dosage: string; instructions: string }> => {
+  if (!text) return [{ name: '', dosage: '', instructions: '' }];
+  
+  const lines = text.split('\n');
+  const found: Array<{ name: string; dosage: string; instructions: string }> = [];
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    
+    // Matches: [Optional bullet/number] [Name] [Dosage - e.g. 500mg or 20 mg] [Instructions]
+    const match = trimmed.match(/^(?:[\-\*\d\.]+\s*)?([A-Za-z0-9\s\-\/]+?)\s+(\d+(?:\.\d+)?\s*(?:mg|g|mcg|ml|tab|caps?|units?|tbs))\b\s*(.*)$/i);
+    if (match) {
+      const name = match[1].trim();
+      const dosage = match[2].trim();
+      const instructions = match[3].trim();
+      
+      // Exclude header words
+      if (name && !/^(prescription|rx|patient|date|doctor|clinic|hospital|name|age|gender|sex)$/i.test(name)) {
+        found.push({ name, dosage, instructions });
+      }
+    }
+  }
+  
+  if (found.length === 0) {
+    return [{ name: '', dosage: '', instructions: '' }];
+  }
+  return found;
+};
+
 export const PrescriptionCenter: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -77,7 +107,8 @@ export const PrescriptionCenter: React.FC = () => {
 
       if (lastRes) {
         setActivePrescription(lastRes);
-        setRawText(lastRes.ocrResult?.rawText || '');
+        const rawOcrText = lastRes.ocrResult?.rawText || '';
+        setRawText(rawOcrText);
         if (lastRes.prescriptionAnalysis && lastRes.prescriptionAnalysis.length > 0) {
           setMedicineFields(lastRes.prescriptionAnalysis.map(med => ({
             name: med.medicineName,
@@ -85,7 +116,7 @@ export const PrescriptionCenter: React.FC = () => {
             instructions: med.instructions
           })));
         } else {
-          setMedicineFields([]);
+          setMedicineFields(parseMedicinesFromRawText(rawOcrText));
         }
       }
       setSelectedFiles([]);
@@ -135,7 +166,8 @@ export const PrescriptionCenter: React.FC = () => {
 
   const selectPrescription = (pres: Prescription) => {
     setActivePrescription(pres);
-    setRawText(pres.ocrResult?.rawText || '');
+    const rawOcrText = pres.ocrResult?.rawText || '';
+    setRawText(rawOcrText);
     if (pres.prescriptionAnalysis.length > 0) {
       setMedicineFields(pres.prescriptionAnalysis.map(med => ({
         name: med.medicineName,
@@ -143,7 +175,7 @@ export const PrescriptionCenter: React.FC = () => {
         instructions: med.instructions
       })));
     } else {
-      setMedicineFields([]);
+      setMedicineFields(parseMedicinesFromRawText(rawOcrText));
     }
   };
 
