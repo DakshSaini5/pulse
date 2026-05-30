@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import Tesseract from 'tesseract.js';
+import { generateContentWithFallback } from './gemini';
 
 export interface OCRResult {
   text: string;
@@ -75,28 +76,47 @@ export const performOCR = async (filePath: string): Promise<OCRResult> => {
       else if (ext === '.webp') mimeType = 'image/webp';
 
       const imagePart = await fileToGenerativePart(filePath, mimeType);
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const prompt = `You are a medical document OCR scanner. Extract ALL text from this medical document image.
 
-      const prompt = `
-        You are an expert medical OCR data extractor.
-        Analyze the attached medical document (image or PDF).
-        
-        Your task is to transcribe the ENTIRE document from top to bottom.
-        - Include ALL text: Clinic headers, doctor names, patient details, dates, vital signs, and doctor notes.
-        - Carefully read and transcribe all prescribed medications, dosages, frequencies, and instructions.
-        - Do NOT skip, filter, or summarize any part of the document. Read every single word.
-        - Format the text cleanly with proper line breaks so it is highly legible.
-        
-        Do not include any conversational filler. Output ONLY the transcribed text.
-      `;
+OUTPUT FORMAT: Return a JSON object with this exact structure:
+{
+  "lines": ["line 1 text here", "line 2 text here", ...]
+}
 
-      const result = await model.generateContent([prompt, imagePart]);
-      const responseText = result.response.text().trim();
+RULES:
+- Every single line of text visible in the document must be captured as a separate string in the "lines" array.
+- Include ALL headers, patient info, test names, values, units, reference ranges, doctor names, dates, addresses, stamps, signatures text, footnotes.
+- Preserve the reading order (top to bottom, left to right).
+- For tabular data, combine columns into a single string per row (e.g. "TSH 5.85 uIU/mL 0.40 - 4.50").
+- Do NOT add any commentary, explanation, or markdown formatting. Return ONLY the raw JSON object.`;
+
+      const { result, modelName } = await generateContentWithFallback(genAI, [prompt, imagePart], {
+        responseMimeType: "application/json",
+        maxOutputTokens: 8192
+      });
+      console.log(`[OCR] Extracted using model: ${modelName}`);
+      let responseText = result.response.text().trim();
       
-      console.log("Successfully extracted OCR text via Gemini.");
+      // Strip markdown code fences if present
+      responseText = responseText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+      
+      let finalText = '';
+      try {
+        const parsed = JSON.parse(responseText);
+        if (parsed.lines && Array.isArray(parsed.lines)) {
+          finalText = parsed.lines.join('\n').trim();
+        } else {
+          finalText = responseText;
+        }
+      } catch {
+        // If JSON parsing fails, use the raw text directly (still valid OCR output)
+        finalText = responseText;
+      }
+      
+      console.log(`Gemini OCR completed successfully (${finalText.length} chars extracted).`);
 
       return {
-        text: responseText,
+        text: finalText,
         confidence: 99.5
       };
     } catch (err) {
