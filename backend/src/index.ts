@@ -1,8 +1,11 @@
+import dotenv from 'dotenv';
+// Load Environment Configuration immediately before any other internal module imports
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import http from 'http';
@@ -16,9 +19,6 @@ import prescriptionsRouter from './routes/prescriptions';
 import reportsRouter from './routes/reports';
 import trendsRouter from './routes/trends';
 import adminRouter from './routes/admin';
-
-// Load Environment Configuration
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
