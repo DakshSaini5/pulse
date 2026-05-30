@@ -85,7 +85,7 @@ export const PrescriptionCenter: React.FC = () => {
             instructions: med.instructions
           })));
         } else {
-          setMedicineFields([{ name: 'Paracetamol', dosage: '500mg', instructions: '1 tablet twice a day after meals' }]);
+          setMedicineFields([]);
         }
       }
       setSelectedFiles([]);
@@ -143,7 +143,7 @@ export const PrescriptionCenter: React.FC = () => {
         instructions: med.instructions
       })));
     } else {
-      setMedicineFields([{ name: '', dosage: '', instructions: '' }]);
+      setMedicineFields([]);
     }
   };
 
@@ -246,7 +246,11 @@ export const PrescriptionCenter: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <FileText className="w-4 h-4 text-primary shrink-0" />
                       <div>
-                        <span className="block truncate max-w-[140px] text-xs">Scan #{pres.id.slice(0, 8)}</span>
+                        <span className="block truncate max-w-[140px] text-xs font-semibold">
+                          {pres.prescriptionAnalysis && pres.prescriptionAnalysis.length > 0 
+                            ? pres.prescriptionAnalysis.map(m => m.medicineName).join(', ')
+                            : `Scan #${pres.id.slice(0, 8)}`}
+                        </span>
                         <span className="text-[9px] text-slate-500 block leading-none mt-1">Status: {pres.status}</span>
                       </div>
                     </div>
@@ -372,12 +376,18 @@ export const PrescriptionCenter: React.FC = () => {
                     
                     <div className="flex justify-between items-center pb-3 border-b border-slate-200">
                       <div>
-                        <h2 className="text-lg font-bold text-slate-900">Gemini Educational breakdown</h2>
+                        <h2 className="text-lg font-bold text-slate-900">Prescription Analysis</h2>
                         <span className="text-[10px] text-slate-500">Scan ID: {activePrescription.id.slice(0, 8)}</span>
                       </div>
-                      <span className="text-[10px] bg-success/15 border border-success/25 text-success px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                        Analyzed Successfully
-                      </span>
+                      {activePrescription.prescriptionAnalysis.length > 0 ? (
+                        <span className="text-[10px] bg-success/15 border border-success/25 text-success px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                          Analyzed Successfully
+                        </span>
+                      ) : (
+                        <span className="text-[10px] bg-warning/15 border border-warning/25 text-warning px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                          Warning: No Meds Found
+                        </span>
+                      )}
                     </div>
 
                     {activePrescription.prescriptionAnalysis.length === 0 ? (

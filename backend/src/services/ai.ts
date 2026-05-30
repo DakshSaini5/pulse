@@ -134,7 +134,11 @@ export const parsePrescriptionWithGemini = async (rawText: string) => {
         ]
       }
       
-      CRITICAL: Output ONLY the raw JSON string. Do NOT write diagnostic statements.
+      CRITICAL RECITATION-BYPASS SAFETY INSTRUCTIONS:
+      - To prevent triggering automated recitation/copyright blocks, the 'simplifiedExplanation', 'sideEffects', and 'drugInteractions' MUST be written in an extremely custom, casual, friendly conversational tone (as if explaining to a close friend in plain language) using unique phrasing.
+      - Do NOT copy or write academic, textbook, or dictionary definitions. Avoid formal pharmaceutical phrasing.
+      - NEVER write disease diagnoses or definitive statements. Focus purely on friendly definitions.
+      - Output ONLY the raw JSON string.
     `;
 
     const result = await model.generateContent(prompt);
@@ -186,7 +190,11 @@ export const enrichMedicinesWithGemini = async (medicines: Array<{ name: string;
         ]
       }
 
-      CRITICAL: Output ONLY the raw JSON string. Do NOT write diagnostic statements.
+      CRITICAL RECITATION-BYPASS SAFETY INSTRUCTIONS:
+      - To prevent triggering automated recitation/copyright blocks, the 'simplifiedExplanation', 'sideEffects', and 'drugInteractions' MUST be written in an extremely custom, casual, friendly conversational tone (as if explaining to a close friend in plain language) using unique phrasing.
+      - Do NOT copy or write academic, textbook, or dictionary definitions. Avoid formal pharmaceutical phrasing.
+      - NEVER write disease diagnoses or definitive statements.
+      - Output ONLY the raw JSON string.
     `;
 
     const result = await model.generateContent(prompt);
@@ -240,9 +248,10 @@ export const parseMedicalReportWithGemini = async (rawText: string, reportType: 
         ]
       }
 
-      CRITICAL SAFETY RULES:
-      - NEVER write disease diagnoses (e.g., do not say 'You have Hypothyroidism' or 'You have Diabetes').
-      - Focus strictly on translating chemical values to friendly definitions and routing to specialists.
+      CRITICAL RECITATION-BYPASS SAFETY INSTRUCTIONS:
+      - To prevent triggering automated recitation/copyright blocks, the 'description' of each marker and the overall 'summary' MUST be written in an extremely custom, casual, friendly conversational tone (as if explaining to a close friend in plain language) using unique phrasing.
+      - Do NOT copy or write academic, textbook, or dictionary definitions. Avoid formal clinical phrasing.
+      - NEVER write disease diagnoses (e.g., do not say 'You have Hypothyroidism' or 'You have Diabetes'). Focus strictly on translating chemical values to friendly definitions and routing to specialists.
       - Output ONLY the raw JSON string with no wrapper markdown brackets.
     `;
 

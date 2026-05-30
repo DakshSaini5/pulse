@@ -251,8 +251,12 @@ export const ReportCenter: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <FileText className="w-4 h-4 text-primary shrink-0" />
                       <div>
-                        <span className="block truncate max-w-[140px] text-xs">Scan #{rep.id.slice(0, 8)}</span>
-                        <span className="text-[9px] text-slate-500 block leading-none mt-1">Type: {rep.reportType}</span>
+                        <span className="block truncate max-w-[140px] text-xs font-semibold">
+                          {rep.status === 'ANALYZED' || rep.reportType !== 'GENERAL'
+                            ? `${rep.reportType === 'GENERAL' ? 'Medical' : rep.reportType} Report`
+                            : `Scan #${rep.id.slice(0, 8)}`}
+                        </span>
+                        <span className="text-[9px] text-slate-500 block leading-none mt-1">Status: {rep.status}</span>
                       </div>
                     </div>
                     <span className="text-[10px] text-slate-500">{new Date(rep.createdAt).toLocaleDateString()}</span>
