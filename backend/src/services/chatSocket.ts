@@ -15,7 +15,7 @@ export const setupChatSocket = (io: Server) => {
     let chatSession: any = null;
 
     if (genAI) {
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
       chatSession = model.startChat({
         history: [
           {

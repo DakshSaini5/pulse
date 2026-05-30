@@ -114,7 +114,7 @@ export const parsePrescriptionWithGemini = async (rawText: string) => {
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     const prompt = `
       You are an expert clinical pharmacist and pharmacologist. Analyze this clinical prescription text scanned via OCR:
       "${rawText}"
@@ -171,7 +171,7 @@ export const enrichMedicinesWithGemini = async (medicines: Array<{ name: string;
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     const prompt = `
       You are an expert clinical pharmacologist.
       A user has verified or manually entered the following medicine list from a medical prescription:
@@ -226,7 +226,7 @@ export const parseMedicalReportWithGemini = async (rawText: string, reportType: 
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     const prompt = `
       Analyze this medical lab report text:
       "${rawText}"
