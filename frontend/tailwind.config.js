@@ -9,17 +9,17 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#0D6EFD',
-          hover: '#0b5ed7',
-          light: '#e7f1ff',
-          dark: '#0a58ca',
+          DEFAULT: '#2563EB', // Medical blue
+          hover: '#1D4ED8',
+          light: '#DBEAFE',
+          dark: '#1E40AF',
         },
-        success: '#198754',
-        warning: '#FFC107',
-        danger: '#DC3545',
-        pulseBg: '#0B0F19',
-        pulseCard: 'rgba(255, 255, 255, 0.03)',
-        pulseBorder: 'rgba(255, 255, 255, 0.08)',
+        success: '#10B981',
+        warning: '#F59E0B',
+        danger: '#EF4444',
+        pulseBg: '#F8FAFC', // slate-50
+        pulseCard: '#FFFFFF',
+        pulseBorder: '#E2E8F0', // slate-200
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
