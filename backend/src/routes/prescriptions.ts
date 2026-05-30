@@ -11,7 +11,7 @@ import cloudinary from '../config/cloudinary';
 
 const router = Router();
 
-// Cloudinary storage setup
+// Pure Cloudinary storage setup for production uploads
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
