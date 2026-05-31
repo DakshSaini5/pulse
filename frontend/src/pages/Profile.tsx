@@ -112,65 +112,65 @@ export const Profile: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-16">
       <div className="text-left space-y-2">
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
+        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
           <User className="text-primary w-8 h-8" />
           My Profile
         </h1>
-        <p className="text-xs text-slate-500">Manage your account settings and preferences.</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500">Manage your account settings and preferences.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
         {/* Left Column: Stats & Info */}
         <div className="md:col-span-1 space-y-6">
-          <div className="glass-panel rounded-3xl p-6 border border-slate-200 text-center relative overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100/50">
+          <div className="glass-panel rounded-3xl p-6 border border-slate-200 dark:border-slate-700 text-center relative overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100/50 dark:from-slate-800 dark:to-slate-900/50">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] pointer-events-none" />
             
             <div className="w-24 h-24 rounded-full bg-primary/10 mx-auto mb-4 border-4 border-white shadow-sm flex items-center justify-center text-primary text-3xl font-extrabold">
               {profile.name.charAt(0).toUpperCase()}
             </div>
             
-            <h2 className="text-lg font-bold text-slate-900">{profile.name}</h2>
-            <p className="text-sm text-slate-500">{profile.email}</p>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">{profile.name}</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500">{profile.email}</p>
             
-            <div className="mt-4 pt-4 border-t border-slate-200 grid grid-cols-2 gap-2 text-left">
-              <div className="p-3 bg-white rounded-xl border border-slate-100 flex flex-col gap-1 items-center justify-center">
+            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 grid grid-cols-2 gap-2 text-left">
+              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 flex flex-col gap-1 items-center justify-center">
                 <Activity className="w-4 h-4 text-primary" />
-                <span className="text-lg font-extrabold text-slate-900">{profile._count.prescriptions}</span>
-                <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider text-center leading-tight">Prescription<br/>Scans</span>
+                <span className="text-lg font-extrabold text-slate-900 dark:text-white">{profile._count.prescriptions}</span>
+                <span className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase font-bold tracking-wider text-center leading-tight">Prescription<br/>Scans</span>
               </div>
-              <div className="p-3 bg-white rounded-xl border border-slate-100 flex flex-col gap-1 items-center justify-center">
+              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 flex flex-col gap-1 items-center justify-center">
                 <FileText className="w-4 h-4 text-primary" />
-                <span className="text-lg font-extrabold text-slate-900">{profile._count.medicalReports}</span>
-                <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider text-center leading-tight">Report<br/>Analyses</span>
+                <span className="text-lg font-extrabold text-slate-900 dark:text-white">{profile._count.medicalReports}</span>
+                <span className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase font-bold tracking-wider text-center leading-tight">Report<br/>Analyses</span>
               </div>
             </div>
           </div>
 
-          <div className="glass-panel rounded-3xl p-6 border border-slate-200 space-y-4">
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Account Info</h3>
+          <div className="glass-panel rounded-3xl p-6 border border-slate-200 dark:border-slate-700 space-y-4">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Account Info</h3>
             
             <div className="space-y-3 text-sm">
               <div className="flex items-center gap-3">
-                <Calendar className="w-4 h-4 text-slate-400" />
+                <Calendar className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                 <div>
-                  <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider">Member Since</span>
-                  <span className="text-slate-900 font-medium">{new Date(profile.createdAt).toLocaleDateString()}</span>
+                  <span className="block text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Member Since</span>
+                  <span className="text-slate-900 dark:text-white font-medium">{new Date(profile.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
               
               <div className="flex items-center gap-3">
-                <Shield className="w-4 h-4 text-slate-400" />
+                <Shield className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                 <div>
-                  <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider">Account Role</span>
-                  <span className="text-slate-900 font-medium">{profile.role}</span>
+                  <span className="block text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Account Role</span>
+                  <span className="text-slate-900 dark:text-white font-medium">{profile.role}</span>
                 </div>
               </div>
               
               <div className="flex items-center gap-3">
-                <Lock className="w-4 h-4 text-slate-400" />
+                <Lock className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                 <div>
-                  <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider">Authentication</span>
-                  <span className="text-slate-900 font-medium">{profile.authProvider === 'GOOGLE' ? 'Google Sign-In' : 'Email/Password'}</span>
+                  <span className="block text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Authentication</span>
+                  <span className="text-slate-900 dark:text-white font-medium">{profile.authProvider === 'GOOGLE' ? 'Google Sign-In' : 'Email/Password'}</span>
                 </div>
               </div>
             </div>
@@ -179,8 +179,8 @@ export const Profile: React.FC = () => {
 
         {/* Right Column: Forms */}
         <div className="md:col-span-2 space-y-6">
-          <div className="glass-panel rounded-3xl p-6 border border-slate-200">
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-6 flex items-center gap-2">
+          <div className="glass-panel rounded-3xl p-6 border border-slate-200 dark:border-slate-700">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-6 flex items-center gap-2">
               <User className="w-4 h-4 text-primary" />
               Personal Details
             </h3>
@@ -190,12 +190,12 @@ export const Profile: React.FC = () => {
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-700 uppercase">Full Name</label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                     <input
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border-slate-200 bg-white focus:ring-2 focus:ring-primary/20 text-sm"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary/20 text-sm text-slate-900 dark:text-white"
                       required
                     />
                   </div>
@@ -204,12 +204,12 @@ export const Profile: React.FC = () => {
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-700 uppercase">Email Address</label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border-slate-200 bg-white focus:ring-2 focus:ring-primary/20 text-sm"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary/20 text-sm text-slate-900 dark:text-white"
                       required
                     />
                   </div>
@@ -220,7 +220,7 @@ export const Profile: React.FC = () => {
                 <button
                   type="submit"
                   disabled={savingProfile}
-                  className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-slate-900 text-sm font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center gap-2"
+                  className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-slate-900 dark:text-white text-sm font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center gap-2"
                 >
                   <Save className="w-4 h-4" />
                   {savingProfile ? 'Saving...' : 'Save Changes'}
@@ -230,8 +230,8 @@ export const Profile: React.FC = () => {
           </div>
 
           {profile.authProvider !== 'GOOGLE' && (
-            <div className="glass-panel rounded-3xl p-6 border border-slate-200">
-              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-6 flex items-center gap-2">
+            <div className="glass-panel rounded-3xl p-6 border border-slate-200 dark:border-slate-700">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-6 flex items-center gap-2">
                 <Key className="w-4 h-4 text-primary" />
                 Change Password
               </h3>
@@ -243,7 +243,7 @@ export const Profile: React.FC = () => {
                     type="password"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border-slate-200 bg-white focus:ring-2 focus:ring-primary/20 text-sm"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary/20 text-sm text-slate-900 dark:text-white"
                     required
                   />
                 </div>
@@ -255,7 +255,7 @@ export const Profile: React.FC = () => {
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border-slate-200 bg-white focus:ring-2 focus:ring-primary/20 text-sm"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary/20 text-sm text-slate-900 dark:text-white"
                       required
                       minLength={8}
                     />
@@ -266,7 +266,7 @@ export const Profile: React.FC = () => {
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border-slate-200 bg-white focus:ring-2 focus:ring-primary/20 text-sm"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary/20 text-sm text-slate-900 dark:text-white"
                       required
                       minLength={8}
                     />
@@ -277,7 +277,7 @@ export const Profile: React.FC = () => {
                   <button
                     type="submit"
                     disabled={changingPassword}
-                    className="px-6 py-2.5 border border-slate-300 hover:border-slate-400 bg-white text-slate-700 text-sm font-bold rounded-xl flex items-center gap-2 transition-colors"
+                    className="px-6 py-2.5 border border-slate-300 hover:border-slate-400 bg-white dark:bg-slate-900 text-slate-700 text-sm font-bold rounded-xl flex items-center gap-2 transition-colors"
                   >
                     {changingPassword ? 'Updating...' : 'Update Password'}
                   </button>
@@ -286,17 +286,14 @@ export const Profile: React.FC = () => {
             </div>
           )}
 
-          <div className="glass-panel rounded-3xl p-6 border border-danger/20 bg-danger/5">
-            <h3 className="text-sm font-bold text-danger uppercase tracking-wider mb-2 flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4" />
+          <div className="glass-panel rounded-3xl p-6 border border-slate-200 dark:border-slate-700">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-danger" />
               Danger Zone
             </h3>
-            <p className="text-sm text-slate-600 mb-4">
-              Once you delete your account, there is no going back. All your uploaded prescriptions, reports, and health trends will be permanently deleted.
-            </p>
             <button
               onClick={() => setShowDeleteModal(true)}
-              className="px-6 py-2.5 bg-danger hover:bg-danger/90 text-white text-sm font-bold rounded-xl shadow-lg shadow-danger/20 flex items-center gap-2"
+              className="px-6 py-2.5 border border-danger text-danger hover:bg-danger hover:text-white text-sm font-bold rounded-xl transition-all flex items-center gap-2"
             >
               <Trash2 className="w-4 h-4" />
               Delete Account
@@ -308,18 +305,18 @@ export const Profile: React.FC = () => {
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white max-w-md w-full rounded-2xl shadow-2xl p-6 border border-slate-200 animate-in zoom-in-95">
+          <div className="bg-white dark:bg-slate-900 max-w-md w-full rounded-2xl shadow-2xl p-6 border border-slate-200 dark:border-slate-700 animate-in zoom-in-95">
             <div className="w-12 h-12 bg-danger/10 text-danger rounded-full flex items-center justify-center mb-4 mx-auto">
               <AlertTriangle className="w-6 h-6" />
             </div>
-            <h3 className="text-xl font-bold text-center text-slate-900 mb-2">Delete Account?</h3>
-            <p className="text-center text-slate-500 text-sm mb-6">
-              This action cannot be undone. This will permanently delete your account and remove your data from our servers.
+            <h3 className="text-xl font-bold text-center text-danger mb-2 uppercase tracking-wider">Danger Zone</h3>
+            <p className="text-center text-slate-600 dark:text-slate-300 text-sm mb-6">
+              Once you delete your account, there is no going back. All your uploaded prescriptions, reports, and health trends will be permanently deleted.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="flex-1 px-4 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-xl transition-colors"
+                className="flex-1 px-4 py-2.5 border border-slate-300 hover:bg-slate-50 dark:bg-slate-800 text-slate-700 font-bold rounded-xl transition-colors"
               >
                 Cancel
               </button>

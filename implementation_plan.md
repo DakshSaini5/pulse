@@ -425,6 +425,18 @@ We will build the system iteratively following your MVP roadmap, utilizing stric
 * **Features**:
   * Admin monitoring charts for API performance, OCR queues, and active Gemini tokens used.
 
+### Phase 7: Landing Page Redesign & UI Polish (Current Task)
+* **Files Affected**:
+  * [MODIFY] `frontend/src/pages/Landing.tsx`
+  * [MODIFY] `frontend/src/pages/Profile.tsx`
+  * [MODIFY] `frontend/src/pages/Settings.tsx`
+  * [MODIFY] `frontend/src/components/Layout.tsx` (or related components with the disclaimer)
+* **Features**:
+  * Completely rewrite `Landing.tsx` to match the exact Google Stitch design requested by the user, migrating raw HTML/CSS into proper React+Tailwind TSX with responsive tabs for Pricing, About Us, etc.
+  * Add an accessible, branded outline box `border border-slate-200 dark:border-slate-700` and focus rings to the Password Change inputs.
+  * Refactor the "Danger Zone" in the Profile/Settings page: remove the inline aggressive warning text, keep a clean "Delete Account" button, and implement a modal/dialog popup that displays the warning only when the button is clicked to avoid scaring users unnecessarily.
+  * Move the "Educational Purpose Only" medical disclaimers to the bottom of the pages (or footer) and rephrase them to sound more professional and trustworthy, rather than alarming the user.
+
 ---
 
 ## AI Prompt Strategies & Safety Systems

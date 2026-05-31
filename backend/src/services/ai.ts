@@ -318,18 +318,26 @@ export const parseMedicalReportWithGemini = async (rawText: string, reportType: 
       Analyze this medical lab report text:
       "${rawText}"
 
-      Extract the key biological markers matching the requested category: "${reportType}".
+      Extract the key biological markers or diagnostic findings matching the requested category: "${reportType}".
+      
+      CRITICAL INSTRUCTION: If this is an IMAGING report (like Ultrasound, X-Ray, MRI) or CLINICAL NOTES, there will be NO numeric lab values. In that case:
+      - Set "value" to null.
+      - Set "unit" to "N/A".
+      - Set "referenceRange" to "N/A".
+      - Extract each organ or body part examined as the "key" (e.g., "Liver", "Kidney").
+      - Put the doctor's finding about that organ in the "description" field.
+
       Output format must be strictly a valid JSON string matching this exact schema:
       {
         "reportType": "${reportType}",
         "values": [
           { 
-            "key": "Marker key name", 
-            "value": 12.5, 
-            "unit": "g/dL", 
-            "referenceRange": "12.0 - 15.0", 
+            "key": "Marker key name or Organ name", 
+            "value": 12.5, // Use null if imaging report
+            "unit": "g/dL", // Use "N/A" if imaging report
+            "referenceRange": "12.0 - 15.0", // Use "N/A" if imaging report
             "isAbnormal": false, 
-            "description": "Extremely concise 1-sentence plain explanation of what this marker monitors" 
+            "description": "Extremely concise plain explanation of what this marker monitors, or the actual finding for this organ" 
           }
         ],
         "summary": "Extremely concise friendly high level educational summary (max 2 sentences).",

@@ -129,6 +129,8 @@ router.post('/upload', authenticateToken, uploadLimiter, upload.single('file'), 
       detectedType = 'LIPID';
     } else if (text.includes('hemoglobin') || text.includes('cbc') || text.includes('wbc') || text.includes('platelet') || text.includes('erythrocyte')) {
       detectedType = 'CBC';
+    } else if (text.includes('ultrasound') || text.includes('x-ray') || text.includes('mri') || text.includes('ct scan') || text.includes('radiology') || text.includes('scan') || text.includes('impression')) {
+      detectedType = 'IMAGING';
     }
 
     const report = await prisma.medicalReport.create({
@@ -195,9 +197,9 @@ router.post('/:id/verify', authenticateToken, aiLimiter, async (req: Authenticat
     const valuesData = analysis.values.map((v: any) => ({
       medicalReportId: id,
       key: v.key,
-      value: parseFloat(v.value),
-      unit: v.unit,
-      referenceRange: v.referenceRange,
+      value: v.value !== undefined && v.value !== null && v.value !== "" ? parseFloat(v.value) : 0,
+      unit: v.unit || "N/A",
+      referenceRange: v.referenceRange || "N/A",
       isAbnormal: !!v.isAbnormal,
       description: v.description || '',
       category: activeType,
@@ -245,16 +247,19 @@ router.post('/:id/verify', authenticateToken, aiLimiter, async (req: Authenticat
         markerName = 'Cholesterol';
       }
 
+      // If it's a text-based finding with no numeric value, skip adding to numeric trends
+      if (v.value === undefined || v.value === null || v.value === "") return null;
+
       return prisma.healthTrend.create({
         data: {
           userId,
           markerName,
-          value: parseFloat(v.value),
-          unit: v.unit,
+          value: parseFloat(v.value) || 0,
+          unit: v.unit || '',
           recordedAt: new Date()
         }
       });
-    });
+    }).filter((v: any) => v !== null);
 
     await Promise.all(trendPromises);
 

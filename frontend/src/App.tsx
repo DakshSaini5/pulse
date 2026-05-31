@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { Layout } from './components/Layout';
 import { Landing } from './pages/Landing';
 import { Search } from './pages/Search';
@@ -15,7 +16,7 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Profile } from './pages/Profile';
-
+import { Settings } from './pages/Settings';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -68,8 +69,9 @@ export const App: React.FC = () => {
     <QueryClientProvider client={queryClient}>
       <Router>
         <AuthProvider>
-          <Layout>
-            <Routes>
+          <ThemeProvider>
+            <Layout>
+              <Routes>
               {/* Public Pages */}
               <Route path="/" element={<Landing />} />
               <Route path="/search" element={<Search />} />
@@ -119,6 +121,14 @@ export const App: React.FC = () => {
                   </ProtectedRoute>
                 } 
               />
+              <Route 
+                path="/settings" 
+                element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                } 
+              />
 
               {/* Guarded Admin Dashboard */}
               <Route 
@@ -132,8 +142,9 @@ export const App: React.FC = () => {
 
               {/* Fallback Redirect */}
               <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Layout>
+              </Routes>
+            </Layout>
+          </ThemeProvider>
         </AuthProvider>
       </Router>
     </QueryClientProvider>

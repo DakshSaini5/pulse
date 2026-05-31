@@ -61,18 +61,18 @@ export const HealthTrends: React.FC = () => {
   return (
     <div className="space-y-8 pb-16 text-left">
       <div className="text-left space-y-2">
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
+        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
           <TrendingUp className="text-primary w-8 h-8 animate-pulse" />
           Biological Health Trends Tracker
         </h1>
-        <p className="text-xs text-slate-500">Track and monitor important clinical indexes over time. Watch historical adjustments in clean comparative graphs.</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500">Track and monitor important clinical indexes over time. Watch historical adjustments in clean comparative graphs.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left pane: selector pills */}
         <div className="lg:col-span-4 space-y-4">
-          <div className="glass-panel rounded-3xl p-6 border border-slate-200 space-y-4">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Select Laboratory Marker</h3>
+          <div className="glass-panel rounded-3xl p-6 border border-slate-200 dark:border-slate-700 space-y-4">
+            <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wider">Select Laboratory Marker</h3>
             
             <div className="flex flex-col gap-2">
               {markers.map((marker) => {
@@ -83,17 +83,17 @@ export const HealthTrends: React.FC = () => {
                     onClick={() => setActiveMarker(marker.name)}
                     className={`w-full p-4 rounded-2xl border text-left transition-all ${
                       isActive 
-                        ? 'border-primary bg-primary/10 text-slate-900 font-bold' 
-                        : 'border-slate-200 bg-slate-50 text-slate-500 hover:text-slate-900'
+                        ? 'border-primary bg-primary/10 text-slate-900 dark:text-white font-bold' 
+                        : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:text-white'
                     }`}
                   >
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-sm font-semibold">{marker.name}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${isActive ? 'bg-primary/20 text-primary' : 'bg-slate-800 text-slate-500'}`}>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${isActive ? 'bg-primary/20 text-primary' : 'bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-500'}`}>
                         {marker.unit}
                       </span>
                     </div>
-                    <p className="text-[10px] text-slate-500 font-light mt-1.5 leading-normal">{marker.desc}</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500 font-light mt-1.5 leading-normal">{marker.desc}</p>
                   </button>
                 );
               })}
@@ -102,13 +102,13 @@ export const HealthTrends: React.FC = () => {
 
           {/* Guidelines info card */}
           {activeMarkerInfo && (
-            <div className="glass-panel rounded-3xl p-6 border border-slate-200 space-y-3 bg-gradient-to-b from-slate-50 to-slate-100/50">
-              <span className="text-xs font-bold text-slate-900 uppercase tracking-wider block">Reference parameters</span>
-              <div className="p-3 bg-slate-50 rounded-xl flex justify-between items-center text-xs">
-                <span className="text-slate-500 font-semibold">Standard Healthy Range</span>
+            <div className="glass-panel rounded-3xl p-6 border border-slate-200 dark:border-slate-700 space-y-3 bg-gradient-to-b from-slate-50 to-slate-100/50 dark:from-slate-800 dark:to-slate-900/50">
+              <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider block">Reference parameters</span>
+              <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl flex justify-between items-center text-xs">
+                <span className="text-slate-500 dark:text-slate-400 dark:text-slate-500 font-semibold">Standard Healthy Range</span>
                 <span className="text-primary font-bold">{activeMarkerInfo.ref} {activeMarkerInfo.unit}</span>
               </div>
-              <p className="text-[10px] text-slate-500 leading-normal font-light">
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500 leading-normal font-light">
                 Note: Blood reference indicators might deviate slightly between clinical laboratory providers. Pulse indicates values based on global standardized guidelines.
               </p>
             </div>
@@ -117,13 +117,13 @@ export const HealthTrends: React.FC = () => {
 
         {/* Right pane: Charts visualizer */}
         <div className="lg:col-span-8 space-y-6">
-          <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200 space-y-6 relative overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100/50">
+          <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700 space-y-6 relative overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100/50 dark:from-slate-800 dark:to-slate-900/50">
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none" />
             
-            <div className="flex justify-between items-center pb-3 border-b border-slate-200">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">{activeMarker} Progression</h2>
-                <p className="text-[10px] text-slate-500">Biological analysis timeline matching verified uploads.</p>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">{activeMarker} Progression</h2>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500">Biological analysis timeline matching verified uploads.</p>
               </div>
               <span className="text-[10px] bg-primary/15 border border-primary/25 text-primary px-2.5 py-0.5 rounded-full font-bold uppercase">
                 Active Graph
@@ -135,7 +135,7 @@ export const HealthTrends: React.FC = () => {
                 <div className="w-12 h-12 rounded-full border-4 border-slate-700 border-t-primary animate-spin" />
               </div>
             ) : filteredData.length === 0 ? (
-              <div className="h-64 flex flex-col items-center justify-center text-slate-500 text-xs">
+              <div className="h-64 flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 dark:text-slate-500 text-xs">
                 <Activity className="w-8 h-8 mb-2 animate-bounce" />
                 No uploads found tracking this marker. Verify your lab report parameters to generate lines.
               </div>
@@ -185,22 +185,22 @@ export const HealthTrends: React.FC = () => {
           </div>
 
           {/* Trend milestones list */}
-          <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200 space-y-4">
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Historical Progress Records</h3>
+          <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700 space-y-4">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Historical Progress Records</h3>
 
             <div className="space-y-3">
               {filteredData.length === 0 ? (
-                <p className="text-xs text-slate-500 text-center py-4">Upload blood sheets to populate history log.</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 text-center py-4">Upload blood sheets to populate history log.</p>
               ) : (
                 filteredData.map((d, i) => (
-                  <div key={i} className="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex justify-between items-center text-xs">
+                  <div key={i} className="p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl flex justify-between items-center text-xs">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-xl bg-success/15 flex items-center justify-center text-success">
                         <CheckCircle2 className="w-4 h-4" />
                       </div>
                       <div>
-                        <span className="text-slate-900 block font-bold">Lab Record Update</span>
-                        <span className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
+                        <span className="text-slate-900 dark:text-white block font-bold">Lab Record Update</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500 flex items-center gap-1 mt-0.5">
                           <Calendar className="w-3.5 h-3.5" />
                           {d.date}
                         </span>
@@ -208,10 +208,10 @@ export const HealthTrends: React.FC = () => {
                     </div>
 
                     <div className="text-right">
-                      <span className="text-slate-900 font-extrabold block">
+                      <span className="text-slate-900 dark:text-white font-extrabold block">
                         {d.value} {activeMarkerInfo?.unit}
                       </span>
-                      <span className="text-[9px] text-slate-500 font-semibold block mt-0.5 uppercase tracking-wider">{activeMarker}</span>
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-500 font-semibold block mt-0.5 uppercase tracking-wider">{activeMarker}</span>
                     </div>
                   </div>
                 ))

@@ -231,25 +231,25 @@ export const ReportCenter: React.FC = () => {
       {showAiModal && <AIModalDisclaimer onAcknowledge={handleAcknowledgeAi} />}
       
       <div className="text-left space-y-2">
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
+        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
           <FileText className="text-primary w-8 h-8 animate-pulse" />
           Medical Report Analytics & Simplifier
         </h1>
-        <p className="text-xs text-slate-500">Scan blood panels, thyroid sheets or general lab reports. Review extraction parameters, verify indexes, and receive expert specialist suggestions.</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500">Scan blood panels, thyroid sheets or general lab reports. Review extraction parameters, verify indexes, and receive expert specialist suggestions.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left column: upload & history listing */}
         <div className="lg:col-span-4 space-y-6">
           {/* Upload card */}
-          <div className="glass-panel rounded-3xl p-6 border border-slate-200 bg-gradient-to-b from-slate-50 to-slate-100/50 space-y-4">
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+          <div className="glass-panel rounded-3xl p-6 border border-slate-200 dark:border-slate-700 bg-gradient-to-b from-slate-50 to-slate-100/50 dark:from-slate-800 dark:to-slate-900/50 space-y-4">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
               <UploadCloud className="w-4 h-4 text-primary" />
               Upload Medical Report File
             </h3>
 
             <form onSubmit={handleUploadSubmit} className="space-y-4">
-              <div className="border border-dashed border-slate-200 hover:border-primary/50 transition-colors rounded-2xl p-6 text-center bg-white/[0.005] cursor-pointer relative">
+              <div className="border border-dashed border-slate-200 dark:border-slate-700 hover:border-primary/50 transition-colors rounded-2xl p-6 text-center bg-white dark:bg-slate-900/[0.005] cursor-pointer relative">
                 <input
                   type="file"
                   accept="image/*,application/pdf"
@@ -257,28 +257,28 @@ export const ReportCenter: React.FC = () => {
                   multiple
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
-                <UploadCloud className="w-8 h-8 text-slate-500 mx-auto mb-2" />
-                <span className="text-xs text-slate-600 block font-semibold">
+                <UploadCloud className="w-8 h-8 text-slate-500 dark:text-slate-400 dark:text-slate-500 mx-auto mb-2" />
+                <span className="text-xs text-slate-600 dark:text-slate-300 block font-semibold">
                   Select or drag lab report sheet(s)
                 </span>
-                <span className="text-[10px] text-slate-500 mt-1 block">Supports PNG, JPG, PDF up to 5MB</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500 mt-1 block">Supports PNG, JPG, PDF up to 5MB</span>
               </div>
 
               {selectedFiles.length > 0 && (
                 <div className="space-y-2 mt-3 text-left">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Selected Files ({selectedFiles.length})</label>
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Selected Files ({selectedFiles.length})</label>
                   <div className="space-y-1.5 max-h-[150px] overflow-y-auto pr-1">
                     {selectedFiles.map((file, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white/70 shadow-sm text-xs text-slate-700 animate-fadeIn">
+                      <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/70 shadow-sm text-xs text-slate-700 animate-fadeIn">
                         <div className="flex items-center gap-2 min-w-0">
                           <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
                           <span className="truncate font-medium max-w-[180px]">{file.name}</span>
-                          <span className="text-[9px] text-slate-500 font-light">({(file.size / 1024).toFixed(1)} KB)</span>
+                          <span className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-500 font-light">({(file.size / 1024).toFixed(1)} KB)</span>
                         </div>
                         <button
                           type="button"
                           onClick={() => handleRemoveFile(idx)}
-                          className="text-slate-400 hover:text-danger hover:bg-slate-100 p-1 rounded-lg transition-colors shrink-0 flex items-center justify-center"
+                          className="text-slate-400 dark:text-slate-500 hover:text-danger hover:bg-slate-100 dark:bg-slate-700 p-1 rounded-lg transition-colors shrink-0 flex items-center justify-center"
                           title="Remove File"
                         >
                           <span className="text-base leading-none font-bold">&times;</span>
@@ -293,7 +293,7 @@ export const ReportCenter: React.FC = () => {
                 <button
                   type="submit"
                   disabled={uploading}
-                  className="w-full py-3 bg-primary hover:bg-primary-hover text-slate-900 text-xs font-bold rounded-xl shadow-lg shadow-primary/20 transition-all"
+                  className="w-full py-3 bg-primary hover:bg-primary-hover text-slate-900 dark:text-white text-xs font-bold rounded-xl shadow-lg shadow-primary/20 transition-all"
                 >
                   {uploading ? 'Extracting OCR Text...' : `Start Scan & OCR (${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''})`}
                 </button>
@@ -302,8 +302,8 @@ export const ReportCenter: React.FC = () => {
           </div>
 
           {/* Historical Listing */}
-          <div className="glass-panel rounded-3xl p-6 border border-slate-200 space-y-4">
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Report Scan History</h3>
+          <div className="glass-panel rounded-3xl p-6 border border-slate-200 dark:border-slate-700 space-y-4">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Report Scan History</h3>
 
             {loading ? (
               <div className="space-y-3">
@@ -311,7 +311,7 @@ export const ReportCenter: React.FC = () => {
                 <div className="h-10 bg-slate-800 rounded animate-pulse" />
               </div>
             ) : reports.length === 0 ? (
-              <p className="text-xs text-slate-500 text-center py-4">No reports analyzed yet.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 text-center py-4">No reports analyzed yet.</p>
             ) : (
               <div className="space-y-2">
                 {reports.map(rep => (
@@ -320,8 +320,8 @@ export const ReportCenter: React.FC = () => {
                     onClick={() => selectReport(rep)}
                     className={`w-full p-3 rounded-xl border text-left flex items-center justify-between text-xs transition-all ${
                       activeReport?.id === rep.id
-                        ? 'border-primary bg-primary/10 text-slate-900 font-bold'
-                        : 'border-slate-200 bg-slate-50 text-slate-500 hover:text-slate-900'
+                        ? 'border-primary bg-primary/10 text-slate-900 dark:text-white font-bold'
+                        : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:text-white'
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -332,10 +332,10 @@ export const ReportCenter: React.FC = () => {
                             ? `${rep.reportType === 'GENERAL' ? 'Medical' : rep.reportType} Report`
                             : `Scan #${rep.id.slice(0, 8)}`}
                         </span>
-                        <span className="text-[9px] text-slate-500 block leading-none mt-1">Status: {rep.status}</span>
+                        <span className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-500 block leading-none mt-1">Status: {rep.status}</span>
                       </div>
                     </div>
-                    <span className="text-[10px] text-slate-500">{new Date(rep.createdAt).toLocaleDateString()}</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500">{new Date(rep.createdAt).toLocaleDateString()}</span>
                   </button>
                 ))}
               </div>
@@ -349,11 +349,11 @@ export const ReportCenter: React.FC = () => {
             <>
               {/* Dual-Pane Editor for Verification */}
               {activeReport.status === 'PENDING' || activeReport.status === 'OCR_COMPLETED' ? (
-                <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200 space-y-6">
-                  <div className="flex justify-between items-center pb-3 border-b border-slate-200">
+                <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700 space-y-6">
+                  <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
                     <div>
-                      <h2 className="text-lg font-bold text-slate-900">Report Verification Desk</h2>
-                      <p className="text-[10px] text-slate-500">Review raw extracted scanned text on the left, and fill/correct lab parameters on the right.</p>
+                      <h2 className="text-lg font-bold text-slate-900 dark:text-white">Report Verification Desk</h2>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500">Review raw extracted scanned text on the left, and fill/correct lab parameters on the right.</p>
                     </div>
                     <span className="text-[10px] bg-warning/15 border border-warning/25 text-warning px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
                       Verify report Draft
@@ -364,11 +364,11 @@ export const ReportCenter: React.FC = () => {
                     {/* Left Pane: Raw Text */}
                     <div className="space-y-3 text-left">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Report Category Type</label>
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Report Category Type</label>
                         <select
                           value={reportType}
                           onChange={(e) => setReportType(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl glass-input text-xs text-slate-900"
+                          className="w-full px-3 py-2 rounded-xl glass-input text-xs text-slate-900 dark:text-white"
                         >
                           <option value="CBC">🫁 CBC (Blood Panel)</option>
                           <option value="THYROID">🦋 Thyroid Profile</option>
@@ -376,16 +376,18 @@ export const ReportCenter: React.FC = () => {
                           <option value="LIPID">🫀 Lipid Panel (Cholesterol)</option>
                           <option value="VITAMIN">🍊 Vitamin Profile</option>
                           <option value="GENERAL">🔬 General Chemistry</option>
+                          <option value="IMAGING">📸 Imaging / Scan (Ultrasound, X-Ray, MRI)</option>
+                          <option value="NOTES">📝 Clinical Doctor Notes</option>
                         </select>
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Raw Scanned OCR Output</label>
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Raw Scanned OCR Output</label>
                         <textarea
                           value={rawText}
                           onChange={(e) => setRawText(e.target.value)}
                           rows={12}
-                          className="w-full p-4 rounded-2xl glass-input text-xs font-mono leading-relaxed text-slate-600"
+                          className="w-full p-4 rounded-2xl glass-input text-xs font-mono leading-relaxed text-slate-600 dark:text-slate-300"
                         />
                       </div>
                     </div>
@@ -393,7 +395,7 @@ export const ReportCenter: React.FC = () => {
                     {/* Right Pane: Structured Fields Verification */}
                     <div className="space-y-4 text-left">
                       <div className="flex justify-between items-center">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Biological Parameters</label>
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wider">Biological Parameters</label>
                         <button
                           onClick={handleAddField}
                           className="text-[10px] font-bold text-primary flex items-center gap-1 hover:underline"
@@ -405,63 +407,63 @@ export const ReportCenter: React.FC = () => {
 
                       <div className="space-y-4 max-h-[350px] overflow-y-auto pr-2">
                         {reportValues.map((field, idx) => (
-                          <div key={idx} className="p-3 border border-slate-200 rounded-xl bg-white/[0.01] space-y-2 relative">
+                          <div key={idx} className="p-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900/[0.01] space-y-2 relative">
                             <button
                               onClick={() => handleRemoveField(idx)}
-                              className="absolute top-2 right-2 text-slate-500 hover:text-danger p-1"
+                              className="absolute top-2 right-2 text-slate-500 dark:text-slate-400 dark:text-slate-500 hover:text-danger p-1"
                               title="Delete Row"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
 
-                            <div className="space-y-2 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                            <div className="space-y-2 text-[10px] font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                               <div className="grid grid-cols-2 gap-2">
                                 <div>
-                                  <label className="text-slate-500 block mb-0.5">Marker (e.g. TSH, Hb)</label>
+                                  <label className="text-slate-500 dark:text-slate-400 dark:text-slate-500 block mb-0.5">Marker (e.g. TSH, Hb)</label>
                                   <input
                                     type="text"
                                     value={field.key}
                                     onChange={(e) => handleFieldChange(idx, 'key', e.target.value)}
                                     placeholder="TSH"
-                                    className="w-full p-2 rounded-lg glass-input text-xs text-slate-900"
+                                    className="w-full p-2 rounded-lg glass-input text-xs text-slate-900 dark:text-white"
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-slate-500 block mb-0.5">Value</label>
+                                  <label className="text-slate-500 dark:text-slate-400 dark:text-slate-500 block mb-0.5">Value</label>
                                   <input
                                     type="number"
                                     step="0.01"
                                     value={field.value}
                                     onChange={(e) => handleFieldChange(idx, 'value', parseFloat(e.target.value))}
                                     placeholder="2.4"
-                                    className="w-full p-2 rounded-lg glass-input text-xs text-slate-900"
+                                    className="w-full p-2 rounded-lg glass-input text-xs text-slate-900 dark:text-white"
                                   />
                                 </div>
                               </div>
 
                               <div className="grid grid-cols-3 gap-2">
                                 <div>
-                                  <label className="text-slate-500 block mb-0.5">Unit</label>
+                                  <label className="text-slate-500 dark:text-slate-400 dark:text-slate-500 block mb-0.5">Unit</label>
                                   <input
                                     type="text"
                                     value={field.unit}
                                     onChange={(e) => handleFieldChange(idx, 'unit', e.target.value)}
                                     placeholder="uIU/mL"
-                                    className="w-full p-2 rounded-lg glass-input text-xs text-slate-900"
+                                    className="w-full p-2 rounded-lg glass-input text-xs text-slate-900 dark:text-white"
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-slate-500 block mb-0.5">Ref Range</label>
+                                  <label className="text-slate-500 dark:text-slate-400 dark:text-slate-500 block mb-0.5">Ref Range</label>
                                   <input
                                     type="text"
                                     value={field.referenceRange}
                                     onChange={(e) => handleFieldChange(idx, 'referenceRange', e.target.value)}
                                     placeholder="0.4 - 4.5"
-                                    className="w-full p-2 rounded-lg glass-input text-xs text-slate-900"
+                                    className="w-full p-2 rounded-lg glass-input text-xs text-slate-900 dark:text-white"
                                   />
                                 </div>
                                 <div className="text-left flex flex-col justify-end pb-1.5 pl-2">
-                                  <label className="flex items-center gap-1.5 cursor-pointer text-slate-600 text-xs">
+                                  <label className="flex items-center gap-1.5 cursor-pointer text-slate-600 dark:text-slate-300 text-xs">
                                     <input
                                       type="checkbox"
                                       checked={field.isAbnormal}
@@ -479,11 +481,11 @@ export const ReportCenter: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-200 flex justify-end">
+                  <div className="pt-4 border-t border-slate-200 dark:border-slate-700 flex justify-end">
                     <button
                       onClick={initiateVerifySubmit}
                       disabled={verifying}
-                      className="px-6 py-3 bg-primary hover:bg-primary-hover text-slate-900 text-xs font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center gap-1.5"
+                      className="px-6 py-3 bg-primary hover:bg-primary-hover text-slate-900 dark:text-white text-xs font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center gap-1.5"
                     >
                       <Sparkles className="w-4 h-4 animate-spin" />
                       {verifying ? 'Generating report analysis...' : 'Submit & Analyze with Gemini'}
@@ -496,13 +498,13 @@ export const ReportCenter: React.FC = () => {
                   <MedicalDisclaimer />
                   
                   {/* Summary Box */}
-                  <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200 space-y-4 relative overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100/50">
+                  <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700 space-y-4 relative overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100/50 dark:from-slate-800 dark:to-slate-900/50">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none" />
                     
-                    <div className="flex justify-between items-center pb-3 border-b border-slate-200">
+                    <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
                       <div>
-                        <h2 className="text-lg font-bold text-slate-900">Report Snapshot: {activeReport.reportType}</h2>
-                        <span className="text-[10px] text-slate-500">Recorded: {new Date(activeReport.reportDate).toLocaleDateString()}</span>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Report Snapshot: {activeReport.reportType}</h2>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500">Recorded: {new Date(activeReport.reportDate).toLocaleDateString()}</span>
                       </div>
                       <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border uppercase tracking-wider ${
                         activeReport.summary?.overallStatus === 'STABLE'
@@ -515,19 +517,19 @@ export const ReportCenter: React.FC = () => {
 
                     {activeReport.summary && (
                       <div className="space-y-3">
-                        <p className="text-xs text-slate-600 font-light leading-relaxed">
+                        <p className="text-xs text-slate-600 dark:text-slate-300 font-light leading-relaxed">
                           {activeReport.summary.healthSummary}
                         </p>
                         
                         <div className="grid grid-cols-2 gap-4 max-w-sm">
                           <div className="p-3 bg-success/10 border border-success/15 rounded-xl">
-                            <span className="text-[10px] text-slate-500 block font-bold uppercase">Normal Findings</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500 block font-bold uppercase">Normal Findings</span>
                             <span className="text-2xl font-extrabold text-success mt-1 block">
                               {activeReport.summary.normalFindingsCount}
                             </span>
                           </div>
                           <div className="p-3 bg-danger/10 border border-danger/15 rounded-xl">
-                            <span className="text-[10px] text-slate-500 block font-bold uppercase">Abnormal Findings</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500 block font-bold uppercase">Abnormal Findings</span>
                             <span className="text-2xl font-extrabold text-danger mt-1 block">
                               {activeReport.summary.abnormalFindingsCount}
                             </span>
@@ -538,8 +540,8 @@ export const ReportCenter: React.FC = () => {
                   </div>
 
                   {/* Biological dials cards */}
-                  <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200 space-y-6">
-                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700 space-y-6">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
                       <Gauge className="w-4.5 h-4.5 text-primary" />
                       Parameter index values
                     </h3>
@@ -551,12 +553,12 @@ export const ReportCenter: React.FC = () => {
                           className={`p-4 border rounded-2xl flex flex-col justify-between space-y-3 ${
                             val.isAbnormal 
                               ? 'border-danger/20 bg-danger/[0.01]' 
-                              : 'border-slate-200 bg-white/[0.005]'
+                              : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/[0.005]'
                           }`}
                         >
                           <div>
                             <div className="flex justify-between items-start">
-                              <span className="text-xs font-bold text-slate-900">{val.key}</span>
+                              <span className="text-xs font-bold text-slate-900 dark:text-white">{val.key}</span>
                               <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
                                 val.isAbnormal ? 'bg-danger/15 text-danger' : 'bg-success/15 text-success'
                               }`}>
@@ -565,17 +567,17 @@ export const ReportCenter: React.FC = () => {
                             </div>
                             
                             <div className="flex items-baseline gap-1 mt-2">
-                              <span className={`text-2xl font-extrabold ${val.isAbnormal ? 'text-danger' : 'text-slate-900'}`}>
+                              <span className={`text-2xl font-extrabold ${val.isAbnormal ? 'text-danger' : 'text-slate-900 dark:text-white'}`}>
                                 {val.value}
                               </span>
-                              <span className="text-[10px] text-slate-500">{val.unit}</span>
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500">{val.unit}</span>
                             </div>
                             
-                            <span className="text-[10px] text-slate-500 font-medium block mt-1">Ref Range: {val.referenceRange}</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium block mt-1">Ref Range: {val.referenceRange}</span>
                           </div>
 
                           {val.description && (
-                            <p className="text-[10px] text-slate-500 font-light border-t border-slate-200 pt-2 leading-relaxed">
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500 font-light border-t border-slate-200 dark:border-slate-700 pt-2 leading-relaxed">
                               {val.description}
                             </p>
                           )}
@@ -588,19 +590,19 @@ export const ReportCenter: React.FC = () => {
                   {activeReport.specialists && activeReport.specialists.length > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
                       {/* Specialist recommendation card */}
-                      <div className="md:col-span-5 glass-panel rounded-3xl p-6 border border-slate-200 space-y-4">
-                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">🔬 Specialist Referral</h3>
+                      <div className="md:col-span-5 glass-panel rounded-3xl p-6 border border-slate-200 dark:border-slate-700 space-y-4">
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">🔬 Specialist Referral</h3>
                         
                         <div className="space-y-4">
                           {activeReport.specialists.map((spec, i) => (
                             <div key={i} className="p-4 bg-primary/10 border border-primary/20 rounded-2xl space-y-3">
                               <div className="flex justify-between items-center">
-                                <span className="text-sm font-extrabold text-slate-900">{spec.specialtyName}</span>
+                                <span className="text-sm font-extrabold text-slate-900 dark:text-white">{spec.specialtyName}</span>
                                 <span className="text-[10px] bg-primary/20 text-primary font-bold px-2 py-0.5 rounded-full">
                                   {Math.round(spec.confidenceScore * 100)}% Confidence
                                 </span>
                               </div>
-                              <p className="text-[10px] text-slate-600 leading-normal font-light">
+                              <p className="text-[10px] text-slate-600 dark:text-slate-300 leading-normal font-light">
                                 {spec.reason}
                               </p>
                             </div>
@@ -609,26 +611,26 @@ export const ReportCenter: React.FC = () => {
                       </div>
 
                       {/* Matching Hospitals links */}
-                      <div className="md:col-span-7 glass-panel rounded-3xl p-6 border border-slate-200 space-y-4">
-                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">🏥 Specialty Facilities Nearby</h3>
+                      <div className="md:col-span-7 glass-panel rounded-3xl p-6 border border-slate-200 dark:border-slate-700 space-y-4">
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">🏥 Specialty Facilities Nearby</h3>
                         
                         <div className="space-y-3">
                           {matchedHospitals.length === 0 ? (
-                            <p className="text-xs text-slate-500 py-4 text-center">Locating matching specialist clinics near Delhi...</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 py-4 text-center">Locating matching specialist clinics near Delhi...</p>
                           ) : (
                             matchedHospitals.map(h => (
                               <div 
                                 key={h.id} 
-                                className="p-3 bg-slate-50 border border-slate-200 hover:border-primary/20 hover:bg-primary/[0.01] rounded-2xl flex items-center justify-between transition-all cursor-pointer"
+                                className="p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary/20 hover:bg-primary/[0.01] rounded-2xl flex items-center justify-between transition-all cursor-pointer"
                                 onClick={() => navigate(`/hospitals/${h.id}`)}
                               >
                                 <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center border border-slate-200 text-xs font-bold text-slate-700">
+                                  <div className="w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700">
                                     H
                                   </div>
                                   <div>
-                                    <span className="text-xs font-bold text-slate-900 block truncate max-w-[160px]">{h.name}</span>
-                                    <span className="text-[10px] text-slate-500 flex items-center gap-0.5 mt-0.5 truncate max-w-[160px]">
+                                    <span className="text-xs font-bold text-slate-900 dark:text-white block truncate max-w-[160px]">{h.name}</span>
+                                    <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500 flex items-center gap-0.5 mt-0.5 truncate max-w-[160px]">
                                       <MapPin className="w-3.5 h-3.5" />
                                       {h.address}
                                     </span>
@@ -637,10 +639,10 @@ export const ReportCenter: React.FC = () => {
 
                                 <div className="text-right flex items-center gap-2">
                                   <div className="text-xs font-semibold">
-                                    <span className="text-[10px] text-slate-500 block uppercase leading-none">Match Score</span>
+                                    <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500 block uppercase leading-none">Match Score</span>
                                     <span className="text-primary font-extrabold mt-0.5 block leading-none">{h.recommendationScore}%</span>
                                   </div>
-                                  <ArrowRight className="w-4 h-4 text-slate-500 shrink-0" />
+                                  <ArrowRight className="w-4 h-4 text-slate-500 dark:text-slate-400 dark:text-slate-500 shrink-0" />
                                 </div>
                               </div>
                             ))
@@ -653,10 +655,10 @@ export const ReportCenter: React.FC = () => {
               )}
             </>
           ) : (
-            <div className="glass-panel rounded-3xl p-16 border border-slate-200 text-center text-slate-500 flex flex-col items-center justify-center min-h-[400px]">
-              <FileText className="w-12 h-12 text-slate-600 mb-3 animate-pulse" />
+            <div className="glass-panel rounded-3xl p-16 border border-slate-200 dark:border-slate-700 text-center text-slate-500 dark:text-slate-400 dark:text-slate-500 flex flex-col items-center justify-center min-h-[400px]">
+              <FileText className="w-12 h-12 text-slate-600 dark:text-slate-300 mb-3 animate-pulse" />
               <p className="text-sm font-semibold">No active scan workspace open.</p>
-              <p className="text-xs text-slate-500 mt-1">Please upload a blood sheet or lab report to start, or select a past scan from the history board.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 mt-1">Please upload a blood sheet or lab report to start, or select a past scan from the history board.</p>
             </div>
           )}
         </div>

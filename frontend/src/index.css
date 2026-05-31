@@ -4,7 +4,11 @@
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900 min-h-screen selection:bg-primary selection:text-white;
+    @apply bg-pulseBg text-slate-900 min-h-screen selection:bg-primary selection:text-white transition-colors duration-300;
+  }
+  .dark body {
+    background-color: #181c1e;
+    @apply text-slate-100;
   }
 }
 
@@ -24,33 +28,38 @@
   background: #94A3B8;
 }
 
-/* Premium Light Panel Styles (Replacing Glassmorphism) */
+/* Premium Light Panel Styles (Clean Corporate Aesthetic) */
 .glass-panel {
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  @apply bg-pulseCard border border-pulseBorder shadow-ambient rounded-2xl transition-all duration-300;
+}
+
+.dark .glass-panel {
+  @apply bg-slate-900 border-slate-700 shadow-ambient-dark;
 }
 
 .glass-panel-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  @apply transition-all duration-300 ease-out;
 }
 .glass-panel-hover:hover {
-  border-color: #93C5FD;
-  box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.1), 0 8px 10px -6px rgba(37, 99, 235, 0.1);
-  transform: translateY(-2px);
+  @apply border-primary-light shadow-ambient-lg -translate-y-[2px];
+}
+
+.dark .glass-panel-hover:hover {
+  @apply border-primary-dark shadow-ambient-lg;
 }
 
 .glass-input {
-  background: #FFFFFF;
-  border: 1px solid #CBD5E1;
-  transition: all 0.2s ease;
-  color: #0F172A;
+  @apply bg-pulseCard border border-slate-300 transition-all duration-200 text-slate-900 rounded-lg;
 }
+.dark .glass-input {
+  @apply bg-slate-800 border-slate-600 text-slate-100;
+}
+
 .glass-input:focus {
-  background: #FFFFFF;
-  border-color: #3B82F6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-  outline: none;
+  @apply border-primary ring-2 ring-primary/20 outline-none;
+}
+.dark .glass-input:focus {
+  @apply border-primary-light ring-primary-dark/50;
 }
 
 /* Glowing animations */
