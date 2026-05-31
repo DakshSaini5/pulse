@@ -37,7 +37,12 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, etc.)
+    // In development, allow all origins to prevent local network or 127.0.0.1 testing issues
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+
+    // In production, strictly enforce allowedOrigins
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -133,6 +138,9 @@ const httpServer = http.createServer(app);
 const io = new SocketIOServer(httpServer, {
   cors: {
     origin: (origin, callback) => {
+      if (process.env.NODE_ENV === 'development') {
+        return callback(null, true);
+      }
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
