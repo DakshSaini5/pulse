@@ -11,9 +11,9 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, passwordHash: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   googleLogin: (credential: string) => Promise<void>;
-  register: (name: string, email: string, passwordHash: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -42,10 +42,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, []);
 
-  const login = async (email: string, passwordHash: string) => {
+  const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      const data = await authAPI.login(email, passwordHash);
+      const data = await authAPI.login(email, password);
       setUser(data.user);
     } finally {
       setLoading(false);
@@ -62,10 +62,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (name: string, email: string, passwordHash: string) => {
+  const register = async (name: string, email: string, password: string) => {
     setLoading(true);
     try {
-      const data = await authAPI.register(name, email, passwordHash);
+      const data = await authAPI.register(name, email, password);
       setUser(data.user);
     } finally {
       setLoading(false);

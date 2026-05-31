@@ -32,3 +32,10 @@ backend/uploads/*
 
 # OS
 .DS_Store
+
+# Temp dev files
+frontend/fix-dark-mode.*
+frontend/refactor-theme.*
+backend/scratch_*
+backend/test-keys.*
+*.timestamp-*

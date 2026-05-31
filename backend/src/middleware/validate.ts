@@ -44,7 +44,7 @@ export const registerSchema = z.object({
     .max(255, 'Email must be under 255 characters.')
     .trim()
     .toLowerCase(),
-  passwordHash: z
+  password: z
     .string()
     .min(8, 'Password must be at least 8 characters.')
     .max(128, 'Password must be under 128 characters.'),
@@ -57,7 +57,7 @@ export const loginSchema = z.object({
     .email('Please provide a valid email address.')
     .trim()
     .toLowerCase(),
-  passwordHash: z
+  password: z
     .string()
     .min(1, 'Password is required.'),
 });

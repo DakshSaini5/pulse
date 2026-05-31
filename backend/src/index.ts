@@ -48,7 +48,22 @@ app.use(cors({
 }));
 app.use(helmet({
   crossOriginResourcePolicy: false, // Allows browser Leaflet icons to load correctly
+  hsts: {
+    maxAge: 31536000, // 1 year in seconds
+    includeSubDomains: true,
+    preload: true,
+  },
 }));
+
+// Redirect HTTP → HTTPS in production (behind reverse proxy)
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    if (req.headers['x-forwarded-proto'] !== 'https') {
+      return res.redirect(301, `https://${req.hostname}${req.url}`);
+    }
+    next();
+  });
+}
 app.use(morgan('dev'));
 app.use(express.json({ limit: '1mb' }));
 app.use(generalLimiter);
@@ -100,8 +115,16 @@ process.on('unhandledRejection', (reason: any) => {
   console.error('[Unhandled Promise Rejection]', reason);
 });
 
-process.on('uncaughtException', (error: Error) => {
+process.on('uncaughtException', async (error: Error) => {
   console.error('[Uncaught Exception]', error);
+  // Graceful shutdown: close DB connections before exiting
+  try {
+    const { prisma } = await import('./db');
+    await prisma.$disconnect();
+    console.log('[Shutdown] Database connections closed.');
+  } catch (e) {
+    console.error('[Shutdown] Error disconnecting DB:', e);
+  }
   process.exit(1);
 });
 
@@ -109,11 +132,40 @@ process.on('uncaughtException', (error: Error) => {
 const httpServer = http.createServer(app);
 const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Socket.IO CORS rejected'));
+      }
+    },
+    methods: ['GET', 'POST'],
+    credentials: true,
   }
 });
 setupChatSocket(io);
+
+// Graceful shutdown on SIGTERM/SIGINT (container stop, Ctrl+C)
+const gracefulShutdown = async (signal: string) => {
+  console.log(`\n[Shutdown] Received ${signal}. Shutting down gracefully...`);
+  httpServer.close(async () => {
+    try {
+      const { prisma } = await import('./db');
+      await prisma.$disconnect();
+      console.log('[Shutdown] Database connections closed. Goodbye!');
+    } catch (e) {
+      console.error('[Shutdown] Error disconnecting DB:', e);
+    }
+    process.exit(0);
+  });
+  // Force kill after 10 seconds if graceful shutdown hangs
+  setTimeout(() => {
+    console.error('[Shutdown] Forced exit after timeout.');
+    process.exit(1);
+  }, 10000);
+};
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Listen
 httpServer.listen(PORT, () => {

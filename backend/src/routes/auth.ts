@@ -11,7 +11,7 @@ const JWT_SECRET = process.env.JWT_SECRET!;
 
 // POST /api/auth/register
 router.post('/register', authLimiter, validate(registerSchema), async (req: Request, res: Response) => {
-  const { name, email, passwordHash } = req.body;
+  const { name, email, password } = req.body;
 
   try {
     const existing = await prisma.user.findUnique({ where: { email } });
@@ -19,7 +19,7 @@ router.post('/register', authLimiter, validate(registerSchema), async (req: Requ
       return res.status(400).json({ message: 'An account with this email already exists.' });
     }
 
-    const hashed = await bcrypt.hash(passwordHash, 10);
+    const hashed = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
       data: {
@@ -59,7 +59,7 @@ router.post('/register', authLimiter, validate(registerSchema), async (req: Requ
 
 // POST /api/auth/login
 router.post('/login', authLimiter, validate(loginSchema), async (req: Request, res: Response) => {
-  const { email, passwordHash } = req.body;
+  const { email, password } = req.body;
 
   try {
     const user = await prisma.user.findUnique({ where: { email } });
@@ -74,7 +74,7 @@ router.post('/login', authLimiter, validate(loginSchema), async (req: Request, r
       });
     }
 
-    const matches = await bcrypt.compare(passwordHash, user.passwordHash);
+    const matches = await bcrypt.compare(password, user.passwordHash);
     if (!matches) {
       return res.status(400).json({ message: 'Invalid email or password.' });
     }

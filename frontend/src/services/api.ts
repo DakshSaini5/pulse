@@ -195,16 +195,16 @@ export interface UserProfile {
 }
 
 export const authAPI = {
-  login: async (email: string, passwordHash: string) => {
-    const res = await api.post('/api/auth/login', { email, passwordHash });
+  login: async (email: string, password: string) => {
+    const res = await api.post('/api/auth/login', { email, password });
     if (res.data.token) {
       localStorage.setItem('pulse_token', res.data.token);
       localStorage.setItem('pulse_user', JSON.stringify(res.data.user));
     }
     return res.data;
   },
-  register: async (name: string, email: string, passwordHash: string) => {
-    const res = await api.post('/api/auth/register', { name, email, passwordHash });
+  register: async (name: string, email: string, password: string) => {
+    const res = await api.post('/api/auth/register', { name, email, password });
     if (res.data.token) {
       localStorage.setItem('pulse_token', res.data.token);
       localStorage.setItem('pulse_user', JSON.stringify(res.data.user));
