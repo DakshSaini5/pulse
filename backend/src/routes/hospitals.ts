@@ -185,6 +185,52 @@ router.get('/compare', async (req: AuthenticatedRequest, res: Response) => {
   }
 });
 
+// GET /api/hospitals/autocomplete (Public - real-time matching dropdown results)
+router.get('/autocomplete', async (req: AuthenticatedRequest, res: Response) => {
+  const { q } = req.query;
+  if (!q || typeof q !== 'string' || q.trim().length === 0) {
+    return res.json({ hospitals: [], specialties: [] });
+  }
+
+  const queryText = q.trim();
+
+  try {
+    // 1. Search matching hospitals (top 5)
+    const hospitals = await prisma.hospital.findMany({
+      where: {
+        name: {
+          contains: queryText,
+          mode: 'insensitive'
+        }
+      },
+      select: {
+        id: true,
+        name: true
+      },
+      take: 5
+    });
+
+    // 2. Search matching specialties (top 5)
+    const specialties = await prisma.specialty.findMany({
+      where: {
+        name: {
+          contains: queryText,
+          mode: 'insensitive'
+        }
+      },
+      select: {
+        name: true
+      },
+      take: 5
+    });
+
+    return res.json({ hospitals, specialties });
+  } catch (err) {
+    console.error('Error in autocomplete route:', err);
+    return res.status(500).json({ message: 'Error performing autocomplete search.' });
+  }
+});
+
 // GET /api/hospitals/:id (Public - single hospital metrics)
 router.get('/:id', async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;

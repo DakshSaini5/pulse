@@ -65,6 +65,7 @@ export interface Hospital {
   recommendationScore: number;
   explanation?: string;
   photoUrl?: string;
+  distance?: number;
   specialties: Array<{
     departments: string;
     averageCost: number;
@@ -243,6 +244,12 @@ export const hospitalAPI = {
     });
     return res.data.data as Hospital[];
   },
+  autocomplete: async (q: string) => {
+    const res = await api.get('/api/hospitals/autocomplete', {
+      params: { q },
+    });
+    return res.data as { hospitals: Array<{ id: string; name: string }>; specialties: Array<{ name: string }> };
+  },
   getById: async (id: string) => {
     const res = await api.get(`/api/hospitals/${id}`);
     return res.data as Hospital;
@@ -382,5 +389,33 @@ export const userAPI = {
   deleteAccount: async () => {
     const res = await api.delete('/api/user/account');
     return res.data;
+  },
+};
+
+export interface EmergencyContact {
+  id: string;
+  userId: string;
+  name: string;
+  phoneNumber: string;
+  relationship: string;
+  createdAt: string;
+}
+
+export const emergencyAPI = {
+  getContacts: async () => {
+    const res = await api.get('/api/emergency/contacts');
+    return res.data as EmergencyContact[];
+  },
+  addContact: async (data: { name: string; phoneNumber: string; relationship: string }) => {
+    const res = await api.post('/api/emergency/contacts', data);
+    return res.data as EmergencyContact;
+  },
+  deleteContact: async (id: string) => {
+    const res = await api.delete(`/api/emergency/contacts/${id}`);
+    return res.data;
+  },
+  triggerPanic: async (lat?: number, lng?: number) => {
+    const res = await api.post('/api/emergency/panic', { lat, lng });
+    return res.data as { message: string, results: any[], simulated: boolean };
   },
 };

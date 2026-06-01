@@ -9,8 +9,8 @@ export class GooglePlacesAdapter implements IHospitalProvider {
 
   async searchNearby(lat: number, lng: number, keyword: string, radius: number): Promise<HospitalData[]> {
     if (!this.apiKey) {
-      console.warn('Google Places API key is missing. Using MOCK data for adapter.');
-      return this.getMockData(lat, lng, keyword);
+      console.warn('Google Places API key is missing. GooglePlacesAdapter returning empty list.');
+      return [];
     }
 
     try {
@@ -67,32 +67,5 @@ export class GooglePlacesAdapter implements IHospitalProvider {
       console.error('Failed to fetch from Google Places Adapter', err);
       return [];
     }
-  }
-
-  // Fallback for local testing without an API key
-  private getMockData(lat: number, lng: number, keyword: string): HospitalData[] {
-    return [
-      {
-        externalId: `mock-google-1-${Date.now()}`,
-        name: `Pulse Mock: ${keyword} General Hospital`,
-        address: '123 Fake Street, Delhi',
-        latitude: lat + 0.01,
-        longitude: lng + 0.01,
-        phone: '+91 98765 43210',
-        website: 'https://mockhospital.com',
-        rating: 4.8,
-        photoUrl: 'https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?q=80&w=800&auto=format&fit=crop'
-      },
-      {
-        externalId: `mock-google-2-${Date.now()}`,
-        name: `Pulse Mock: ${keyword} City Clinic`,
-        address: '456 Fake Avenue, Delhi',
-        latitude: lat - 0.015,
-        longitude: lng - 0.012,
-        phone: '+91 98765 43211',
-        rating: 4.2,
-        photoUrl: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=800&auto=format&fit=crop'
-      }
-    ];
   }
 }

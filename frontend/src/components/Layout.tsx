@@ -219,7 +219,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         </div>
       </footer>
       {/* Floating AI Chat Assistant */}
-      <ChatAssistant />
+      {user && <ChatAssistant />}
     </div>
   );
 };

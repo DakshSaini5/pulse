@@ -1,6 +1,7 @@
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
@@ -30,6 +31,7 @@ model User {
   adminLogs       AdminLog[]
   aiUsages        AIUsage[]
   notifications   Notification[]
+  emergencyContacts EmergencyContact[]
 }
 
 model Hospital {
@@ -292,4 +294,17 @@ model Notification {
   createdAt DateTime @default(now())
   
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EmergencyContact {
+  id           String   @id @default(uuid())
+  userId       String
+  name         String
+  phoneNumber  String
+  relationship String
+  createdAt    DateTime @default(now())
+  
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

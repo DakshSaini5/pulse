@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { hospitalAPI, Hospital } from '../services/api';
 import { Map } from '../components/Map';
 import { 
@@ -11,13 +11,14 @@ import { useAuth } from '../context/AuthContext';
 export const Search: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  // Search parameters state
-  const [query, setQuery] = useState('');
-  const [specialty, setSpecialty] = useState('');
-  const [radius, setRadius] = useState(15); // max distance in km
-  const [emergencyOnly, setEmergencyOnly] = useState(false);
-  const [sortBy, setSortBy] = useState('match'); // match, rating, distance
+  // Search parameters state initialized from URL if present
+  const [query, setQuery] = useState(searchParams.get('q') || '');
+  const [specialty, setSpecialty] = useState(searchParams.get('specialty') || '');
+  const [radius, setRadius] = useState(15);
+  const [emergencyOnly, setEmergencyOnly] = useState(searchParams.get('emergency') === 'true');
+  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'match');
 
   // Map user coordinates
   const [lat, setLat] = useState(28.6139);
@@ -52,9 +53,7 @@ export const Search: React.FC = () => {
       if (sortBy === 'rating') {
         filtered = filtered.sort((a, b) => b.rating - a.rating);
       } else if (sortBy === 'distance') {
-        // We don't have distance in the Hospital interface explicitly exposed from API, but if we did, we would sort by it.
-        // Assuming the API returns sorted by distance by default if query is empty, or we rely on recommendationScore.
-        // Let's just sort by rating as fallback or keep order.
+        filtered = filtered.sort((a, b) => (a.distance || 0) - (b.distance || 0));
       } else {
         // match
         filtered = filtered.sort((a, b) => b.recommendationScore - a.recommendationScore);
@@ -209,6 +208,7 @@ export const Search: React.FC = () => {
             className="w-full px-3 py-2.5 rounded-xl glass-input text-xs text-slate-900"
           >
             <option value="match">Best Match</option>
+            <option value="distance">Nearest First</option>
             <option value="rating">Highest Rated</option>
           </select>
         </div>
@@ -241,6 +241,28 @@ export const Search: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Side: Hospital List */}
         <div className="lg:col-span-5 space-y-4 max-h-[600px] overflow-y-auto pr-2 text-left">
+          {/* Active Specialty Filter Header */}
+          {specialty && (
+            <div className="glass-panel border border-primary/20 bg-primary/5 p-4 rounded-2xl flex items-center justify-between animate-in slide-in-from-top duration-300">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  🔍 Active Filter: <span className="text-primary font-extrabold">{specialty}</span>
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSpecialty('');
+                  navigate('/search');
+                }}
+                className="text-[10px] font-bold bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-xl transition-all border border-pulseBorder dark:border-slate-700"
+                title="Clear filter"
+              >
+                Clear (X)
+              </button>
+            </div>
+          )}
+          
           {loading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((n) => (

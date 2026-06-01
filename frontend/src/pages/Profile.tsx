@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { userAPI, UserProfile } from '../services/api';
+import { userAPI, emergencyAPI, UserProfile, EmergencyContact } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { User, Mail, Shield, Calendar, Activity, FileText, Lock, Save, Trash2, AlertTriangle, Key } from 'lucide-react';
+import EmergencyContactModal from '../components/EmergencyContactModal';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -22,6 +23,9 @@ export const Profile: React.FC = () => {
   const [changingPassword, setChangingPassword] = useState(false);
   
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  
+  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
+  const [emergencyModalOpen, setEmergencyModalOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -43,7 +47,18 @@ export const Profile: React.FC = () => {
     };
     
     fetchProfile();
+    emergencyAPI.getContacts().then(setContacts).catch(console.error);
   }, [user, navigate]);
+
+  const handleDeleteContact = async (id: string) => {
+    try {
+      await emergencyAPI.deleteContact(id);
+      setContacts(prev => prev.filter(c => c.id !== id));
+      toast.success('Emergency contact deleted');
+    } catch (err: any) {
+      toast.error('Failed to delete contact');
+    }
+  };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -286,6 +301,49 @@ export const Profile: React.FC = () => {
             </div>
           )}
 
+          {/* Emergency Contacts Panel */}
+          <div className="glass-panel rounded-3xl p-6 border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <Shield className="w-4 h-4 text-red-500" />
+                Emergency Contacts
+              </h3>
+              <button 
+                onClick={() => setEmergencyModalOpen(true)}
+                className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold rounded-lg transition-colors border border-red-200"
+              >
+                + Add New
+              </button>
+            </div>
+            
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+              Contacts listed here will be notified via SMS if you trigger the Panic Button.
+            </p>
+            
+            <div className="space-y-3">
+              {contacts.length === 0 ? (
+                <div className="text-center p-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+                  <p className="text-sm text-slate-500">No emergency contacts added yet.</p>
+                </div>
+              ) : (
+                contacts.map(c => (
+                  <div key={c.id} className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
+                    <div>
+                      <h4 className="font-bold text-slate-900 dark:text-white">{c.name}</h4>
+                      <p className="text-xs text-slate-500">{c.relationship} • {c.phoneNumber}</p>
+                    </div>
+                    <button 
+                      onClick={() => handleDeleteContact(c.id)}
+                      className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
           <div className="glass-panel rounded-3xl p-6 border border-slate-200 dark:border-slate-700">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-danger" />
@@ -330,6 +388,15 @@ export const Profile: React.FC = () => {
           </div>
         </div>
       )}
+
+      <EmergencyContactModal 
+        isOpen={emergencyModalOpen} 
+        onClose={() => setEmergencyModalOpen(false)}
+        onSuccess={() => {
+          setEmergencyModalOpen(false);
+          emergencyAPI.getContacts().then(setContacts);
+        }}
+      />
     </div>
   );
 };

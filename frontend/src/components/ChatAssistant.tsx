@@ -36,7 +36,10 @@ const ChatAssistant: React.FC = () => {
     // Only connect when opened for the first time
     if (isOpen && !socketRef.current) {
       const url = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const socket = io(url);
+      const token = localStorage.getItem('pulse_token');
+      const socket = io(url, {
+        auth: { token }
+      });
       
       socket.on('connect', () => {
         console.log('Chat socket connected');
@@ -61,7 +64,10 @@ const ChatAssistant: React.FC = () => {
     }
 
     return () => {
-      // We keep socket open unless component unmounts
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
     };
   }, [isOpen]);
 
