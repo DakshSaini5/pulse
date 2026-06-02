@@ -252,17 +252,27 @@ export const HospitalDetail: React.FC = () => {
                 </div>
               </div>
 
-              {hospital.phone && (
-                <div className="flex items-start gap-3">
-                  <Phone className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                  <div>
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold block">Helpline</span>
+              <div className="flex items-start gap-3">
+                <Phone className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold block">Helpline</span>
+                  {hospital.phone ? (
                     <a href={`tel:${hospital.phone.trim()}`} className="text-primary hover:underline mt-1 block font-bold">
                       {hospital.phone}
                     </a>
-                  </div>
+                  ) : (
+                    <a 
+                      href={`https://www.google.com/search?q=phone+number+for+${encodeURIComponent(hospital.name)}+${encodeURIComponent(hospital.address)}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline mt-1 block font-semibold flex items-center gap-0.5"
+                    >
+                      Search Helpline on Google
+                      <Globe className="w-3 h-3 text-slate-400 shrink-0" />
+                    </a>
+                  )}
                 </div>
-              )}
+              </div>
 
               {hospital.website && (
                 <div className="flex items-start gap-3">

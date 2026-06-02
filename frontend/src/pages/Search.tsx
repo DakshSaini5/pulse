@@ -4,7 +4,7 @@ import { hospitalAPI, Hospital } from '../services/api';
 import { Map } from '../components/Map';
 import { 
   Search as SearchIcon, MapPin, Star, AlertCircle, Heart, Phone,
-  Activity, ArrowRight, ShieldCheck, HelpCircle, Layers, CheckSquare, Square
+  Activity, ArrowRight, ShieldCheck, HelpCircle, Layers, CheckSquare, Square, Globe
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -308,10 +308,23 @@ export const Search: React.FC = () => {
                           <MapPin className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                           {hosp.address}
                         </p>
-                        {hosp.phone && (
+                        {hosp.phone ? (
                           <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1.5 leading-none">
                             <Phone className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                            <a href={`tel:${hosp.phone}`} className="hover:text-primary transition-colors">{hosp.phone}</a>
+                            <a href={`tel:${hosp.phone.trim()}`} className="hover:text-primary transition-colors">{hosp.phone}</a>
+                          </p>
+                        ) : (
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1.5 leading-none">
+                            <Phone className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                            <a 
+                              href={`https://www.google.com/search?q=phone+number+for+${encodeURIComponent(hosp.name)}+${encodeURIComponent(hosp.address)}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline transition-colors font-semibold flex items-center gap-0.5"
+                            >
+                              Search number on Google
+                              <Globe className="w-3 h-3 text-slate-400 shrink-0" />
+                            </a>
                           </p>
                         )}
                       </div>
