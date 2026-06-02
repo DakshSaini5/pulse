@@ -30,11 +30,39 @@ router.get('/', searchLimiter, async (req: AuthenticatedRequest, res: Response) 
       });
     }
 
+    // Calculate bounding box for the search radius to prevent loading all 3,500+ records from DB
+    const latDiff = radius / 111;
+    const cosLat = Math.cos((userLat * Math.PI) / 180);
+    const lngDiff = radius / (111 * (cosLat > 0.1 ? cosLat : 0.1));
+
+    const whereClause: any = {
+      latitude: {
+        gte: userLat - latDiff,
+        lte: userLat + latDiff,
+      },
+      longitude: {
+        gte: userLng - lngDiff,
+        lte: userLng + lngDiff,
+      },
+    };
+
+    if (query) {
+      whereClause.name = { contains: query as string, mode: 'insensitive' };
+    }
+
+    if (specialty) {
+      whereClause.specialties = {
+        some: {
+          specialty: {
+            name: { equals: specialty as string, mode: 'insensitive' }
+          }
+        }
+      };
+    }
+
     // Load hospitals with specialties — case-insensitive search
     let hospitalsList = await prisma.hospital.findMany({
-      where: query
-        ? { name: { contains: query as string, mode: 'insensitive' } }
-        : {},
+      where: whereClause,
       include: {
         specialties: {
           include: {
@@ -52,9 +80,7 @@ router.get('/', searchLimiter, async (req: AuthenticatedRequest, res: Response) 
 
       // Re-fetch from our DB now that the cache is populated
       hospitalsList = await prisma.hospital.findMany({
-        where: query
-          ? { name: { contains: query as string, mode: 'insensitive' } }
-          : {},
+        where: whereClause,
         include: {
           specialties: {
             include: {
