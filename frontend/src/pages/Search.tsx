@@ -368,6 +368,26 @@ export const Search: React.FC = () => {
                         <strong>💡 Match Reason:</strong> {hosp.explanation}
                       </div>
                     )}
+
+                    {/* Active Specialty OPD Hours & INR Fees */}
+                    {specialty && (() => {
+                      const matchedSpec = hosp.specialties?.find(
+                        (s) => s.specialty.name.toLowerCase() === specialty.toLowerCase()
+                      );
+                      if (!matchedSpec) return null;
+                      return (
+                        <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 rounded-xl text-[10px] leading-normal font-semibold space-y-1">
+                          <div className="flex justify-between">
+                            <span>🕒 OPD Hours:</span>
+                            <span className="font-bold text-slate-900 dark:text-white">{matchedSpec.opdTimings || '09:00 AM - 05:00 PM'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>💳 Consult Fee:</span>
+                            <span className="font-extrabold text-primary">₹{matchedSpec.averageCost}</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div className="flex justify-between items-center pt-4 border-t border-pulseBorder dark:border-slate-700 mt-4">

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { emergencyAPI, hospitalAPI, EmergencyContact } from '../services/api';
 import EmergencyContactModal from '../components/EmergencyContactModal';
 import NeedHelpModal from '../components/NeedHelpModal';
+import BreathingCuesModal from '../components/BreathingCuesModal';
 import { 
   Activity, Search, FileText, ArrowRight, 
   Map, Play, Sparkles, Heart, Activity as ActivityIcon,
@@ -18,6 +19,7 @@ export const Landing: React.FC = () => {
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [showPanicModal, setShowPanicModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [panicLoading, setPanicLoading] = useState(false);
 
@@ -156,6 +158,13 @@ export const Landing: React.FC = () => {
           }}
         />
 
+        <BreathingCuesModal 
+          isOpen={showPanicModal}
+          onClose={() => setShowPanicModal(false)}
+          emergencyContactPhone={contacts[0]?.phoneNumber}
+          emergencyContactName={contacts[0]?.name}
+        />
+
         <NeedHelpModal 
           isOpen={showHelpModal}
           onClose={() => setShowHelpModal(false)}
@@ -197,12 +206,11 @@ export const Landing: React.FC = () => {
               Need Help?
             </button>
             <button 
-              onClick={triggerPanic}
-              disabled={panicLoading}
-              className="flex-1 md:flex-none px-6 py-3.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:hover:bg-red-600 text-white font-extrabold rounded-2xl shadow-xl shadow-red-600/30 transition-all active:scale-95 flex items-center justify-center gap-2"
+              onClick={() => setShowPanicModal(true)}
+              className="flex-1 md:flex-none px-6 py-3.5 bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-2xl shadow-xl shadow-red-600/30 transition-all active:scale-95 flex items-center justify-center gap-2"
             >
               <ShieldAlert className="w-5 h-5" />
-              {panicLoading ? 'SENDING...' : 'PANIC'}
+              PANIC
             </button>
           </div>
         </div>

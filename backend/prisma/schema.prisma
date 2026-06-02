@@ -72,6 +72,7 @@ model HospitalSpecialty {
   specialtyId  String
   departments  String // Comma separated specific departments
   averageCost  Float  @default(0.0)
+  opdTimings   String @default("09:00 AM - 05:00 PM")
   
   hospital     Hospital  @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   specialty    Specialty @relation(fields: [specialtyId], references: [id], onDelete: Cascade)

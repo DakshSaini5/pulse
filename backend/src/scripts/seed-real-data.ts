@@ -57,20 +57,23 @@ async function main() {
         rating: h.rating,
         phone: h.phone,
         website: h.website,
-        workingHours: h.workingHours,
-        emergencyAvailable: h.emergencyAvailable,
+        workingHours: h.workingHours || 'Open 24 Hours',
+        emergencyAvailable: h.emergencyAvailable !== undefined ? h.emergencyAvailable : true,
         recommendationScore: Math.floor(Math.random() * (99 - 85 + 1) + 85),
       },
     });
 
     for (const specName of h.specialties) {
       if (specialtiesMap.has(specName)) {
+        // Indian Rupees scaling: e.g. 500 to 1500 INR
+        const costINR = Math.floor(Math.random() * (1500 - 500 + 1) + 500);
         await prisma.hospitalSpecialty.create({
           data: {
             hospitalId: created.id,
             specialtyId: specialtiesMap.get(specName),
             departments: `${specName} Department`,
-            averageCost: Math.floor(Math.random() * (150 - 50 + 1) + 50),
+            averageCost: costINR,
+            opdTimings: "09:00 AM - 04:00 PM",
           },
         });
       }
@@ -120,8 +123,12 @@ async function main() {
       if (!lat || !lon) continue;
 
       // Extract details
-      const emergencyStr = node.tags.emergency || '';
-      const isEmergency = emergencyStr.toLowerCase() === 'yes';
+      const amenity = node.tags.amenity || 'hospital';
+      const isHospital = amenity.toLowerCase() === 'hospital';
+      
+      // Major hospitals are open 24/7 and have emergency available by default
+      const isEmergency = isHospital ? true : (node.tags.emergency?.toLowerCase() === 'yes');
+      const workingHours = isHospital ? 'Open 24 Hours' : (node.tags.opening_hours || '09:00 AM - 08:00 PM');
       
       const phone = node.tags['contact:phone'] || node.tags.phone || null;
       const website = node.tags['contact:website'] || node.tags.website || null;
@@ -161,7 +168,7 @@ async function main() {
             rating: parseFloat((Math.random() * (4.8 - 3.5) + 3.5).toFixed(1)), // Fake rating for OSM
             phone: phone,
             website: website,
-            workingHours: node.tags.opening_hours || '09:00 AM - 08:00 PM',
+            workingHours: workingHours,
             emergencyAvailable: isEmergency,
             recommendationScore: Math.floor(Math.random() * (85 - 60 + 1) + 60),
           }
@@ -170,12 +177,15 @@ async function main() {
         // Link specialties
         for (const sName of specs) {
           if (specialtiesMap.has(sName)) {
+            // General OSM clinics average consult costs in INR (e.g. ₹200 to ₹700)
+            const consultFeeINR = Math.floor(Math.random() * (700 - 200 + 1) + 200);
             await prisma.hospitalSpecialty.create({
               data: {
                 hospitalId: hosp.id,
                 specialtyId: specialtiesMap.get(sName),
                 departments: `${sName} Outpatient`,
-                averageCost: Math.floor(Math.random() * (80 - 30 + 1) + 30),
+                averageCost: consultFeeINR,
+                opdTimings: isHospital ? "09:00 AM - 04:00 PM" : "09:00 AM - 08:00 PM",
               }
             });
           }

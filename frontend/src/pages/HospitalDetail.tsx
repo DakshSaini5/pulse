@@ -46,7 +46,12 @@ export const HospitalDetail: React.FC = () => {
     if (!reviewText.trim() || !id) return;
     
     if (!user) {
-      alert("Please login to submit a review.");
+      alert("Please log in to submit a review.");
+      return;
+    }
+
+    if (reviewText.trim().length < 10) {
+      alert("Your review must be at least 10 characters long.");
       return;
     }
     
@@ -61,7 +66,10 @@ export const HospitalDetail: React.FC = () => {
       // Update hospital rating visually
       fetchDetails(); // Refetch to get updated hospital rating
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to submit review');
+      const validationMessage = err.response?.data?.errors
+        ? err.response.data.errors.map((e: any) => `${e.field}: ${e.message}`).join('\n')
+        : null;
+      alert(validationMessage || err.response?.data?.message || 'Failed to submit review');
     } finally {
       setSubmittingReview(false);
     }
@@ -138,14 +146,20 @@ export const HospitalDetail: React.FC = () => {
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {hospital.specialties?.map((spec, index) => (
-                <div key={index} className="p-4 bg-slate-50 dark:bg-slate-800 border border-pulseBorder dark:border-slate-700 rounded-2xl flex flex-col justify-between">
+                <div key={index} className="p-4 bg-slate-50 dark:bg-slate-800 border border-pulseBorder dark:border-slate-700 rounded-2xl flex flex-col justify-between space-y-3">
                   <div>
                     <span className="text-xs font-bold text-primary dark:text-primary-light block">{spec.specialty.name}</span>
                     <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal mt-1">{spec.specialty.description}</p>
                   </div>
-                  <div className="mt-4 flex justify-between items-center text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 pt-2 border-t border-pulseBorder dark:border-slate-700">
-                    <span>Average consult cost</span>
-                    <span className="text-slate-900 dark:text-white font-extrabold">${spec.averageCost}</span>
+                  <div className="space-y-1 text-[10px] font-semibold text-slate-500 dark:text-slate-400 pt-2 border-t border-pulseBorder dark:border-slate-700">
+                    <div className="flex justify-between items-center">
+                      <span className="uppercase tracking-wider">OPD Timings</span>
+                      <span className="text-slate-900 dark:text-white font-extrabold">{spec.opdTimings || '09:00 AM - 05:00 PM'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="uppercase tracking-wider">Consult fee</span>
+                      <span className="text-primary font-black">₹{spec.averageCost}</span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -237,7 +251,9 @@ export const HospitalDetail: React.FC = () => {
                   <Phone className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                   <div>
                     <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold block">Helpline</span>
-                    <span className="text-slate-900 dark:text-white mt-1 block">{hospital.phone}</span>
+                    <a href={`tel:${hospital.phone.trim()}`} className="text-primary hover:underline mt-1 block font-bold">
+                      {hospital.phone}
+                    </a>
                   </div>
                 </div>
               )}

@@ -69,6 +69,7 @@ export interface Hospital {
   specialties: Array<{
     departments: string;
     averageCost: number;
+    opdTimings: string;
     specialty: {
       name: string;
       description: string;
