@@ -6,6 +6,8 @@ import {
   Activity, AlertCircle, ShieldCheck, Heart, User 
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { formatIndianPhoneNumber, getDialerHref } from '../utils/phoneFormatter';
+
 
 export const HospitalDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -257,8 +259,8 @@ export const HospitalDetail: React.FC = () => {
                 <div>
                   <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold block">Helpline</span>
                   {hospital.phone ? (
-                    <a href={`tel:${hospital.phone.trim()}`} className="text-primary hover:underline mt-1 block font-bold">
-                      {hospital.phone}
+                    <a href={getDialerHref(hospital.phone, hospital.address)} className="text-primary hover:underline mt-1 block font-bold">
+                      {formatIndianPhoneNumber(hospital.phone, hospital.address)}
                     </a>
                   ) : (
                     <a 

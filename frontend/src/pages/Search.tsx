@@ -7,6 +7,8 @@ import {
   Activity, ArrowRight, ShieldCheck, HelpCircle, Layers, CheckSquare, Square, Globe
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { formatIndianPhoneNumber, getDialerHref } from '../utils/phoneFormatter';
+
 
 export const Search: React.FC = () => {
   const { user } = useAuth();
@@ -311,7 +313,9 @@ export const Search: React.FC = () => {
                         {hosp.phone ? (
                           <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1.5 leading-none">
                             <Phone className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                            <a href={`tel:${hosp.phone.trim()}`} className="hover:text-primary transition-colors">{hosp.phone}</a>
+                            <a href={getDialerHref(hosp.phone, hosp.address)} className="hover:text-primary transition-colors">
+                              {formatIndianPhoneNumber(hosp.phone, hosp.address)}
+                            </a>
                           </p>
                         ) : (
                           <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1.5 leading-none">
