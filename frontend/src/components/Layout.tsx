@@ -34,8 +34,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   return (
     <div className="min-h-screen bg-pulseBg dark:bg-[#181c1e] text-slate-800 dark:text-slate-100 flex flex-col relative overflow-x-hidden selection:bg-primary selection:text-white transition-colors duration-300">
       {/* Background visual graphics */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px] pointer-events-none pulse-glow" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#198754]/5 blur-[120px] pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[radial-gradient(circle_at_center,rgba(37,99,235,0.08)_0%,transparent_70%)] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[radial-gradient(circle_at_center,rgba(25,135,84,0.04)_0%,transparent_70%)] pointer-events-none" />
 
       {/* Top Header */}
       <header className="sticky top-0 z-40 w-full glass-panel border-b border-pulseBorder dark:border-slate-800 backdrop-blur-md rounded-none">

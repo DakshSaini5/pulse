@@ -107,7 +107,7 @@ export const HospitalDetail: React.FC = () => {
 
       {/* Hero card details */}
       <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-pulseBorder dark:border-slate-700 relative overflow-hidden bg-gradient-to-b from-pulseBg to-pulseCard dark:from-slate-900 dark:to-slate-800/80">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none animate-pulse" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[radial-gradient(circle_at_center,rgba(37,99,235,0.1)_0%,transparent_70%)] pointer-events-none" />
         
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="space-y-4">

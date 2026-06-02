@@ -118,7 +118,7 @@ export const HealthTrends: React.FC = () => {
         {/* Right pane: Charts visualizer */}
         <div className="lg:col-span-8 space-y-6">
           <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700 space-y-6 relative overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100/50 dark:from-slate-800 dark:to-slate-900/50">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[radial-gradient(circle_at_center,rgba(37,99,235,0.1)_0%,transparent_70%)] pointer-events-none" />
             
             <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
               <div>
