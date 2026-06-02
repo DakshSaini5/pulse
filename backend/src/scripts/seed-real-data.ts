@@ -108,10 +108,10 @@ async function main() {
     const elements = data.elements || [];
     console.log(`📦 Received ${elements.length} raw nodes from OSM.`);
 
+    let insertedCount = 0;
     let delhiSeeded = 0;
     let mumbaiSeeded = 0;
     let blrSeeded = 0;
-    const maxPerCity = 120; // Ensure 50+ completed per city is easily met
 
     for (const node of elements) {
       if (!node.tags || !node.tags.name) continue; // Skip unnamed
@@ -126,11 +126,6 @@ async function main() {
       if (lat > 28) city = 'Delhi';
       else if (lat > 18) city = 'Mumbai';
       else city = 'Bangalore';
-
-      // Cap checks to keep seeding fast and focused
-      if (city === 'Delhi' && delhiSeeded >= maxPerCity) continue;
-      if (city === 'Mumbai' && mumbaiSeeded >= maxPerCity) continue;
-      if (city === 'Bangalore' && blrSeeded >= maxPerCity) continue;
 
       // Extract details
       const amenity = node.tags.amenity || 'hospital';
@@ -220,9 +215,15 @@ async function main() {
           }
         }
         
+        insertedCount++;
         if (city === 'Delhi') delhiSeeded++;
         else if (city === 'Mumbai') mumbaiSeeded++;
         else if (city === 'Bangalore') blrSeeded++;
+
+        if (insertedCount >= 3500) {
+          console.log('✋ Capping at 3500 OSM hospitals to protect database limits.');
+          break;
+        }
 
       } catch (err) {
         // Skip on duplicate externalId or other weird errors
