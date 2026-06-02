@@ -65,15 +65,13 @@ async function main() {
 
     for (const specName of h.specialties) {
       if (specialtiesMap.has(specName)) {
-        // Indian Rupees scaling: e.g. 500 to 1500 INR
-        const costINR = Math.floor(Math.random() * (1500 - 500 + 1) + 500);
         await prisma.hospitalSpecialty.create({
           data: {
             hospitalId: created.id,
             specialtyId: specialtiesMap.get(specName),
             departments: `${specName} Department`,
-            averageCost: costINR,
-            opdTimings: "09:00 AM - 04:00 PM",
+            averageCost: h.averageCost || 0.0,
+            opdTimings: h.opdTimings || '09:00 AM - 05:00 PM (Mon - Sat)',
           },
         });
       }
@@ -110,25 +108,36 @@ async function main() {
     const elements = data.elements || [];
     console.log(`📦 Received ${elements.length} raw nodes from OSM.`);
 
-    let insertedCount = 0;
+    let delhiSeeded = 0;
+    let mumbaiSeeded = 0;
+    let blrSeeded = 0;
+    const maxPerCity = 120; // Ensure 50+ completed per city is easily met
 
     for (const node of elements) {
       if (!node.tags || !node.tags.name) continue; // Skip unnamed
-      
-      // Filter out weirdly named ones to keep it somewhat clean
       if (node.tags.name.length < 3) continue;
 
       const lat = node.lat || (node.center ? node.center.lat : null);
       const lon = node.lon || (node.center ? node.center.lon : null);
       if (!lat || !lon) continue;
 
+      // Identify city
+      let city = 'Delhi';
+      if (lat > 28) city = 'Delhi';
+      else if (lat > 18) city = 'Mumbai';
+      else city = 'Bangalore';
+
+      // Cap checks to keep seeding fast and focused
+      if (city === 'Delhi' && delhiSeeded >= maxPerCity) continue;
+      if (city === 'Mumbai' && mumbaiSeeded >= maxPerCity) continue;
+      if (city === 'Bangalore' && blrSeeded >= maxPerCity) continue;
+
       // Extract details
       const amenity = node.tags.amenity || 'hospital';
       const isHospital = amenity.toLowerCase() === 'hospital';
       
-      // Major hospitals are open 24/7 and have emergency available by default
       const isEmergency = isHospital ? true : (node.tags.emergency?.toLowerCase() === 'yes');
-      const workingHours = isHospital ? 'Open 24 Hours' : (node.tags.opening_hours || '09:00 AM - 08:00 PM');
+      const workingHours = isHospital ? 'Open 24 Hours' : (node.tags.opening_hours || 'Contact Facility to Confirm');
       
       const phone = node.tags['contact:phone'] || node.tags.phone || null;
       const website = node.tags['contact:website'] || node.tags.website || null;
@@ -138,13 +147,22 @@ async function main() {
       if (node.tags['addr:city']) address += node.tags['addr:city'];
       
       if (!address) {
-        // Approximate city based on latitude
-        if (lat > 28) address = 'Delhi Area';
-        else if (lat > 18) address = 'Mumbai Area';
-        else address = 'Bangalore Area';
+        address = `${city} Area`;
       }
 
-      // We strictly assign General Medicine UNLESS OSM explicitly has a healthcare:speciality tag
+      // Check Government vs. Private vs. Clinic
+      const lowerName = node.tags.name.toLowerCase();
+      const isGovt = lowerName.includes('government') || 
+                      lowerName.includes('govt') || 
+                      lowerName.includes('municipal') || 
+                      lowerName.includes('aiims') || 
+                      lowerName.includes('charitable') || 
+                      lowerName.includes('general hospital') ||
+                      lowerName.includes('esic') ||
+                      lowerName.includes('civil hospital') ||
+                      lowerName.includes('railway hospital') ||
+                      lowerName.includes('district hospital');
+
       let specs = ['General Medicine'];
       if (node.tags['healthcare:speciality']) {
         const osmSpec = node.tags['healthcare:speciality'].toLowerCase();
@@ -155,7 +173,6 @@ async function main() {
         if (osmSpec.includes('haematology') || osmSpec.includes('hematology')) specs.push('Hematology');
       }
 
-      // De-duplicate specialties
       specs = [...new Set(specs)];
 
       try {
@@ -174,37 +191,45 @@ async function main() {
           }
         });
 
-        // Link specialties
+        // Link specialties with ethical timing and consult fee rules
         for (const sName of specs) {
           if (specialtiesMap.has(sName)) {
-            // General OSM clinics average consult costs in INR (e.g. ₹200 to ₹700)
-            const consultFeeINR = Math.floor(Math.random() * (700 - 200 + 1) + 200);
+            let opdTimings = 'Contact Facility to Confirm';
+            let averageCost = 0.0; 
+
+            if (isGovt) {
+              opdTimings = '09:00 AM - 01:00 PM (Mon - Sat)';
+              averageCost = 10.0; // Govt registration fee
+            } else if (isHospital) {
+              opdTimings = '09:00 AM - 05:00 PM (Mon - Sat)';
+              averageCost = 0.0; // Private hospital, display contact prompt
+            } else {
+              opdTimings = node.tags.opening_hours || 'Contact Facility to Confirm';
+              averageCost = 0.0; // Private clinic, display contact prompt
+            }
+
             await prisma.hospitalSpecialty.create({
               data: {
                 hospitalId: hosp.id,
                 specialtyId: specialtiesMap.get(sName),
-                departments: `${sName} Outpatient`,
-                averageCost: consultFeeINR,
-                opdTimings: isHospital ? "09:00 AM - 04:00 PM" : "09:00 AM - 08:00 PM",
+                departments: `${sName} Department`,
+                averageCost: averageCost,
+                opdTimings: opdTimings,
               }
             });
           }
         }
         
-        insertedCount++;
-
-        // Let's cap at 2500 to enrich maps in Delhi and Bangalore
-        if (insertedCount >= 2500) {
-          console.log('✋ Capping at 2500 OSM hospitals to protect database limits.');
-          break;
-        }
+        if (city === 'Delhi') delhiSeeded++;
+        else if (city === 'Mumbai') mumbaiSeeded++;
+        else if (city === 'Bangalore') blrSeeded++;
 
       } catch (err) {
         // Skip on duplicate externalId or other weird errors
       }
     }
 
-    console.log(`✅ Successfully seeded ${insertedCount} bulk OSM hospitals.`);
+    console.log(`✅ Successfully seeded: Delhi: ${delhiSeeded}, Bangalore: ${blrSeeded}, Mumbai: ${mumbaiSeeded} bulk OSM hospitals.`);
   } catch (err: any) {
     console.error('❌ Failed to fetch from Overpass API:', err.message);
   }

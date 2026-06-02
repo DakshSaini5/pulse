@@ -8,8 +8,10 @@
     "rating": 4.9,
     "phone": "+91-11-26588500",
     "website": "aiims.edu",
-    "workingHours": "24 Hours Open",
+    "workingHours": "Open 24 Hours",
     "emergencyAvailable": true,
+    "opdTimings": "08:30 AM - 01:30 PM (Mon - Sat)",
+    "averageCost": 10.0,
     "specialties": ["Cardiology", "Endocrinology", "Hematology", "Neurology", "Pediatrics", "General Medicine"]
   },
   {
@@ -21,8 +23,10 @@
     "rating": 4.7,
     "phone": "+91-11-26925858",
     "website": "delhi.apollohospitals.com",
-    "workingHours": "24 Hours Open",
+    "workingHours": "Open 24 Hours",
     "emergencyAvailable": true,
+    "opdTimings": "09:00 AM - 05:00 PM (Mon - Sat)",
+    "averageCost": 1500.0,
     "specialties": ["Cardiology", "Neurology", "General Medicine"]
   },
   {
@@ -34,8 +38,10 @@
     "rating": 4.6,
     "phone": "+91-11-26515050",
     "website": "maxhealthcare.in",
-    "workingHours": "24 Hours Open",
+    "workingHours": "Open 24 Hours",
     "emergencyAvailable": true,
+    "opdTimings": "09:00 AM - 05:00 PM (Mon - Sat)",
+    "averageCost": 1200.0,
     "specialties": ["Cardiology", "Neurology", "Endocrinology"]
   },
   {
@@ -47,8 +53,10 @@
     "rating": 4.8,
     "phone": "+91-11-47135000",
     "website": "fortisescorts.in",
-    "workingHours": "24 Hours Open",
+    "workingHours": "Open 24 Hours",
     "emergencyAvailable": true,
+    "opdTimings": "09:00 AM - 05:00 PM (Mon - Sat)",
+    "averageCost": 1500.0,
     "specialties": ["Cardiology"]
   },
   {
@@ -60,8 +68,10 @@
     "rating": 4.7,
     "phone": "+91-22-26568000",
     "website": "lilavatihospital.com",
-    "workingHours": "24 Hours Open",
+    "workingHours": "Open 24 Hours",
     "emergencyAvailable": true,
+    "opdTimings": "09:00 AM - 05:00 PM (Mon - Sat)",
+    "averageCost": 1000.0,
     "specialties": ["Cardiology", "Endocrinology", "Hematology", "Neurology", "Pediatrics", "General Medicine"]
   },
   {
@@ -73,8 +83,10 @@
     "rating": 4.5,
     "phone": "+91-22-26267000",
     "website": "nanavatihospital.org",
-    "workingHours": "24 Hours Open",
+    "workingHours": "Open 24 Hours",
     "emergencyAvailable": true,
+    "opdTimings": "09:00 AM - 05:00 PM (Mon - Sat)",
+    "averageCost": 1200.0,
     "specialties": ["Cardiology", "Neurology", "Pediatrics"]
   },
   {
@@ -86,8 +98,10 @@
     "rating": 4.8,
     "phone": "+91-22-30999999",
     "website": "kokilabenhospital.com",
-    "workingHours": "24 Hours Open",
+    "workingHours": "Open 24 Hours",
     "emergencyAvailable": true,
+    "opdTimings": "09:00 AM - 05:00 PM (Mon - Sat)",
+    "averageCost": 1500.0,
     "specialties": ["Cardiology", "Endocrinology", "Neurology"]
   },
   {
@@ -99,8 +113,10 @@
     "rating": 4.9,
     "phone": "+91-22-24177000",
     "website": "tmc.gov.in",
-    "workingHours": "24 Hours Open",
+    "workingHours": "Open 24 Hours",
     "emergencyAvailable": true,
+    "opdTimings": "09:00 AM - 04:00 PM (Mon - Fri)",
+    "averageCost": 100.0,
     "specialties": ["Hematology"]
   },
   {
@@ -112,8 +128,10 @@
     "rating": 4.6,
     "phone": "+91-80-25024444",
     "website": "manipalhospitals.com",
-    "workingHours": "24 Hours Open",
+    "workingHours": "Open 24 Hours",
     "emergencyAvailable": true,
+    "opdTimings": "09:00 AM - 05:00 PM (Mon - Sat)",
+    "averageCost": 1000.0,
     "specialties": ["Cardiology", "Endocrinology", "Neurology", "Pediatrics"]
   },
   {
@@ -125,8 +143,10 @@
     "rating": 4.8,
     "phone": "+91-80-71222222",
     "website": "narayanahealth.org",
-    "workingHours": "24 Hours Open",
+    "workingHours": "Open 24 Hours",
     "emergencyAvailable": true,
+    "opdTimings": "09:00 AM - 05:00 PM (Mon - Sat)",
+    "averageCost": 800.0,
     "specialties": ["Cardiology"]
   },
   {
@@ -138,8 +158,10 @@
     "rating": 4.5,
     "phone": "+91-80-66214444",
     "website": "fortishealthcare.com",
-    "workingHours": "24 Hours Open",
+    "workingHours": "Open 24 Hours",
     "emergencyAvailable": true,
+    "opdTimings": "09:00 AM - 05:00 PM (Mon - Sat)",
+    "averageCost": 1000.0,
     "specialties": ["Cardiology", "Neurology", "General Medicine"]
   },
   {
@@ -151,8 +173,10 @@
     "rating": 4.7,
     "phone": "+91-80-43420100",
     "website": "asterhospitals.in",
-    "workingHours": "24 Hours Open",
+    "workingHours": "Open 24 Hours",
     "emergencyAvailable": true,
+    "opdTimings": "09:00 AM - 05:00 PM (Mon - Sat)",
+    "averageCost": 900.0,
     "specialties": ["Cardiology", "Endocrinology", "Pediatrics"]
   }
 ]
