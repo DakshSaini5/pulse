@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { hospitalAPI, Hospital } from '../services/api';
+import { getInitialLocation } from '../utils/geolocation';
 import { 
   ArrowLeft, MapPin, Phone, Globe, Clock, Star, 
   Activity, AlertCircle, ShieldCheck, Heart, User 
@@ -21,12 +22,15 @@ export const HospitalDetail: React.FC = () => {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [totalReviews, setTotalReviews] = useState(0);
 
-  const fetchDetails = async () => {
+  const [lat, setLat] = useState<number | undefined>(undefined);
+  const [lng, setLng] = useState<number | undefined>(undefined);
+
+  const fetchDetails = async (userLat = lat, userLng = lng) => {
     if (!id) return;
     setLoading(true);
     try {
       const [hospitalData, reviewsData] = await Promise.all([
-        hospitalAPI.getById(id),
+        hospitalAPI.getById(id, userLat, userLng),
         hospitalAPI.getReviews(id)
       ]);
       setHospital(hospitalData);
@@ -40,7 +44,28 @@ export const HospitalDetail: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchDetails();
+    const loadLocation = () => {
+      getInitialLocation()
+        .then((res) => {
+          setLat(res.latitude);
+          setLng(res.longitude);
+          fetchDetails(res.latitude, res.longitude);
+        });
+    };
+
+    loadLocation();
+
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'geolocation' })
+        .then((status) => {
+          status.onchange = () => {
+            if (status.state === 'granted') {
+              loadLocation();
+            }
+          };
+        })
+        .catch(err => console.log('Permissions API query not supported:', err));
+    }
   }, [id]);
 
   const handleAddReview = async (e: React.FormEvent) => {

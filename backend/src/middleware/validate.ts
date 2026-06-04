@@ -44,19 +44,25 @@ export const registerSchema = z.object({
     .max(255, 'Email must be under 255 characters.')
     .trim()
     .toLowerCase(),
+  mobileNumber: z
+    .string()
+    .min(1, 'Mobile number is required.')
+    .regex(/^\+[1-9]\d{10,14}$/, 'Mobile number must be in international format (e.g. +919999999999)'),
   password: z
     .string()
     .min(8, 'Password must be at least 8 characters.')
-    .max(128, 'Password must be under 128 characters.'),
+    .max(128, 'Password must be under 128 characters.')
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/, 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.'),
+  code: z
+    .string()
+    .length(6, 'Verification code must be exactly 6 digits.'),
 });
 
 export const loginSchema = z.object({
-  email: z
+  identifier: z
     .string()
-    .min(1, 'Email is required.')
-    .email('Please provide a valid email address.')
-    .trim()
-    .toLowerCase(),
+    .min(1, 'Email or Mobile Number is required.')
+    .trim(),
   password: z
     .string()
     .min(1, 'Password is required.'),
@@ -106,7 +112,8 @@ export const changePasswordSchema = z.object({
   newPassword: z
     .string()
     .min(8, 'New password must be at least 8 characters.')
-    .max(128, 'New password must be under 128 characters.'),
+    .max(128, 'New password must be under 128 characters.')
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/, 'New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.'),
 });
 
 // UUID param validator (for route params like :id)

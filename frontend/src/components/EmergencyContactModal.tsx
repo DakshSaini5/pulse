@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ShieldAlert, X, Phone, User, Heart } from 'lucide-react';
 import { emergencyAPI } from '../services/api';
 import toast from 'react-hot-toast';
@@ -36,7 +37,7 @@ const EmergencyContactModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
       <div className="bg-white dark:bg-[#111827] w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-gray-100 dark:border-gray-800">
         
@@ -125,7 +126,8 @@ const EmergencyContactModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

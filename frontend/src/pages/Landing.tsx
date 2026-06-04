@@ -5,11 +5,12 @@ import { emergencyAPI, hospitalAPI, EmergencyContact } from '../services/api';
 import EmergencyContactModal from '../components/EmergencyContactModal';
 import NeedHelpModal from '../components/NeedHelpModal';
 import BreathingCuesModal from '../components/BreathingCuesModal';
+import { getCityNameFromCoords } from '../utils/geolocation';
 import { 
   Activity, Search, FileText, ArrowRight, 
   Map, Play, Sparkles, Heart, Activity as ActivityIcon,
   ShieldAlert, AlertTriangle, Stethoscope, Syringe,
-  TestTube, Bone, Brain, Eye, Baby
+  TestTube, Bone, Brain, Eye, Baby, MapPin
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -22,6 +23,157 @@ export const Landing: React.FC = () => {
   const [showPanicModal, setShowPanicModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [panicLoading, setPanicLoading] = useState(false);
+
+  const [locationStatus, setLocationStatus] = useState<'checking' | 'granted' | 'denied'>('checking');
+  const [cityName, setCityName] = useState('');
+  const [isBlocked, setIsBlocked] = useState(false);
+
+  const requestLocation = async () => {
+    setLocationStatus('checking');
+    if (!navigator.geolocation) {
+      setLocationStatus('denied');
+      toast.error("Geolocation is not supported by your browser.");
+      return;
+    }
+
+    if (navigator.permissions) {
+      try {
+        const perm = await navigator.permissions.query({ name: 'geolocation' });
+        if (perm.state === 'denied') {
+          setIsBlocked(true);
+          setLocationStatus('denied');
+          toast.error("Location permission blocked. Please click the lock icon in the browser address bar to allow location access.", {
+            duration: 8000
+          });
+          return;
+        }
+      } catch (e) {}
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        localStorage.setItem('pulse_latitude', lat.toString());
+        localStorage.setItem('pulse_longitude', lng.toString());
+        localStorage.removeItem('pulse_location_denied');
+        setIsBlocked(false);
+        
+        setLocationStatus('granted');
+        try {
+          const city = await getCityNameFromCoords(lat, lng);
+          setCityName(city);
+          localStorage.setItem('pulse_city_name', city);
+        } catch (err) {
+          setCityName("Detected Location");
+        }
+      },
+      (error) => {
+        console.error("Geolocation request failed:", error);
+        setLocationStatus('denied');
+        localStorage.setItem('pulse_location_denied', 'true');
+        localStorage.removeItem('pulse_latitude');
+        localStorage.removeItem('pulse_longitude');
+        localStorage.removeItem('pulse_city_name');
+
+        if (error.code === 1) {
+          setIsBlocked(true);
+          toast.error("Location permission blocked. Please click the lock icon in the browser address bar to allow location access.", {
+            duration: 8000
+          });
+        } else {
+          toast.error(`Unable to retrieve location: ${error.message}`);
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  };
+
+  useEffect(() => {
+    let permissionStatus: PermissionStatus | null = null;
+
+    const handlePermissionChange = () => {
+      if (permissionStatus) {
+        if (permissionStatus.state === 'granted') {
+          requestLocation();
+        } else if (permissionStatus.state === 'denied') {
+          setLocationStatus('denied');
+          setIsBlocked(true);
+          localStorage.setItem('pulse_location_denied', 'true');
+        } else {
+          setLocationStatus('checking');
+          setIsBlocked(false);
+        }
+      }
+    };
+
+    const initLocation = async () => {
+      const latStr = localStorage.getItem('pulse_latitude');
+      const lngStr = localStorage.getItem('pulse_longitude');
+      const storedCity = localStorage.getItem('pulse_city_name');
+      const deniedFlag = localStorage.getItem('pulse_location_denied');
+
+      if (latStr && lngStr && !deniedFlag) {
+        setLocationStatus('granted');
+        if (storedCity) {
+          setCityName(storedCity);
+        } else {
+          try {
+            const city = await getCityNameFromCoords(parseFloat(latStr), parseFloat(lngStr));
+            setCityName(city);
+            localStorage.setItem('pulse_city_name', city);
+          } catch (e) {}
+        }
+        
+        navigator.geolocation?.getCurrentPosition((pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          localStorage.setItem('pulse_latitude', lat.toString());
+          localStorage.setItem('pulse_longitude', lng.toString());
+          getCityNameFromCoords(lat, lng).then(city => {
+            setCityName(city);
+            localStorage.setItem('pulse_city_name', city);
+          }).catch(console.error);
+        }, () => {}, { enableHighAccuracy: true });
+        
+        return;
+      }
+
+      if (navigator.permissions) {
+        try {
+          permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
+          permissionStatus.addEventListener('change', handlePermissionChange);
+
+          if (permissionStatus.state === 'granted') {
+            requestLocation();
+          } else if (permissionStatus.state === 'denied') {
+            setLocationStatus('denied');
+            setIsBlocked(true);
+          } else {
+            requestLocation();
+          }
+        } catch (e) {
+          requestLocation();
+        }
+      } else {
+        requestLocation();
+      }
+    };
+
+    initLocation();
+
+    return () => {
+      if (permissionStatus) {
+        try {
+          permissionStatus.removeEventListener('change', handlePermissionChange);
+        } catch (e) {}
+      }
+    };
+  }, []);
 
   // Autocomplete Dropdown State
   const [autocompleteResults, setAutocompleteResults] = useState<{
@@ -65,7 +217,16 @@ export const Landing: React.FC = () => {
     const delayDebounceFn = setTimeout(async () => {
       setSearchingAutocomplete(true);
       try {
-        const data = await hospitalAPI.autocomplete(searchQuery);
+        // BUG-05 FIX: Pass user's coordinates so autocomplete returns only city-local results
+        const lat = localStorage.getItem('pulse_latitude');
+        const lng = localStorage.getItem('pulse_longitude');
+        const city = localStorage.getItem('pulse_city_name') || undefined;
+        const data = await hospitalAPI.autocomplete(
+          searchQuery,
+          lat ? parseFloat(lat) : undefined,
+          lng ? parseFloat(lng) : undefined,
+          city
+        );
         setAutocompleteResults(data);
         setShowDropdown(true);
       } catch (err) {
@@ -189,149 +350,202 @@ export const Landing: React.FC = () => {
         )}
 
         {/* Header & Panic Buttons */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6 text-left">
           <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">
-              Hi, {user.name.split(' ')[0]} 👋
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+              Hi, {user.name} 👋
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">How are you feeling today?</p>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
+              {locationStatus === 'granted' && cityName ? (
+                <>
+                  <MapPin className="w-4 h-4 text-primary shrink-0 animate-bounce" />
+                  <span>Showing care services in <strong className="text-slate-800 dark:text-white">{cityName}</strong></span>
+                </>
+              ) : locationStatus === 'checking' ? (
+                <>
+                  <Activity className="w-4 h-4 text-primary animate-spin shrink-0" />
+                  <span>Acquiring your location coordinates...</span>
+                </>
+              ) : (
+                <span>Welcome back to Pulse. Monitor, analyze, and explore your care.</span>
+              )}
+            </p>
           </div>
 
-          <div className="flex w-full md:w-auto items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-start sm:justify-end">
+            
             <button 
               onClick={() => setShowHelpModal(true)}
-              className="flex-1 md:flex-none px-6 py-3.5 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 font-bold rounded-2xl border border-red-200 dark:border-red-500/30 transition-all flex items-center justify-center gap-2"
+              className="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-xl border border-blue-200 dark:border-blue-800/50 shadow-sm transition-all flex items-center gap-2"
             >
-              <ActivityIcon className="w-5 h-5" />
+              <ActivityIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               Need Help?
             </button>
             <button 
               onClick={() => setShowPanicModal(true)}
-              className="flex-1 md:flex-none px-6 py-3.5 bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-2xl shadow-xl shadow-red-600/30 transition-all active:scale-95 flex items-center justify-center gap-2"
+              className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold rounded-xl shadow-md shadow-red-600/20 transition-all active:scale-95 flex items-center gap-2 border border-red-500/10"
             >
-              <ShieldAlert className="w-5 h-5" />
+              <ShieldAlert className="w-4 h-4" />
               PANIC
             </button>
           </div>
         </div>
 
-        {/* Global Search Bar with AutoComplete Dropdown */}
-        <div className="search-container relative group">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-teal-500/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all opacity-50" />
-          <form onSubmit={handleSearchSubmit} className="relative flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-2 shadow-sm">
-            <div className="pl-4 text-slate-400">
-              <Search className="w-6 h-6" />
-            </div>
-            <input 
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search for services, hospitals, or conditions..."
-              className="w-full bg-transparent border-none focus:ring-0 text-lg px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
-            />
-            <button type="submit" className="bg-primary hover:bg-primary-hover text-white px-8 py-3 rounded-2xl font-bold transition-colors">
-              Search
-            </button>
-          </form>
+        {/* Dynamic Location-Based Care Discovery Rendering */}
+        {locationStatus === 'checking' ? (
+          <div className="flex flex-col items-center justify-center py-20 space-y-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm">
+            <Activity className="w-10 h-10 text-primary animate-spin" />
+            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+              Locating you to find nearby healthcare services...
+            </p>
+          </div>
+        ) : locationStatus === 'granted' ? (
+          <>
+            {/* Global Search Bar with AutoComplete Dropdown */}
+            <div className="search-container relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-teal-500/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all opacity-50" />
+              <form onSubmit={handleSearchSubmit} className="relative flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-2 shadow-sm">
+                <div className="pl-4 text-slate-400">
+                  <Search className="w-6 h-6" />
+                </div>
+                <input 
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search for services, hospitals, or conditions..."
+                  className="w-full bg-transparent border-none focus:ring-0 text-lg px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
+                />
+                <button type="submit" className="bg-primary hover:bg-primary-hover text-white px-8 py-3 rounded-2xl font-bold transition-colors">
+                  Search
+                </button>
+              </form>
 
-          {/* Autocomplete Dropdown List */}
-          {showDropdown && searchQuery.trim().length >= 2 && (
-            <div className="absolute left-0 right-0 top-full mt-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-[1000] p-4 text-left max-h-96 overflow-y-auto">
-              {searchingAutocomplete ? (
-                <div className="py-4 text-center text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
-                  <Activity className="animate-spin text-primary w-4 h-4" />
-                  Searching Database...
-                </div>
-              ) : autocompleteResults.hospitals.length === 0 && autocompleteResults.specialties.length === 0 ? (
-                <div className="py-6 text-center text-xs text-slate-500 dark:text-slate-400">
-                  ❌ No matching hospitals or services found in database.
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Specialties/Services Autocomplete results */}
-                  {autocompleteResults.specialties.length > 0 && (
-                    <div>
-                      <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider block mb-2 px-2">
-                        🩺 Results in Services
-                      </span>
-                      <div className="space-y-1">
-                        {autocompleteResults.specialties.map((spec) => (
-                          <div
-                            key={spec.name}
-                            onClick={() => {
-                              setShowDropdown(false);
-                              navigate(`/search?specialty=${encodeURIComponent(spec.name)}`);
-                            }}
-                            className="px-3 py-2.5 rounded-xl text-xs hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer flex items-center justify-between group transition-colors"
-                          >
-                            <span className="font-semibold">{spec.name}</span>
-                            <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold group-hover:bg-primary group-hover:text-white transition-colors">
-                              Go to Service
-                            </span>
-                          </div>
-                        ))}
-                      </div>
+              {/* Autocomplete Dropdown List */}
+              {showDropdown && searchQuery.trim().length >= 2 && (
+                <div className="absolute left-0 right-0 top-full mt-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-[1000] p-4 text-left max-h-96 overflow-y-auto">
+                  {searchingAutocomplete ? (
+                    <div className="py-4 text-center text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
+                      <Activity className="animate-spin text-primary w-4 h-4" />
+                      Searching Database...
                     </div>
-                  )}
-
-                  {/* Hospitals Autocomplete results */}
-                  {autocompleteResults.hospitals.length > 0 && (
-                    <div>
-                      <span className="text-[10px] font-extrabold text-red-500 uppercase tracking-wider block mb-2 px-2">
-                        🏥 Results in Hospitals
-                      </span>
-                      <div className="space-y-1">
-                        {autocompleteResults.hospitals.map((hosp) => (
-                          <div
-                            key={hosp.id}
-                            onClick={() => {
-                              setShowDropdown(false);
-                              navigate(`/hospitals/${hosp.id}`);
-                            }}
-                            className="px-3 py-2.5 rounded-xl text-xs hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer flex items-center justify-between group transition-colors"
-                          >
-                            <span className="font-semibold">{hosp.name}</span>
-                            <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-0.5 rounded-full group-hover:bg-primary group-hover:text-white transition-colors">
-                              View Details
-                            </span>
+                  ) : autocompleteResults.hospitals.length === 0 && autocompleteResults.specialties.length === 0 ? (
+                    <div className="py-6 text-center text-xs text-slate-500 dark:text-slate-400">
+                      ❌ No matching hospitals or services found in database.
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Specialties/Services Autocomplete results */}
+                      {autocompleteResults.specialties.length > 0 && (
+                        <div>
+                          <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider block mb-2 px-2">
+                            🩺 Results in Services
+                          </span>
+                          <div className="space-y-1">
+                            {autocompleteResults.specialties.map((spec) => (
+                              <div
+                                key={spec.name}
+                                onClick={() => {
+                                  setShowDropdown(false);
+                                  navigate(`/search?specialty=${encodeURIComponent(spec.name)}`);
+                                }}
+                                className="px-3 py-2.5 rounded-xl text-xs hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer flex items-center justify-between group transition-colors"
+                              >
+                                <span className="font-semibold">{spec.name}</span>
+                                <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold group-hover:bg-primary group-hover:text-white transition-colors">
+                                  Go to Service
+                                </span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      )}
+
+                      {/* Hospitals Autocomplete results */}
+                      {autocompleteResults.hospitals.length > 0 && (
+                        <div>
+                          <span className="text-[10px] font-extrabold text-red-500 uppercase tracking-wider block mb-2 px-2">
+                            🏥 Results in Hospitals
+                          </span>
+                          <div className="space-y-1">
+                            {autocompleteResults.hospitals.map((hosp) => (
+                              <div
+                                key={hosp.id}
+                                onClick={() => {
+                                  setShowDropdown(false);
+                                  navigate(`/hospitals/${hosp.id}`);
+                                }}
+                                className="px-3 py-2.5 rounded-xl text-xs hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer flex items-center justify-between group transition-colors"
+                              >
+                                <span className="font-semibold">{hosp.name}</span>
+                                <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-0.5 rounded-full group-hover:bg-primary group-hover:text-white transition-colors">
+                                  View Details
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
               )}
             </div>
-          )}
-        </div>
 
-        {/* Browse Services Grid */}
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Browse Services</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {[
-              { name: 'General', icon: Stethoscope, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-500/10' },
-              { name: 'Vaccination', icon: Syringe, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
-              { name: 'Blood Test', icon: TestTube, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-500/10' },
-              { name: 'Dental', icon: Bone, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10' },
-              { name: 'Cardiology', icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-500/10' },
-              { name: 'Neurology', icon: Brain, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-500/10' },
-              { name: 'Eye Care', icon: Eye, color: 'text-cyan-500', bg: 'bg-cyan-50 dark:bg-cyan-500/10' },
-              { name: 'Pediatrics', icon: Baby, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-500/10' },
-            ].map((service, idx) => (
-              <Link 
-                key={idx}
-                to={`/search?specialty=${encodeURIComponent(service.name)}`}
-                className="flex flex-col items-center justify-center p-6 bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-3xl hover:-translate-y-1 transition-transform group shadow-sm hover:shadow-xl hover:shadow-slate-200/20 dark:hover:shadow-black/40"
-              >
-                <div className={`w-16 h-16 rounded-2xl ${service.bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <service.icon className={`w-8 h-8 ${service.color}`} />
+            {/* Browse Services Grid */}
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6 text-left">Browse Services</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                  { name: 'General', icon: Stethoscope, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-500/10' },
+                  { name: 'Vaccination', icon: Syringe, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
+                  { name: 'Blood Test', icon: TestTube, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-500/10' },
+                  { name: 'Dental', icon: Bone, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10' },
+                  { name: 'Cardiology', icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-500/10' },
+                  { name: 'Neurology', icon: Brain, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-500/10' },
+                  { name: 'Eye Care', icon: Eye, color: 'text-cyan-500', bg: 'bg-cyan-50 dark:bg-cyan-500/10' },
+                  { name: 'Pediatrics', icon: Baby, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-500/10' },
+                ].map((service, idx) => (
+                  <Link 
+                    key={idx}
+                    to={`/search?specialty=${encodeURIComponent(service.name)}`}
+                    className="flex flex-col items-center justify-center p-6 bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-3xl hover:-translate-y-1 transition-transform group shadow-sm hover:shadow-xl hover:shadow-slate-200/20 dark:hover:shadow-black/40"
+                  >
+                    <div className={`w-16 h-16 rounded-2xl ${service.bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                      <service.icon className={`w-8 h-8 ${service.color}`} />
+                    </div>
+                    <span className="text-slate-900 dark:text-slate-200 font-semibold">{service.name}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 text-center max-w-xl mx-auto my-8 space-y-6 shadow-xl shadow-slate-100 dark:shadow-black/20">
+            <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto animate-pulse">
+              <MapPin className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">Location Needed</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Please turn on location to search for nearby hospitals and services.
+              </p>
+              {isBlocked && (
+                <div className="text-[11px] text-red-500 font-semibold bg-red-500/5 dark:bg-red-500/10 p-3 rounded-2xl border border-red-500/20 max-w-sm mx-auto mt-4 leading-normal text-center space-y-1.5 animate-in fade-in duration-300">
+                  <p>⚠️ Geolocation access is blocked by your browser settings.</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">To fix this, click the lock or info icon in the left side of your browser's address bar, set Location permission to "Allow", and reload the page.</p>
                 </div>
-                <span className="text-slate-900 dark:text-slate-200 font-semibold">{service.name}</span>
-              </Link>
-            ))}
+              )}
+            </div>
+            <div className="pt-2">
+              <button
+                onClick={requestLocation}
+                className="px-6 py-3 bg-primary hover:bg-primary-hover text-white text-sm font-extrabold rounded-2xl shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all active:scale-95 flex items-center justify-center gap-2 mx-auto"
+              >
+                Enable Location Access
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
     );

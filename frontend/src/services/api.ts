@@ -197,16 +197,20 @@ export interface UserProfile {
 }
 
 export const authAPI = {
-  login: async (email: string, password: string) => {
-    const res = await api.post('/api/auth/login', { email, password });
+  login: async (identifier: string, password: string) => {
+    const res = await api.post('/api/auth/login', { identifier, password });
     if (res.data.token) {
       localStorage.setItem('pulse_token', res.data.token);
       localStorage.setItem('pulse_user', JSON.stringify(res.data.user));
     }
     return res.data;
   },
-  register: async (name: string, email: string, password: string) => {
-    const res = await api.post('/api/auth/register', { name, email, password });
+  sendRegisterOTP: async (email: string) => {
+    const res = await api.post('/api/auth/register/send-otp', { email });
+    return res.data;
+  },
+  register: async (name: string, email: string, mobileNumber: string, password: string, code: string) => {
+    const res = await api.post('/api/auth/register', { name, email, mobileNumber, password, code });
     if (res.data.token) {
       localStorage.setItem('pulse_token', res.data.token);
       localStorage.setItem('pulse_user', JSON.stringify(res.data.user));
@@ -219,6 +223,30 @@ export const authAPI = {
       localStorage.setItem('pulse_token', res.data.token);
       localStorage.setItem('pulse_user', JSON.stringify(res.data.user));
     }
+    return res.data;
+  },
+  loginMobile: async (firebaseToken: string) => {
+    const res = await api.post('/api/auth/login-mobile', { firebaseToken });
+    if (res.data.token) {
+      localStorage.setItem('pulse_token', res.data.token);
+      localStorage.setItem('pulse_user', JSON.stringify(res.data.user));
+    }
+    return res.data;
+  },
+  checkMobile: async (mobileNumber: string) => {
+    const res = await api.post('/api/auth/check-mobile', { mobileNumber });
+    return res.data as { exists: boolean };
+  },
+  requestEmailOTP: async (email: string) => {
+    const res = await api.post('/api/auth/forgot-password/request-email', { email });
+    return res.data;
+  },
+  verifyEmailOTP: async (email: string, code: string) => {
+    const res = await api.post('/api/auth/forgot-password/verify-email', { email, code });
+    return res.data as { resetToken: string };
+  },
+  resetPassword: async (data: { newPassword: string; resetToken?: string; firebaseToken?: string }) => {
+    const res = await api.post('/api/auth/forgot-password/reset', data);
     return res.data;
   },
   verifyToken: async () => {
@@ -239,25 +267,27 @@ export const authAPI = {
 };
 
 export const hospitalAPI = {
-  search: async (query: string, specialty: string, maxDistance: number, lat?: number, lng?: number) => {
+  search: async (query: string, specialty: string, maxDistance: number, lat?: number, lng?: number, city?: string) => {
     const res = await api.get('/api/hospitals', {
-      params: { query, specialty, maxDistance, lat, lng },
+      params: { query, specialty, maxDistance, lat, lng, city },
     });
     return res.data.data as Hospital[];
   },
-  autocomplete: async (q: string) => {
+  autocomplete: async (q: string, lat?: number, lng?: number, city?: string) => {
     const res = await api.get('/api/hospitals/autocomplete', {
-      params: { q },
+      params: { q, lat, lng, city },
     });
     return res.data as { hospitals: Array<{ id: string; name: string }>; specialties: Array<{ name: string }> };
   },
-  getById: async (id: string) => {
-    const res = await api.get(`/api/hospitals/${id}`);
+  getById: async (id: string, lat?: number, lng?: number) => {
+    const res = await api.get(`/api/hospitals/${id}`, {
+      params: { lat, lng }
+    });
     return res.data as Hospital;
   },
-  compare: async (ids: string[]) => {
+  compare: async (ids: string[], lat?: number, lng?: number) => {
     const res = await api.get(`/api/hospitals/compare`, {
-      params: { ids: ids.join(',') },
+      params: { ids: ids.join(','), lat, lng },
     });
     return res.data as Hospital[];
   },
@@ -269,8 +299,10 @@ export const hospitalAPI = {
     const res = await api.delete(`/api/hospitals/${id}/save`);
     return res.data;
   },
-  getSaved: async () => {
-    const res = await api.get('/api/hospitals/saved');
+  getSaved: async (lat?: number, lng?: number) => {
+    const res = await api.get('/api/hospitals/saved', {
+      params: { lat, lng }
+    });
     return res.data as Hospital[];
   },
   getReviews: async (id: string, page: number = 1, limit: number = 10) => {
@@ -379,12 +411,26 @@ export const userAPI = {
     const res = await api.get('/api/user/profile');
     return res.data as UserProfile;
   },
-  updateProfile: async (data: { name?: string; email?: string }) => {
+  updateProfile: async (data: { name?: string }) => { // BUG-10: email no longer updated directly
     const res = await api.patch('/api/user/profile', data);
     return res.data;
   },
+  // BUG-10 FIX: Step 1 — request OTP to the new email address
+  requestEmailChange: async (newEmail: string) => {
+    const res = await api.post('/api/user/request-email-change', { newEmail });
+    return res.data as { message: string };
+  },
+  // BUG-10 FIX: Step 2 — submit the OTP to confirm and apply the email change
+  confirmEmailChange: async (newEmail: string, code: string) => {
+    const res = await api.post('/api/user/confirm-email-change', { newEmail, code });
+    return res.data as { message: string; user: any };
+  },
   changePassword: async (data: any) => {
     const res = await api.post('/api/user/change-password', data);
+    return res.data;
+  },
+  verifyMobileUpdate: async (firebaseToken: string) => {
+    const res = await api.post('/api/user/verify-mobile-update', { firebaseToken });
     return res.data;
   },
   deleteAccount: async () => {

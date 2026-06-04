@@ -27,6 +27,13 @@ export class HospitalService {
 
       // Bulk insert into PostgreSQL, skipping duplicates (based on externalId)
       for (const h of fetchedHospitals) {
+        // BUG-06 FIX: Only mark as emergency-capable if Google types confirm it's a hospital
+        // Clinics, dentists, and general health providers should NOT be marked as emergency
+        const isHospital = Array.isArray(h.types) && (
+          h.types.includes('hospital') ||
+          h.types.includes('emergency_room')
+        );
+
         await prisma.hospital.upsert({
           where: { externalId: h.externalId },
           update: {
@@ -44,8 +51,8 @@ export class HospitalService {
             phone: h.phone,
             website: h.website,
             rating: h.rating || 0,
-            workingHours: 'Open 24 Hours', // Google Places doesn't always provide simple working hours easily without details API, use placeholder or fetch if needed
-            emergencyAvailable: true,
+            workingHours: 'Open 24 Hours',
+            emergencyAvailable: isHospital,
             photoUrl: h.photoUrl
           }
         });

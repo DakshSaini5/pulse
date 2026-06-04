@@ -3,13 +3,18 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   Activity, Search, Heart, FileText, ClipboardList, TrendingUp, 
-  LogOut, LogIn, UserPlus, Menu, X, Bell, User as UserIcon, ShieldAlert, Settings
+  LogOut, LogIn, UserPlus, Menu, X, Bell, User as UserIcon, ShieldAlert, Settings,
+  Phone, KeyRound, MessageSquare, CheckCircle2
 } from 'lucide-react';
 import ChatAssistant from './ChatAssistant';
 import { NotificationCenter } from './NotificationCenter';
+import { PulseLogo } from './PulseLogo';
+import { sendSMSVerification, isFirebaseMockMode } from '../utils/firebase';
+import { userAPI } from '../services/api';
+import toast from 'react-hot-toast';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -34,18 +39,15 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   return (
     <div className="min-h-screen bg-pulseBg dark:bg-[#181c1e] text-slate-800 dark:text-slate-100 flex flex-col relative overflow-x-hidden selection:bg-primary selection:text-white transition-colors duration-300">
       {/* Background visual graphics */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[radial-gradient(circle_at_center,rgba(37,99,235,0.08)_0%,transparent_70%)] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[radial-gradient(circle_at_center,rgba(25,135,84,0.04)_0%,transparent_70%)] pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[radial-gradient(circle_at_center,rgba(239,68,68,0.06)_0%,transparent_70%)] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[radial-gradient(circle_at_center,rgba(239,68,68,0.03)_0%,transparent_70%)] pointer-events-none" />
 
       {/* Top Header */}
       <header className="sticky top-0 z-40 w-full glass-panel border-b border-pulseBorder dark:border-slate-800 backdrop-blur-md rounded-none">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <Link to="/" className="flex items-center gap-2 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-blue-500 flex items-center justify-center shadow-lg shadow-primary/25 group-hover:scale-105 transition-transform duration-300">
-                <Activity className="w-5 h-5 text-slate-900 animate-pulse" />
-              </div>
-              <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">Pulse</span>
+            <Link to="/" className="flex items-center group">
+              <PulseLogo size={42} showTagline={true} />
             </Link>
 
             {/* Desktop Navigation */}
@@ -205,15 +207,14 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           </div>
 
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 border-t border-slate-200 dark:border-slate-800 pt-6">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-lg bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">Pulse</span>
-              <span className="text-xs text-slate-500 dark:text-slate-400">© 2026. All rights reserved.</span>
+            <div className="flex flex-col md:flex-row items-center gap-4">
+              <PulseLogo size={42} showTagline={true} />
+              <span className="text-xs text-slate-500 dark:text-slate-400 md:pl-4 md:border-l md:border-slate-200 dark:md:border-slate-800">© 2026. All rights reserved.</span>
             </div>
             <div className="flex flex-wrap justify-center gap-6 text-xs text-slate-500 dark:text-slate-400">
-              <Link to="/" className="hover:text-slate-900 dark:hover:text-white transition-colors">About Us</Link>
-              <Link to="/" className="hover:text-slate-900 dark:hover:text-white transition-colors">Contact</Link>
-              <Link to="/" className="hover:text-slate-900 dark:hover:text-white transition-colors">SaaS Pricing</Link>
-              <Link to="/" className="hover:text-slate-900 dark:hover:text-white transition-colors">Privacy Policy</Link>
+              <Link to="/about" className="hover:text-slate-900 dark:hover:text-white transition-colors">About Us</Link>
+              <Link to="/contact" className="hover:text-slate-900 dark:hover:text-white transition-colors">Contact</Link>
+              <Link to="/privacy" className="hover:text-slate-900 dark:hover:text-white transition-colors">Privacy Policy</Link>
             </div>
           </div>
         </div>

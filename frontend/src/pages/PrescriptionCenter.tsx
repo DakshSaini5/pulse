@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { MedicalDisclaimer, AIModalDisclaimer } from '../components/MedicalDisclaimer';
+import toast from 'react-hot-toast';
 
 const parseMedicinesFromRawText = (text: string): Array<{ name: string; dosage: string; instructions: string }> => {
   if (!text) return [{ name: '', dosage: '', instructions: '' }];
@@ -125,7 +126,7 @@ export const PrescriptionCenter: React.FC = () => {
       setSelectedFiles([]);
     } catch (err) {
       console.error(err);
-      alert('OCR extraction failed. Let us try fallback simulators.');
+      toast.error('OCR extraction failed. Please try a clearer image or a higher-quality PDF.'); // BUG-07 FIX
     } finally {
       setUploading(false);
     }

@@ -3,17 +3,28 @@ import path from 'path';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import Tesseract from 'tesseract.js';
 import { generateContentWithFallback } from './gemini';
+import { Worker } from 'worker_threads';
 
 export interface OCRResult {
   text: string;
   confidence: number;
 }
 
+let cachedGenAI: GoogleGenerativeAI | null = null;
+let lastApiKey: string | undefined = undefined;
+
 // Instantiates Gemini SDKs lazily
 const getGenAI = (): GoogleGenerativeAI | null => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
-  return new GoogleGenerativeAI(apiKey);
+  
+  if (cachedGenAI && lastApiKey === apiKey) {
+    return cachedGenAI;
+  }
+  
+  lastApiKey = apiKey;
+  cachedGenAI = new GoogleGenerativeAI(apiKey);
+  return cachedGenAI;
 };
 
 async function getFileBuffer(filePath: string): Promise<Buffer> {
@@ -26,9 +37,44 @@ async function getFileBuffer(filePath: string): Promise<Buffer> {
   }
 }
 
+const tesseractWorkerCode = `
+  const { parentPort, workerData } = require('worker_threads');
+  const Tesseract = require('tesseract.js');
+
+  Tesseract.recognize(Buffer.from(workerData.buffer), 'eng')
+    .then(result => {
+      parentPort.postMessage({ success: true, text: result.data.text.trim() });
+    })
+    .catch(err => {
+      parentPort.postMessage({ success: false, error: err.message || String(err) });
+    });
+`;
+
 async function performTesseractOCR(fileBuffer: Buffer): Promise<string> {
-  const result = await Tesseract.recognize(fileBuffer, 'eng');
-  return result.data.text.trim();
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(tesseractWorkerCode, {
+      eval: true,
+      workerData: { buffer: fileBuffer }
+    });
+
+    worker.on('message', (message) => {
+      if (message.success) {
+        resolve(message.text);
+      } else {
+        reject(new Error(message.error));
+      }
+    });
+
+    worker.on('error', (err) => {
+      reject(err);
+    });
+
+    worker.on('exit', (code) => {
+      if (code !== 0) {
+        reject(new Error(`OCR Worker stopped with exit code ${code}`));
+      }
+    });
+  });
 }
 
 async function fileToGenerativePart(filePath: string, mimeType: string) {

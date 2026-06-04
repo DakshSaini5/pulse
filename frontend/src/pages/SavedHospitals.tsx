@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { getInitialLocation } from '../utils/geolocation';
 
 export const SavedHospitals: React.FC = () => {
   const { user } = useAuth();
@@ -24,14 +25,17 @@ export const SavedHospitals: React.FC = () => {
     { name: 'Women Helpline', phone: '1091', desc: 'Dedicated civil security and protection response.' }
   ];
 
-  const fetchSaved = async () => {
+  const [lat, setLat] = useState<number | undefined>(undefined);
+  const [lng, setLng] = useState<number | undefined>(undefined);
+
+  const fetchSaved = async (userLat?: number, userLng?: number) => {
     if (!user) {
       navigate('/login');
       return;
     }
     setLoading(true);
     try {
-      const data = await hospitalAPI.getSaved();
+      const data = await hospitalAPI.getSaved(userLat, userLng);
       setHospitals(data);
     } catch (err) {
       console.error(err);
@@ -51,7 +55,28 @@ export const SavedHospitals: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchSaved();
+    const loadLocation = () => {
+      getInitialLocation()
+        .then((res) => {
+          setLat(res.latitude);
+          setLng(res.longitude);
+          fetchSaved(res.latitude, res.longitude);
+        });
+    };
+
+    loadLocation();
+
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'geolocation' })
+        .then((status) => {
+          status.onchange = () => {
+            if (status.state === 'granted') {
+              loadLocation();
+            }
+          };
+        })
+        .catch(err => console.log('Permissions API query not supported:', err));
+    }
   }, []);
 
   return (

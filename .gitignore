@@ -39,3 +39,6 @@ frontend/refactor-theme.*
 backend/scratch_*
 backend/test-keys.*
 *.timestamp-*
+
+# Service Accounts
+firebase-service-account.json

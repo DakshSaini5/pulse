@@ -1,11 +1,21 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { generateContentWithFallback } from './gemini';
 
+let cachedGenAI: GoogleGenerativeAI | null = null;
+let lastApiKey: string | undefined = undefined;
+
 // Instantiates Gemini SDKs lazily to ensure env vars are loaded
 const getGenAI = (): GoogleGenerativeAI | null => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
-  return new GoogleGenerativeAI(apiKey);
+  
+  if (cachedGenAI && lastApiKey === apiKey) {
+    return cachedGenAI;
+  }
+  
+  lastApiKey = apiKey;
+  cachedGenAI = new GoogleGenerativeAI(apiKey);
+  return cachedGenAI;
 };
 
 // Circuit breaker: if Gemini fails too many times, auto-fallback to simulator

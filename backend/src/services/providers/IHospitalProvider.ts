@@ -8,6 +8,7 @@ export interface HospitalData {
   website?: string;
   rating?: number;
   photoUrl?: string;
+  types?: string[]; // BUG-06 FIX: Pass Google Places types to determine emergencyAvailable accurately
 }
 
 export interface IHospitalProvider {

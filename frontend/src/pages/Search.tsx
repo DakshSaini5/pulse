@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { formatIndianPhoneNumber, getDialerHref } from '../utils/phoneFormatter';
+import toast from 'react-hot-toast';
+import { getCityNameFromCoords } from '../utils/geolocation';
 
 
 export const Search: React.FC = () => {
@@ -23,8 +25,26 @@ export const Search: React.FC = () => {
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'match');
 
   // Map user coordinates
-  const [lat, setLat] = useState(28.6139);
-  const [lng, setLng] = useState(77.2090);
+  const [lat, setLat] = useState<number | null>(() => {
+    const storedLat = localStorage.getItem('pulse_latitude');
+    return storedLat ? parseFloat(storedLat) : null;
+  });
+  const [lng, setLng] = useState<number | null>(() => {
+    const storedLng = localStorage.getItem('pulse_longitude');
+    return storedLng ? parseFloat(storedLng) : null;
+  });
+  const [cityName, setCityName] = useState<string>(() => {
+    return localStorage.getItem('pulse_city_name') || '';
+  });
+  const [locationStatus, setLocationStatus] = useState<'checking' | 'granted' | 'denied'>(() => {
+    const latStr = localStorage.getItem('pulse_latitude');
+    const lngStr = localStorage.getItem('pulse_longitude');
+    const deniedFlag = localStorage.getItem('pulse_location_denied');
+    if (latStr && lngStr && !deniedFlag) return 'granted';
+    if (deniedFlag) return 'denied';
+    return 'checking';
+  });
+  const [isBlocked, setIsBlocked] = useState(false);
 
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,9 +65,10 @@ export const Search: React.FC = () => {
   ];
 
   const fetchHospitals = async () => {
+    if (lat === null || lng === null) return;
     setLoading(true);
     try {
-      const data = await hospitalAPI.search(query, specialty, radius, lat, lng);
+      const data = await hospitalAPI.search(query, specialty, radius, lat, lng, cityName);
       // Client-side emergency filter if checked
       let filtered = emergencyOnly ? data.filter(h => h.emergencyAvailable) : data;
       
@@ -75,9 +96,9 @@ export const Search: React.FC = () => {
   };
 
   const fetchSaved = async () => {
-    if (!user) return;
+    if (!user || lat === null || lng === null) return;
     try {
-      const saved = await hospitalAPI.getSaved();
+      const saved = await hospitalAPI.getSaved(lat, lng);
       setSavedIds(saved.map(h => h.id));
     } catch (err) {
       console.error(err);
@@ -88,19 +109,167 @@ export const Search: React.FC = () => {
   useEffect(() => {
     fetchHospitals();
     fetchSaved();
-  }, [specialty, radius, emergencyOnly, sortBy]);
+  }, [specialty, radius, emergencyOnly, sortBy, lat, lng]);
 
-  // Request browser geolocation on mount
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setLat(pos.coords.latitude);
-          setLng(pos.coords.longitude);
-        },
-        (err) => console.log('Geolocation disabled, falling back to Delhi coordinates.')
-      );
+  const requestLocation = async () => {
+    setLocationStatus('checking');
+    if (!navigator.geolocation) {
+      setLocationStatus('denied');
+      toast.error("Geolocation is not supported by your browser.");
+      return;
     }
+
+    if (navigator.permissions) {
+      try {
+        const perm = await navigator.permissions.query({ name: 'geolocation' });
+        if (perm.state === 'denied') {
+          setIsBlocked(true);
+          setLocationStatus('denied');
+          toast.error("Location permission blocked. Please click the lock icon in the browser address bar to allow location access.", {
+            duration: 8000
+          });
+          return;
+        }
+      } catch (e) {}
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+        setLat(latitude);
+        setLng(longitude);
+        localStorage.setItem('pulse_latitude', latitude.toString());
+        localStorage.setItem('pulse_longitude', longitude.toString());
+        localStorage.removeItem('pulse_location_denied');
+        setIsBlocked(false);
+        
+        setLocationStatus('granted');
+        try {
+          const city = await getCityNameFromCoords(latitude, longitude);
+          setCityName(city);
+          localStorage.setItem('pulse_city_name', city);
+        } catch (err) {
+          setCityName("Detected Location");
+        }
+      },
+      (error) => {
+        console.error("Geolocation request failed:", error);
+        setLocationStatus('denied');
+        setLat(null);
+        setLng(null);
+        localStorage.setItem('pulse_location_denied', 'true');
+        localStorage.removeItem('pulse_latitude');
+        localStorage.removeItem('pulse_longitude');
+        localStorage.removeItem('pulse_city_name');
+
+        if (error.code === 1) {
+          setIsBlocked(true);
+          toast.error("Location permission blocked. Please click the lock icon in the browser address bar to allow location access.", {
+            duration: 8000
+          });
+        } else {
+          toast.error(`Unable to retrieve location: ${error.message}`);
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  };
+
+  useEffect(() => {
+    let permissionStatus: PermissionStatus | null = null;
+
+    const handlePermissionChange = () => {
+      if (permissionStatus) {
+        if (permissionStatus.state === 'granted') {
+          requestLocation();
+        } else if (permissionStatus.state === 'denied') {
+          setLocationStatus('denied');
+          setIsBlocked(true);
+          setLat(null);
+          setLng(null);
+          localStorage.setItem('pulse_location_denied', 'true');
+        } else {
+          setLocationStatus('checking');
+          setIsBlocked(false);
+        }
+      }
+    };
+
+    const initLocation = async () => {
+      const latStr = localStorage.getItem('pulse_latitude');
+      const lngStr = localStorage.getItem('pulse_longitude');
+      const storedCity = localStorage.getItem('pulse_city_name');
+      const deniedFlag = localStorage.getItem('pulse_location_denied');
+
+      if (latStr && lngStr && !deniedFlag) {
+        const currentLat = parseFloat(latStr);
+        const currentLng = parseFloat(lngStr);
+        setLat(currentLat);
+        setLng(currentLng);
+        setLocationStatus('granted');
+        if (storedCity) {
+          setCityName(storedCity);
+        } else {
+          try {
+            const city = await getCityNameFromCoords(currentLat, currentLng);
+            setCityName(city);
+            localStorage.setItem('pulse_city_name', city);
+          } catch (e) {}
+        }
+        
+        navigator.geolocation?.getCurrentPosition((pos) => {
+          const latitude = pos.coords.latitude;
+          const longitude = pos.coords.longitude;
+          setLat(latitude);
+          setLng(longitude);
+          localStorage.setItem('pulse_latitude', latitude.toString());
+          localStorage.setItem('pulse_longitude', longitude.toString());
+          getCityNameFromCoords(latitude, longitude).then(city => {
+            setCityName(city);
+            localStorage.setItem('pulse_city_name', city);
+          }).catch(console.error);
+        }, () => {}, { enableHighAccuracy: true });
+        
+        return;
+      }
+
+      if (navigator.permissions) {
+        try {
+          permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
+          permissionStatus.addEventListener('change', handlePermissionChange);
+
+          if (permissionStatus.state === 'granted') {
+            requestLocation();
+          } else if (permissionStatus.state === 'denied') {
+            setLocationStatus('denied');
+            setIsBlocked(true);
+            setLat(null);
+            setLng(null);
+          } else {
+            requestLocation();
+          }
+        } catch (e) {
+          requestLocation();
+        }
+      } else {
+        requestLocation();
+      }
+    };
+
+    initLocation();
+
+    return () => {
+      if (permissionStatus) {
+        try {
+          permissionStatus.removeEventListener('change', handlePermissionChange);
+        } catch (e) {}
+      }
+    };
   }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -155,328 +324,375 @@ export const Search: React.FC = () => {
         <p className="text-xs text-slate-500 dark:text-slate-400">Discover hospitals matching your specialty need, distance parameters, and emergency situations.</p>
       </div>
 
-      {/* Filters Segment */}
-      <form onSubmit={handleSearchSubmit} className="glass-panel rounded-2xl p-4 sm:p-6 border border-pulseBorder dark:border-slate-700 grid grid-cols-1 md:grid-cols-12 gap-4 items-end text-left bg-white/[0.01] dark:bg-slate-900/50">
-        <div className="md:col-span-4 space-y-1">
-          <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Hospital Name / Keywords</label>
-          <div className="relative">
-            <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 dark:text-slate-400">
-              <SearchIcon className="w-4 h-4" />
-            </span>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search e.g. Apollo, Metro, City..."
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl glass-input text-xs text-slate-900"
-            />
-          </div>
+      {locationStatus === 'checking' ? (
+        <div className="flex flex-col items-center justify-center py-20 space-y-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm text-center">
+          <Activity className="w-10 h-10 text-primary animate-spin" />
+          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+            Locating you to find nearby healthcare services...
+          </p>
         </div>
+      ) : locationStatus === 'granted' ? (
+        <>
+          {cityName && (
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-2.5 rounded-xl w-fit mr-auto">
+              <MapPin className="w-4 h-4 text-primary shrink-0 animate-bounce" />
+              <span>Active Location: <strong className="text-slate-800 dark:text-white">{cityName}</strong></span>
+              <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold ml-2">
+                🏥 CITY-CLAMPED SEARCH ACTIVE
+              </span>
+            </div>
+          )}
 
-        <div className="md:col-span-3 space-y-1">
-          <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Clinical Specialty</label>
-          <select
-            value={specialty}
-            onChange={(e) => setSpecialty(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl glass-input text-xs text-slate-900"
-          >
-            <option value="">All Specialties</option>
-            {specialties.map(spec => (
-              <option key={spec.name} value={spec.name}>{spec.label}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="md:col-span-2 space-y-1">
-          <div className="flex justify-between items-center">
-            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Max Radius</label>
-            <span className="text-[10px] text-primary font-extrabold">{radius} km</span>
-          </div>
-          <input
-            type="range"
-            min="2"
-            max="40"
-            value={radius}
-            onChange={(e) => setRadius(parseInt(e.target.value))}
-            className="w-full accent-primary h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
-          />
-        </div>
-
-        <div className="md:col-span-2 space-y-1">
-          <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sort By</label>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl glass-input text-xs text-slate-900"
-          >
-            <option value="match">Best Match</option>
-            <option value="distance">Nearest First</option>
-            <option value="rating">Highest Rated</option>
-          </select>
-        </div>
-
-        <div className="md:col-span-2 grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => setEmergencyOnly(!emergencyOnly)}
-            className={`py-3 px-3 rounded-xl border text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 ${
-              emergencyOnly 
-                ? 'bg-danger/10 border-danger/30 text-danger shadow-md shadow-danger/5' 
-                : 'border-pulseBorder dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <AlertCircle className="w-3.5 h-3.5" />
-            24/7 ER Room
-          </button>
-          
-          <button
-            type="submit"
-            className="py-3 px-3 rounded-xl bg-primary hover:bg-primary-hover text-white text-[11px] font-bold shadow-md shadow-primary/25 transition-all flex items-center justify-center gap-1.5"
-          >
-            <SearchIcon className="w-3.5 h-3.5" />
-            Search
-          </button>
-        </div>
-      </form>
-
-      {/* Main Map + List workspace */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Side: Hospital List */}
-        <div className="lg:col-span-5 space-y-4 max-h-[600px] overflow-y-auto pr-2 text-left">
-          {/* Active Specialty Filter Header */}
-          {specialty && (
-            <div className="glass-panel border border-primary/20 bg-primary/5 p-4 rounded-2xl flex items-center justify-between animate-in slide-in-from-top duration-300">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  🔍 Active Filter: <span className="text-primary font-extrabold">{specialty}</span>
+          {/* Filters Segment */}
+          <form onSubmit={handleSearchSubmit} className="glass-panel rounded-2xl p-4 sm:p-6 border border-pulseBorder dark:border-slate-700 grid grid-cols-1 md:grid-cols-12 gap-4 items-end text-left bg-white/[0.01] dark:bg-slate-900/50">
+            <div className="md:col-span-4 space-y-1">
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Hospital Name / Keywords</label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 dark:text-slate-400">
+                  <SearchIcon className="w-4 h-4" />
                 </span>
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search e.g. Apollo, Metro, City..."
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl glass-input text-xs text-slate-900"
+                />
               </div>
+            </div>
+
+            <div className="md:col-span-3 space-y-1">
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Clinical Specialty</label>
+              <select
+                value={specialty}
+                onChange={(e) => setSpecialty(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl glass-input text-xs text-slate-900"
+              >
+                <option value="">All Specialties</option>
+                {specialties.map(spec => (
+                  <option key={spec.name} value={spec.name}>{spec.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="md:col-span-2 space-y-1">
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Max Radius</label>
+                <span className="text-[10px] text-primary font-extrabold">{radius} km</span>
+              </div>
+              <input
+                type="range"
+                min="2"
+                max="40"
+                value={radius}
+                onChange={(e) => setRadius(parseInt(e.target.value))}
+                className="w-full accent-primary h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
+              />
+            </div>
+
+            <div className="md:col-span-2 space-y-1">
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sort By</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl glass-input text-xs text-slate-900"
+              >
+                <option value="match">Best Match</option>
+                <option value="distance">Nearest First</option>
+                <option value="rating">Highest Rated</option>
+              </select>
+            </div>
+
+            <div className="md:col-span-2 grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => {
-                  setSpecialty('');
-                  navigate('/search');
-                }}
-                className="text-[10px] font-bold bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-xl transition-all border border-pulseBorder dark:border-slate-700"
-                title="Clear filter"
+                onClick={() => setEmergencyOnly(!emergencyOnly)}
+                className={`py-3 px-3 rounded-xl border text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  emergencyOnly 
+                    ? 'bg-danger/10 border-danger/30 text-danger shadow-md shadow-danger/5' 
+                    : 'border-pulseBorder dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
               >
-                Clear (X)
+                <AlertCircle className="w-3.5 h-3.5" />
+                24/7 ER Room
+              </button>
+              
+              <button
+                type="submit"
+                className="py-3 px-3 rounded-xl bg-primary hover:bg-primary-hover text-white text-[11px] font-bold shadow-md shadow-primary/25 transition-all flex items-center justify-center gap-1.5"
+              >
+                <SearchIcon className="w-3.5 h-3.5" />
+                Search
               </button>
             </div>
-          )}
-          
-          {loading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map((n) => (
-                <div key={n} className="glass-panel rounded-2xl p-5 border border-pulseBorder dark:border-slate-700 h-32 animate-pulse flex flex-col justify-between">
-                  <div className="w-[50%] h-4 bg-slate-200 dark:bg-slate-700 rounded" />
-                  <div className="w-[80%] h-3 bg-slate-200 dark:bg-slate-700 rounded" />
-                  <div className="w-[30%] h-3 bg-slate-200 dark:bg-slate-700 rounded" />
+          </form>
+
+          {/* Main Map + List workspace */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Left Side: Hospital List */}
+            <div className="lg:col-span-5 space-y-4 max-h-[600px] overflow-y-auto pr-2 text-left">
+              {/* Active Specialty Filter Header */}
+              {specialty && (
+                <div className="glass-panel border border-primary/20 bg-primary/5 p-4 rounded-2xl flex items-center justify-between animate-in slide-in-from-top duration-300">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      🔍 Active Filter: <span className="text-primary font-extrabold">{specialty}</span>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSpecialty('');
+                      navigate('/search');
+                    }}
+                    className="text-[10px] font-bold bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-xl transition-all border border-pulseBorder dark:border-slate-700"
+                    title="Clear filter"
+                  >
+                    Clear (X)
+                  </button>
                 </div>
-              ))}
-            </div>
-          ) : hospitals.length === 0 ? (
-            <div className="glass-panel rounded-2xl p-10 border border-pulseBorder dark:border-slate-700 text-center text-slate-500 dark:text-slate-400">
-              <AlertCircle className="w-8 h-8 mx-auto text-slate-500 dark:text-slate-400 mb-3 animate-bounce" />
-              <p className="text-sm font-semibold">No clinics located in this range.</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Try broadening your radius slider or clearing the specialty dropdown.</p>
-            </div>
-          ) : (
-            hospitals.map((hosp) => {
-              const isSelected = hosp.id === selectedHospitalId;
-              const isSaved = savedIds.includes(hosp.id);
-              const isComparing = compareIds.includes(hosp.id);
-
-              return (
-                <div
-                  key={hosp.id}
-                  onClick={() => handleSelectHospital(hosp.id)}
-                  className={`glass-panel rounded-2xl p-5 border transition-all duration-300 cursor-pointer flex flex-col justify-between relative ${
-                    isSelected 
-                      ? 'border-primary bg-primary/[0.05] shadow-lg shadow-primary/10' 
-                      : 'border-pulseBorder dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-500'
-                  }`}
-                >
-                  <div className="space-y-3">
-                    {hosp.photoUrl && (
-                      <div className="w-full h-32 rounded-xl overflow-hidden mb-3">
-                        <img src={hosp.photoUrl} alt={hosp.name} className="w-full h-full object-cover" />
-                      </div>
-                    )}
-                    <div className="flex justify-between items-start gap-4">
-                      <div>
-                        <h3 className="font-bold text-slate-900 dark:text-white text-base leading-snug">{hosp.name}</h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1 leading-none">
-                          <MapPin className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                          {hosp.address}
-                        </p>
-                        {hosp.phone ? (
-                          <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1.5 leading-none">
-                            <Phone className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                            <a href={getDialerHref(hosp.phone, hosp.address)} className="hover:text-primary transition-colors">
-                              {formatIndianPhoneNumber(hosp.phone, hosp.address)}
-                            </a>
-                          </p>
-                        ) : (
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1.5 leading-none">
-                            <Phone className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                            <a 
-                              href={`https://www.google.com/search?q=phone+number+for+${encodeURIComponent(hosp.name)}+${encodeURIComponent(hosp.address)}`} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-primary hover:underline transition-colors font-semibold flex items-center gap-0.5"
-                            >
-                              Search number on Google
-                              <Globe className="w-3 h-3 text-slate-400 shrink-0" />
-                            </a>
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-1.5">
-                        {/* Bookmark Button */}
-                        <button
-                          onClick={(e) => handleToggleSave(hosp.id, e)}
-                          className={`p-2 rounded-lg border transition-all ${
-                            isSaved 
-                              ? 'border-danger/30 bg-danger/10 text-danger' 
-                              : 'border-pulseBorder dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                          }`}
-                          title={isSaved ? "Remove from Bookmarks" : "Save Hospital"}
-                        >
-                          <Heart className={`w-4 h-4 ${isSaved ? 'fill-danger' : ''}`} />
-                        </button>
-                        
-                        {/* Compare Button */}
-                        <button
-                          onClick={(e) => handleToggleCompare(hosp.id, e)}
-                          className={`p-2 rounded-lg border transition-all ${
-                            isComparing 
-                              ? 'border-primary bg-primary/20 text-primary' 
-                              : 'border-pulseBorder dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                          }`}
-                          title="Add to Compare Panel"
-                        >
-                          {isComparing ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
-                        </button>
-                      </div>
+              )}
+              
+              {loading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((n) => (
+                    <div key={n} className="glass-panel rounded-2xl p-5 border border-pulseBorder dark:border-slate-700 h-32 animate-pulse flex flex-col justify-between">
+                      <div className="w-[50%] h-4 bg-slate-200 dark:bg-slate-700 rounded" />
+                      <div className="w-[80%] h-3 bg-slate-200 dark:bg-slate-700 rounded" />
+                      <div className="w-[30%] h-3 bg-slate-200 dark:bg-slate-700 rounded" />
                     </div>
+                  ))}
+                </div>
+              ) : hospitals.length === 0 ? (
+                <div className="glass-panel rounded-2xl p-10 border border-pulseBorder dark:border-slate-700 text-center text-slate-500 dark:text-slate-400">
+                  <AlertCircle className="w-8 h-8 mx-auto text-slate-500 dark:text-slate-400 mb-3 animate-bounce" />
+                  <p className="text-sm font-semibold">No clinics located in this range.</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Try broadening your radius slider or clearing the specialty dropdown.</p>
+                </div>
+              ) : (
+                hospitals.map((hosp) => {
+                  const isSelected = hosp.id === selectedHospitalId;
+                  const isSaved = savedIds.includes(hosp.id);
+                  const isComparing = compareIds.includes(hosp.id);
 
-                    <div className="flex items-center gap-4 text-xs font-semibold">
-                      <span className="flex items-center gap-1 text-warning">
-                        <Star className="w-4 h-4 fill-warning text-warning" />
-                        {hosp.rating.toFixed(1)}
-                      </span>
-
-                      {hosp.emergencyAvailable && (
-                        <span className="text-[10px] bg-danger/15 border border-danger/25 text-danger px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                          24/7 ER Ready
-                        </span>
-                      )}
-
-                      <span className="text-[10px] bg-slate-100 dark:bg-slate-800 border border-pulseBorder dark:border-slate-600 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full font-medium">
-                        Score: {hosp.recommendationScore}%
-                      </span>
-                    </div>
-
-                    {/* Recommendation score breakdown snippet */}
-                    {hosp.explanation && (
-                      <div className="p-2.5 bg-primary/10 border border-primary/15 rounded-xl text-[10px] text-slate-600 leading-normal">
-                        <strong>💡 Match Reason:</strong> {hosp.explanation}
-                      </div>
-                    )}
-
-                    {/* Active Specialty OPD Hours & INR Fees */}
-                    {specialty && (() => {
-                      const matchedSpec = hosp.specialties?.find(
-                        (s) => s.specialty.name.toLowerCase() === specialty.toLowerCase()
-                      );
-                      if (!matchedSpec) return null;
-                      return (
-                        <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 rounded-xl text-[10px] leading-normal font-semibold space-y-1">
-                          <div className="flex justify-between">
-                            <span>🕒 OPD Hours:</span>
-                            <span className="font-bold text-slate-900 dark:text-white">{matchedSpec.opdTimings || 'Contact Facility to Confirm'}</span>
+                  return (
+                    <div
+                      key={hosp.id}
+                      onClick={() => handleSelectHospital(hosp.id)}
+                      className={`glass-panel rounded-2xl p-5 border transition-all duration-300 cursor-pointer flex flex-col justify-between relative ${
+                        isSelected 
+                          ? 'border-primary bg-primary/[0.05] shadow-lg shadow-primary/10' 
+                          : 'border-pulseBorder dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-500'
+                      }`}
+                    >
+                      <div className="space-y-3">
+                        {hosp.photoUrl && (
+                          <div className="w-full h-32 rounded-xl overflow-hidden mb-3">
+                            <img src={hosp.photoUrl} alt={hosp.name} className="w-full h-full object-cover" />
                           </div>
-                          <div className="flex justify-between">
-                            <span>💳 Consult Fee:</span>
-                            <span className="font-extrabold text-primary">
-                              {matchedSpec.averageCost === 0 
-                                ? 'Contact Facility' 
-                                : matchedSpec.averageCost <= 50 
-                                  ? `₹${matchedSpec.averageCost} (Govt Rate)` 
-                                  : `₹${matchedSpec.averageCost}`}
-                            </span>
+                        )}
+                        <div className="flex justify-between items-start gap-4">
+                          <div>
+                            <h3 className="font-bold text-slate-900 dark:text-white text-base leading-snug">{hosp.name}</h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1 leading-none">
+                              <MapPin className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                              {hosp.address}
+                            </p>
+                            {hosp.phone ? (
+                              <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1.5 leading-none">
+                                <Phone className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                                <a href={getDialerHref(hosp.phone, hosp.address)} className="hover:text-primary transition-colors">
+                                  {formatIndianPhoneNumber(hosp.phone, hosp.address)}
+                                </a>
+                              </p>
+                            ) : (
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1.5 leading-none">
+                                <Phone className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                                <a 
+                                  href={`https://www.google.com/search?q=phone+number+for+${encodeURIComponent(hosp.name)}+${encodeURIComponent(hosp.address)}`} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline transition-colors font-semibold flex items-center gap-0.5"
+                                >
+                                  Search number on Google
+                                  <Globe className="w-3 h-3 text-slate-400 shrink-0" />
+                                </a>
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            {/* Bookmark Button */}
+                            <button
+                              onClick={(e) => handleToggleSave(hosp.id, e)}
+                              className={`p-2 rounded-lg border transition-all ${
+                                isSaved 
+                                  ? 'border-danger/30 bg-danger/10 text-danger' 
+                                  : 'border-pulseBorder dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                              }`}
+                              title={isSaved ? "Remove from Bookmarks" : "Save Hospital"}
+                            >
+                              <Heart className={`w-4 h-4 ${isSaved ? 'fill-danger' : ''}`} />
+                            </button>
+                            
+                            {/* Compare Button */}
+                            <button
+                              onClick={(e) => handleToggleCompare(hosp.id, e)}
+                              className={`p-2 rounded-lg border transition-all ${
+                                isComparing 
+                                  ? 'border-primary bg-primary/20 text-primary' 
+                                  : 'border-pulseBorder dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                              }`}
+                              title="Add to Compare Panel"
+                            >
+                              {isComparing ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                            </button>
                           </div>
                         </div>
-                      );
-                    })()}
-                  </div>
 
-                  <div className="flex justify-between items-center pt-4 border-t border-pulseBorder dark:border-slate-700 mt-4">
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Open: {hosp.workingHours}</span>
-                    <button
-                      onClick={() => navigate(`/hospitals/${hosp.id}`)}
-                      className="text-xs text-primary font-bold flex items-center gap-1 hover:underline"
-                    >
-                      Full Departments
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
+                        <div className="flex items-center gap-4 text-xs font-semibold">
+                          <span className="flex items-center gap-1 text-warning">
+                            <Star className="w-4 h-4 fill-warning text-warning" />
+                            {hosp.rating.toFixed(1)}
+                          </span>
+
+                          {hosp.emergencyAvailable && (
+                            <span className="text-[10px] bg-danger/15 border border-danger/25 text-danger px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                              24/7 ER Ready
+                            </span>
+                          )}
+
+                          <span className="text-[10px] bg-slate-100 dark:bg-slate-800 border border-pulseBorder dark:border-slate-600 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full font-medium">
+                            Score: {hosp.recommendationScore}%
+                          </span>
+                        </div>
+
+                        {/* Recommendation score breakdown snippet */}
+                        {hosp.explanation && (
+                          <div className="p-2.5 bg-primary/10 border border-primary/15 rounded-xl text-[10px] text-slate-600 leading-normal">
+                            <strong>💡 Match Reason:</strong> {hosp.explanation}
+                          </div>
+                        )}
+
+                        {/* Active Specialty OPD Hours & INR Fees */}
+                        {specialty && (() => {
+                          const matchedSpec = hosp.specialties?.find(
+                            (s) => s.specialty.name.toLowerCase() === specialty.toLowerCase()
+                          );
+                          if (!matchedSpec) return null;
+                          return (
+                            <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 rounded-xl text-[10px] leading-normal font-semibold space-y-1">
+                              <div className="flex justify-between">
+                                <span>🕒 OPD Hours:</span>
+                                <span className="font-bold text-slate-900 dark:text-white">{matchedSpec.opdTimings || 'Contact Facility to Confirm'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>💳 Consult Fee:</span>
+                                <span className="font-extrabold text-primary">
+                                  {matchedSpec.averageCost === 0 
+                                    ? 'Contact Facility' 
+                                    : matchedSpec.averageCost <= 50 
+                                      ? `₹${matchedSpec.averageCost} (Govt Rate)` 
+                                      : `₹${matchedSpec.averageCost}`}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+
+                      <div className="flex justify-between items-center pt-4 border-t border-pulseBorder dark:border-slate-700 mt-4">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Open: {hosp.workingHours}</span>
+                        <button
+                          onClick={() => navigate(`/hospitals/${hosp.id}`)}
+                          className="text-xs text-primary font-bold flex items-center gap-1 hover:underline"
+                        >
+                          Full Departments
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Right Side: Leaflet Map */}
+            <div className="lg:col-span-7 h-[600px] rounded-2xl overflow-hidden shadow-2xl relative border border-pulseBorder dark:border-slate-700">
+              <Map
+                hospitals={hospitals.map(h => ({
+                  id: h.id,
+                  name: h.name,
+                  latitude: h.latitude,
+                  longitude: h.longitude,
+                  rating: h.rating,
+                  recommendationScore: h.recommendationScore
+                }))}
+                selectedHospitalId={selectedHospitalId}
+                onSelectHospital={handleSelectHospital}
+                userLat={lat!}
+                userLng={lng!}
+              />
+            </div>
+          </div>
+
+          {/* Floating comparison dock at the bottom */}
+          {compareIds.length > 0 && (
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[2000] w-full max-w-lg px-4 animate-slide-up">
+              <div className="glass-panel border border-primary/30 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-xl p-4 rounded-2xl flex items-center justify-between shadow-2xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center text-primary">
+                    <Layers className="w-5 h-5 animate-pulse" />
+                  </div>
+                  <div className="text-left">
+                    <span className="text-xs font-bold text-slate-900 dark:text-white block">Compare Panel Active</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400">{compareIds.length} hospital{compareIds.length > 1 ? 's' : ''} selected (Max 3)</span>
                   </div>
                 </div>
-              );
-            })
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCompareIds([])}
+                    className="px-3 py-2 rounded-xl text-[10px] text-slate-500 hover:text-slate-900 font-bold"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    onClick={() => navigate(`/compare?ids=${compareIds.join(',')}`)}
+                    className="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-[10px] font-bold rounded-xl flex items-center gap-1 shadow-md shadow-primary/25 transition-all"
+                  >
+                    Compare Side-by-Side
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
-        </div>
-
-        {/* Right Side: Leaflet Map */}
-        <div className="lg:col-span-7 h-[600px] rounded-2xl overflow-hidden shadow-2xl relative border border-pulseBorder dark:border-slate-700">
-          <Map
-            hospitals={hospitals.map(h => ({
-              id: h.id,
-              name: h.name,
-              latitude: h.latitude,
-              longitude: h.longitude,
-              rating: h.rating,
-              recommendationScore: h.recommendationScore
-            }))}
-            selectedHospitalId={selectedHospitalId}
-            onSelectHospital={handleSelectHospital}
-            userLat={lat}
-            userLng={lng}
-          />
-        </div>
-      </div>
-
-      {/* Floating comparison dock at the bottom */}
-      {compareIds.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[2000] w-full max-w-lg px-4 animate-slide-up">
-          <div className="glass-panel border border-primary/30 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-xl p-4 rounded-2xl flex items-center justify-between shadow-2xl">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center text-primary">
-                <Layers className="w-5 h-5 animate-pulse" />
+        </>
+      ) : (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 text-center max-w-xl mx-auto my-8 space-y-6 shadow-xl shadow-slate-100 dark:shadow-black/20 animate-in fade-in duration-300">
+          <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto animate-pulse">
+            <MapPin className="w-8 h-8" />
+          </div>
+          <div className="space-y-2 text-center">
+            <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">Location Needed</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Please turn on location to search for nearby hospitals and services.
+            </p>
+            {isBlocked && (
+              <div className="text-[11px] text-red-500 font-semibold bg-red-500/5 dark:bg-red-500/10 p-3 rounded-2xl border border-red-500/20 max-w-sm mx-auto mt-4 leading-normal text-center space-y-1.5 animate-in fade-in duration-300">
+                <p>⚠️ Geolocation access is blocked by your browser settings.</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">To fix this, click the lock or info icon in the left side of your browser's address bar, set Location permission to "Allow", and reload the page.</p>
               </div>
-              <div className="text-left">
-                <span className="text-xs font-bold text-slate-900 dark:text-white block">Compare Panel Active</span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400">{compareIds.length} hospital{compareIds.length > 1 ? 's' : ''} selected (Max 3)</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCompareIds([])}
-                className="px-3 py-2 rounded-xl text-[10px] text-slate-500 hover:text-slate-900 font-bold"
-              >
-                Clear
-              </button>
-              <button
-                onClick={() => navigate(`/compare?ids=${compareIds.join(',')}`)}
-                className="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-[10px] font-bold rounded-xl flex items-center gap-1 shadow-md shadow-primary/25 transition-all"
-              >
-                Compare Side-by-Side
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            )}
+          </div>
+          <div className="pt-2">
+            <button
+              onClick={requestLocation}
+              className="px-6 py-3 bg-primary hover:bg-primary-hover text-white text-sm font-extrabold rounded-2xl shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all active:scale-95 flex items-center justify-center gap-2 mx-auto"
+            >
+              Enable Location Access
+            </button>
           </div>
         </div>
       )}

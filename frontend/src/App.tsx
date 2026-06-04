@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -15,8 +15,13 @@ import { HealthTrends } from './pages/HealthTrends';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { Forgot } from './pages/Forgot';
 import { Profile } from './pages/Profile';
 import { Settings } from './pages/Settings';
+import { About } from './pages/About';
+import { Contact } from './pages/Contact';
+import { Privacy } from './pages/Privacy';
+import { NotFound } from './pages/NotFound';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -25,6 +30,17 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Scroll to top of page on route transitions
+const ScrollToTop: React.FC = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+};
 
 // Guard Route for Registered Users
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -68,6 +84,7 @@ export const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
+        <ScrollToTop />
         <AuthProvider>
           <ThemeProvider>
             <Layout>
@@ -79,6 +96,10 @@ export const App: React.FC = () => {
               <Route path="/compare" element={<Comparison />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot" element={<Forgot />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/privacy" element={<Privacy />} />
 
               {/* Guarded Dashboard Pages */}
               <Route 
@@ -141,7 +162,7 @@ export const App: React.FC = () => {
               />
 
               {/* Fallback Redirect */}
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<NotFound />} />
               </Routes>
             </Layout>
           </ThemeProvider>

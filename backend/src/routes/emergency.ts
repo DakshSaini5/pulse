@@ -1,10 +1,9 @@
 import express, { Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../db'; // BUG-03 FIX: Use shared singleton instead of creating a new instance
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import twilio from 'twilio';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Initialize Twilio client (graceful fallback if keys are missing)
 let twilioClient: twilio.Twilio | null = null;

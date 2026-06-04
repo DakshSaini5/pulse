@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { hospitalAPI, Hospital } from '../services/api';
+import { getInitialLocation } from '../utils/geolocation';
 import { 
   ArrowLeft, Star, Clock, AlertCircle, ShieldCheck, 
   MapPin, HelpCircle, Phone, Globe, Layers 
@@ -11,6 +12,9 @@ export const Comparison: React.FC = () => {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [lat, setLat] = useState<number | undefined>(undefined);
+  const [lng, setLng] = useState<number | undefined>(undefined);
+
   const fetchHospitals = async () => {
     const idsStr = searchParams.get('ids');
     if (!idsStr) {
@@ -20,7 +24,7 @@ export const Comparison: React.FC = () => {
     const ids = idsStr.split(',');
     setLoading(true);
     try {
-      const data = await hospitalAPI.compare(ids);
+      const data = await hospitalAPI.compare(ids, lat, lng);
       setHospitals(data);
     } catch (err) {
       console.error(err);
@@ -29,9 +33,35 @@ export const Comparison: React.FC = () => {
     }
   };
 
+  // Get browser coordinates on mount
+  useEffect(() => {
+    const loadLocation = () => {
+      getInitialLocation()
+        .then((res) => {
+          setLat(res.latitude);
+          setLng(res.longitude);
+        });
+    };
+
+    loadLocation();
+
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'geolocation' })
+        .then((status) => {
+          status.onchange = () => {
+            if (status.state === 'granted') {
+              loadLocation();
+            }
+          };
+        })
+        .catch(err => console.log('Permissions API query not supported:', err));
+    }
+  }, []);
+
+  // Fetch comparison data when parameters or coordinates change
   useEffect(() => {
     fetchHospitals();
-  }, [searchParams]);
+  }, [searchParams, lat, lng]);
 
   if (loading) {
     return (

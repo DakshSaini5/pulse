@@ -58,7 +58,8 @@ export class GooglePlacesAdapter implements IHospitalProvider {
           rating: place.rating,
           phone: phone,
           website: website,
-          photoUrl: photoUrl
+          photoUrl: photoUrl,
+          types: place.types || [] // BUG-06 FIX: Pass types array for emergency detection
         });
       }
 

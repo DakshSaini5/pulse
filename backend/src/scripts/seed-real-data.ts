@@ -35,6 +35,8 @@ async function main() {
     { name: 'Neurology', description: 'Neurological assessments and central nervous systems.', category: 'BRAIN' },
     { name: 'Pediatrics', description: 'Infant healthcare, immunization, and growth metrics.', category: 'CHILDREN' },
     { name: 'General Medicine', description: 'Primary health consultations and checkups.', category: 'GENERAL' },
+    { name: 'Dental', description: 'Comprehensive oral hygiene, root canals, and orthodontic care.', category: 'DENTAL' },
+    { name: 'Eye Care', description: 'Vision correction, cataract surgeries, and ophthalmic diagnostics.', category: 'EYE' },
   ];
 
   for (const spec of specialtiesToCreate) {
@@ -159,6 +161,19 @@ async function main() {
                       lowerName.includes('district hospital');
 
       let specs = ['General Medicine'];
+      
+      if (isHospital || isGovt || lowerName.includes('general hospital') || lowerName.includes('multispeciality') || lowerName.includes('multi specialty')) {
+        specs.push('Dental');
+        specs.push('Eye Care');
+      }
+
+      if (lowerName.includes('dental') || lowerName.includes('dentist') || lowerName.includes('tooth') || lowerName.includes('teeth')) {
+        specs.push('Dental');
+      }
+      if (lowerName.includes('eye') || lowerName.includes('vision') || lowerName.includes('optician') || lowerName.includes('ophthalmology')) {
+        specs.push('Eye Care');
+      }
+
       if (node.tags['healthcare:speciality']) {
         const osmSpec = node.tags['healthcare:speciality'].toLowerCase();
         if (osmSpec.includes('cardiology')) specs.push('Cardiology');
@@ -166,6 +181,8 @@ async function main() {
         if (osmSpec.includes('endocrinology')) specs.push('Endocrinology');
         if (osmSpec.includes('paediatrics') || osmSpec.includes('pediatrics')) specs.push('Pediatrics');
         if (osmSpec.includes('haematology') || osmSpec.includes('hematology')) specs.push('Hematology');
+        if (osmSpec.includes('dentist') || osmSpec.includes('dental') || osmSpec.includes('dentistry')) specs.push('Dental');
+        if (osmSpec.includes('ophthalmology') || osmSpec.includes('eye') || osmSpec.includes('optician')) specs.push('Eye Care');
       }
 
       specs = [...new Set(specs)];

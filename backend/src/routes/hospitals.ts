@@ -4,16 +4,47 @@ import { scoreHospital, calculateDistance } from '../services/recommendation';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { searchLimiter } from '../middleware/rateLimiter';
 import { hospitalService } from '../services/HospitalService';
+import { findMappedSpecialty } from '../utils/intentMapper';
+import https from 'https';
 
 const router = Router();
 
+function fetchCityName(lat: number, lng: number): Promise<string> {
+  return new Promise((resolve) => {
+    const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`;
+    https.get(url, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          resolve(json.city || json.locality || json.principalSubdivision || '');
+        } catch (e) {
+          resolve('');
+        }
+      });
+    }).on('error', () => {
+      resolve('');
+    });
+  });
+}
+
 // GET /api/hospitals (Public - search hospitals with pagination)
 router.get('/', searchLimiter, async (req: AuthenticatedRequest, res: Response) => {
-  const { query, specialty, maxDistance, lat, lng, page: pageStr, limit: limitStr } = req.query;
+  const { query, specialty, maxDistance, lat, lng, city, page: pageStr, limit: limitStr } = req.query;
 
-  // Defaults user to Delhi region coordinates if geolocation is not shared
-  const userLat = lat ? parseFloat(lat as string) : 28.6139;
-  const userLng = lng ? parseFloat(lng as string) : 77.2090;
+  // BUG-04 FIX: Require lat/lng — do not silently default to Delhi for any user
+  if (!lat || !lng) {
+    return res.status(400).json({ message: 'Location coordinates (lat, lng) are required to search hospitals.' });
+  }
+
+  const userLat = parseFloat(lat as string);
+  const userLng = parseFloat(lng as string);
+
+  if (isNaN(userLat) || isNaN(userLng)) {
+    return res.status(400).json({ message: 'Invalid location coordinates provided.' });
+  }
+
   const radius = maxDistance ? parseFloat(maxDistance as string) : 15; // default 15km
   const page = Math.max(1, parseInt(pageStr as string) || 1);
   const limit = Math.min(50, Math.max(1, parseInt(limitStr as string) || 20));
@@ -35,30 +66,98 @@ router.get('/', searchLimiter, async (req: AuthenticatedRequest, res: Response) 
     const cosLat = Math.cos((userLat * Math.PI) / 180);
     const lngDiff = radius / (111 * (cosLat > 0.1 ? cosLat : 0.1));
 
-    const whereClause: any = {
-      latitude: {
-        gte: userLat - latDiff,
-        lte: userLat + latDiff,
-      },
-      longitude: {
-        gte: userLng - lngDiff,
-        lte: userLng + lngDiff,
-      },
+    // Determine the user's city dynamically to restrict results to that city only
+    let userCity = (city as string) || '';
+    if (!userCity && lat && lng) {
+      userCity = await fetchCityName(userLat, userLng);
+    }
+
+    const citySynonyms: Record<string, string[]> = {
+      'bengaluru': ['bengaluru', 'bangalore'],
+      'bangalore': ['bengaluru', 'bangalore'],
+      'mumbai': ['mumbai', 'bombay'],
+      'bombay': ['mumbai', 'bombay'],
+      'delhi': ['delhi', 'new delhi', 'noida', 'gurugram', 'ghaziabad', 'faridabad'],
+      'new delhi': ['delhi', 'new delhi', 'noida', 'gurugram', 'ghaziabad', 'faridabad'],
+      'chennai': ['chennai', 'madras'],
+      'madras': ['chennai', 'madras'],
+      'kolkata': ['kolkata', 'calcutta'],
+      'calcutta': ['kolkata', 'calcutta']
     };
 
-    if (query) {
-      whereClause.name = { contains: query as string, mode: 'insensitive' };
+    const cityTerms = userCity
+      .split(/[\s,.-]+/)
+      .filter(term => term.length > 2 && !['near', 'east', 'west', 'north', 'south', 'central', 'city', 'town'].includes(term.toLowerCase()));
+
+    const expandedTerms = new Set<string>();
+    for (const term of cityTerms) {
+      const lowerTerm = term.toLowerCase();
+      expandedTerms.add(lowerTerm);
+      if (citySynonyms[lowerTerm]) {
+        citySynonyms[lowerTerm].forEach(syn => expandedTerms.add(syn));
+      }
     }
 
-    if (specialty) {
-      whereClause.specialties = {
-        some: {
-          specialty: {
-            name: { equals: specialty as string, mode: 'insensitive' }
+    const andConditions: any[] = [
+      {
+        latitude: {
+          gte: userLat - latDiff,
+          lte: userLat + latDiff,
+        }
+      },
+      {
+        longitude: {
+          gte: userLng - lngDiff,
+          lte: userLng + lngDiff,
+        }
+      }
+    ];
+
+    if (expandedTerms.size > 0) {
+      andConditions.push({
+        OR: Array.from(expandedTerms).map(term => ({
+          address: { contains: term, mode: 'insensitive' }
+        }))
+      });
+    }
+
+    const targetSpecialty = specialty ? (findMappedSpecialty(specialty as string) || specialty as string) : null;
+    const querySpecialty = query ? findMappedSpecialty(query as string) : null;
+
+    if (targetSpecialty) {
+      andConditions.push({
+        specialties: {
+          some: {
+            specialty: {
+              name: { equals: targetSpecialty, mode: 'insensitive' }
+            }
           }
         }
-      };
+      });
+    } else if (query) {
+      if (querySpecialty) {
+        andConditions.push({
+          OR: [
+            { name: { contains: query as string, mode: 'insensitive' } },
+            {
+              specialties: {
+                some: {
+                  specialty: {
+                    name: { equals: querySpecialty, mode: 'insensitive' }
+                  }
+                }
+              }
+            }
+          ]
+        });
+      } else {
+        andConditions.push({
+          name: { contains: query as string, mode: 'insensitive' }
+        });
+      }
     }
+
+    const whereClause = { AND: andConditions };
 
     // Load hospitals with specialties — case-insensitive search
     let hospitalsList = await prisma.hospital.findMany({
@@ -75,7 +174,7 @@ router.get('/', searchLimiter, async (req: AuthenticatedRequest, res: Response) 
     // Smart Cache Strategy: If we have very few results locally, ask our Provider (Google Places)
     // and cache them for the future.
     if (hospitalsList.length < 3) {
-      const searchKeyword = (query as string) || (specialty as string) || 'Hospital';
+      const searchKeyword = (query as string) || targetSpecialty || (specialty as string) || 'Hospital';
       await hospitalService.ensureHospitalsCached(userLat, userLng, searchKeyword, radius);
 
       // Re-fetch from our DB now that the cache is populated
@@ -92,11 +191,12 @@ router.get('/', searchLimiter, async (req: AuthenticatedRequest, res: Response) 
     }
 
     // Score and filter by distance radius
+    const activeSpecialty = targetSpecialty || querySpecialty || 'General Medicine';
     const scored = hospitalsList
       .map((hosp: any) => {
         const { score, distance, explanation } = scoreHospital(
           hosp,
-          (specialty as string) || 'General Medicine',
+          activeSpecialty,
           userLat,
           userLng
         );
@@ -135,6 +235,10 @@ router.get('/', searchLimiter, async (req: AuthenticatedRequest, res: Response) 
 // GET /api/hospitals/saved (Guarded - retrieve bookmarked hospitals)
 router.get('/saved', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
+  const { lat, lng } = req.query;
+  const userLat = lat ? parseFloat(lat as string) : 28.6139;
+  const userLng = lng ? parseFloat(lng as string) : 77.2090;
+
   try {
     const saved = await prisma.savedHospital.findMany({
       where: { userId },
@@ -152,12 +256,12 @@ router.get('/saved', authenticateToken, async (req: AuthenticatedRequest, res: R
     });
 
     const result = saved.map(s => {
-      // Calculate scores dynamically relative to Delhi coordinates for consistency
+      // Calculate scores dynamically relative to user coordinates
       const { score, explanation } = scoreHospital(
         s.hospital as any,
         'General Medicine',
-        28.6139,
-        77.2090
+        userLat,
+        userLng
       );
       return {
         ...s.hospital,
@@ -175,12 +279,14 @@ router.get('/saved', authenticateToken, async (req: AuthenticatedRequest, res: R
 
 // GET /api/hospitals/compare (Public - side-by-side matrices)
 router.get('/compare', async (req: AuthenticatedRequest, res: Response) => {
-  const { ids } = req.query;
+  const { ids, lat, lng } = req.query;
   if (!ids) {
     return res.status(400).json({ message: 'Please provide comma-separated hospital ids.' });
   }
 
   const idsArray = (ids as string).split(',');
+  const userLat = lat ? parseFloat(lat as string) : 28.6139;
+  const userLng = lng ? parseFloat(lng as string) : 77.2090;
 
   try {
     const hospitals = await prisma.hospital.findMany({
@@ -196,7 +302,7 @@ router.get('/compare', async (req: AuthenticatedRequest, res: Response) => {
 
     // Append dynamic default match scores
     const scored = hospitals.map(hosp => {
-      const { score, explanation } = scoreHospital(hosp as any, 'General Medicine', 28.6139, 77.2090);
+      const { score, explanation } = scoreHospital(hosp as any, 'General Medicine', userLat, userLng);
       return {
         ...hosp,
         recommendationScore: score,
@@ -211,9 +317,9 @@ router.get('/compare', async (req: AuthenticatedRequest, res: Response) => {
   }
 });
 
-// GET /api/hospitals/autocomplete (Public - real-time matching dropdown results)
+// GET /api/hospitals/autocomplete (Public - real-time matching dropdown results, city-scoped)
 router.get('/autocomplete', async (req: AuthenticatedRequest, res: Response) => {
-  const { q } = req.query;
+  const { q, lat, lng, city } = req.query;
   if (!q || typeof q !== 'string' || q.trim().length === 0) {
     return res.json({ hospitals: [], specialties: [] });
   }
@@ -221,36 +327,62 @@ router.get('/autocomplete', async (req: AuthenticatedRequest, res: Response) => 
   const queryText = q.trim();
 
   try {
-    // 1. Search matching hospitals (top 5)
+    // BUG-05 FIX: Build a city-scoped where clause for hospitals so autocomplete
+    // only returns results from the user's actual city, not the entire DB.
+    let hospitalWhereClause: any = {
+      name: { contains: queryText, mode: 'insensitive' }
+    };
+
+    if (lat && lng) {
+      const userLat = parseFloat(lat as string);
+      const userLng = parseFloat(lng as string);
+      if (!isNaN(userLat) && !isNaN(userLng)) {
+        // Use a ~50km bounding box to scope results to the user's metro area
+        const boundRadius = 50;
+        const latDiff = boundRadius / 111;
+        const cosLat = Math.cos((userLat * Math.PI) / 180);
+        const lngDiff = boundRadius / (111 * (cosLat > 0.1 ? cosLat : 0.1));
+        hospitalWhereClause = {
+          AND: [
+            { name: { contains: queryText, mode: 'insensitive' } },
+            { latitude: { gte: userLat - latDiff, lte: userLat + latDiff } },
+            { longitude: { gte: userLng - lngDiff, lte: userLng + lngDiff } },
+          ]
+        };
+      }
+    } else if (city && typeof city === 'string' && city.trim().length > 0) {
+      // Fallback: filter by city name in address if no coordinates
+      hospitalWhereClause = {
+        AND: [
+          { name: { contains: queryText, mode: 'insensitive' } },
+          { address: { contains: city.trim(), mode: 'insensitive' } },
+        ]
+      };
+    }
+
+    // 1. Search matching hospitals in the user's city (top 5)
     const hospitals = await prisma.hospital.findMany({
-      where: {
-        name: {
-          contains: queryText,
-          mode: 'insensitive'
-        }
-      },
-      select: {
-        id: true,
-        name: true
-      },
+      where: hospitalWhereClause,
+      select: { id: true, name: true },
       take: 5
     });
 
-    // 2. Search matching specialties (top 5)
-    const specialties = await prisma.specialty.findMany({
+    // 2. Search matching specialties (top 5 — global, not city-scoped)
+    const dbSpecialties = await prisma.specialty.findMany({
       where: {
-        name: {
-          contains: queryText,
-          mode: 'insensitive'
-        }
+        name: { contains: queryText, mode: 'insensitive' }
       },
-      select: {
-        name: true
-      },
+      select: { name: true },
       take: 5
     });
 
-    return res.json({ hospitals, specialties });
+    const specialties = [...dbSpecialties];
+    const mappedSpecialtyName = findMappedSpecialty(queryText);
+    if (mappedSpecialtyName && !specialties.some(s => s.name.toLowerCase() === mappedSpecialtyName.toLowerCase())) {
+      specialties.unshift({ name: mappedSpecialtyName });
+    }
+
+    return res.json({ hospitals, specialties: specialties.slice(0, 5) });
   } catch (err) {
     console.error('Error in autocomplete route:', err);
     return res.status(500).json({ message: 'Error performing autocomplete search.' });
@@ -260,6 +392,9 @@ router.get('/autocomplete', async (req: AuthenticatedRequest, res: Response) => 
 // GET /api/hospitals/:id (Public - single hospital metrics)
 router.get('/:id', async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
+  const { lat, lng } = req.query;
+  const userLat = lat ? parseFloat(lat as string) : 28.6139;
+  const userLng = lng ? parseFloat(lng as string) : 77.2090;
 
   try {
     const hospital = await prisma.hospital.findUnique({
@@ -277,7 +412,7 @@ router.get('/:id', async (req: AuthenticatedRequest, res: Response) => {
       return res.status(404).json({ message: 'Hospital clinic not found.' });
     }
 
-    const { score, explanation } = scoreHospital(hospital as any, 'General Medicine', 28.6139, 77.2090);
+    const { score, explanation } = scoreHospital(hospital as any, 'General Medicine', userLat, userLng);
 
     return res.json({
       ...hospital,

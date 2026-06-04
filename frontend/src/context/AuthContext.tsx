@@ -4,17 +4,21 @@ import { authAPI } from '../services/api';
 interface User {
   id: string;
   email: string;
+  mobileNumber?: string;
   name: string;
   role: string;
+  authProvider?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<void>;
   googleLogin: (credential: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, mobileNumber: string, password: string, code: string) => Promise<void>;
+  loginWithMobileToken: (token: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,10 +46,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const refreshUser = async () => {
+    try {
+      const userData = await authAPI.verifyToken();
+      setUser(userData);
+    } catch (err) {
+      authAPI.logout();
+      setUser(null);
+    }
+  };
+
+  const login = async (identifier: string, password: string) => {
     setLoading(true);
     try {
-      const data = await authAPI.login(email, password);
+      const data = await authAPI.login(identifier, password);
       setUser(data.user);
     } finally {
       setLoading(false);
@@ -62,10 +76,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (name: string, email: string, password: string) => {
+  const register = async (name: string, email: string, mobileNumber: string, password: string, code: string) => {
     setLoading(true);
     try {
-      const data = await authAPI.register(name, email, password);
+      const data = await authAPI.register(name, email, mobileNumber, password, code);
+      setUser(data.user);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loginWithMobileToken = async (token: string) => {
+    setLoading(true);
+    try {
+      const data = await authAPI.loginMobile(token);
       setUser(data.user);
     } finally {
       setLoading(false);
@@ -78,7 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, googleLogin, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, googleLogin, register, loginWithMobileToken, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

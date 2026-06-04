@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { reportAPI, hospitalAPI, Hospital, MedicalReport } from '../services/api';
+import { getInitialLocation } from '../utils/geolocation';
 import { 
   FileText, UploadCloud, CheckCircle, AlertTriangle, 
   HelpCircle, Sparkles, Plus, Trash2, Edit, Save, 
@@ -8,6 +9,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { MedicalDisclaimer, AIModalDisclaimer } from '../components/MedicalDisclaimer';
+import toast from 'react-hot-toast'; // BUG-07 FIX
 
 const parseReportValuesFromRawText = (text: string, category: string): Array<{ key: string; value: number; unit: string; referenceRange: string; isAbnormal: boolean; description?: string; category: string }> => {
   if (!text) return [{ key: '', value: 0, unit: '', referenceRange: '', isAbnormal: false, description: '', category }];
@@ -80,8 +82,10 @@ export const ReportCenter: React.FC = () => {
   const [matchedHospitals, setMatchedHospitals] = useState<Hospital[]>([]);
   const [showAiModal, setShowAiModal] = useState(false);
   const [hasAcknowledgedAi, setHasAcknowledgedAi] = useState(false);
+  const [lat, setLat] = useState<number | undefined>(undefined);
+  const [lng, setLng] = useState<number | undefined>(undefined);
 
-  const fetchReports = async () => {
+  const fetchReports = async (userLat = lat, userLng = lng) => {
     if (!user) {
       navigate('/login');
       return;
@@ -91,7 +95,7 @@ export const ReportCenter: React.FC = () => {
       const data = await reportAPI.getAll();
       setReports(data);
       if (data.length > 0) {
-        selectReport(data[0]);
+        selectReport(data[0], userLat, userLng);
       }
     } catch (err) {
       console.error(err);
@@ -100,9 +104,9 @@ export const ReportCenter: React.FC = () => {
     }
   };
 
-  const fetchMatchedHospitals = async (specialtyName: string) => {
+  const fetchMatchedHospitals = async (specialtyName: string, userLat = lat, userLng = lng) => {
     try {
-      const data = await hospitalAPI.search('', specialtyName, 25);
+      const data = await hospitalAPI.search('', specialtyName, 25, userLat, userLng);
       setMatchedHospitals(data.slice(0, 3));
     } catch (err) {
       console.error(err);
@@ -110,10 +114,31 @@ export const ReportCenter: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchReports();
+    const loadLocation = () => {
+      getInitialLocation()
+        .then((res) => {
+          setLat(res.latitude);
+          setLng(res.longitude);
+          fetchReports(res.latitude, res.longitude);
+        });
+    };
+
+    loadLocation();
+
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'geolocation' })
+        .then((status) => {
+          status.onchange = () => {
+            if (status.state === 'granted') {
+              loadLocation();
+            }
+          };
+        })
+        .catch(err => console.log('Permissions API query not supported:', err));
+    }
   }, []);
 
-  const selectReport = (rep: MedicalReport) => {
+  const selectReport = (rep: MedicalReport, userLat = lat, userLng = lng) => {
     setActiveReport(rep);
     const rawOcrText = rep.ocrResult?.rawText || '';
     setRawText(rawOcrText);
@@ -126,7 +151,7 @@ export const ReportCenter: React.FC = () => {
     }
     
     if (rep.specialists && rep.specialists.length > 0) {
-      fetchMatchedHospitals(rep.specialists[0].specialtyName);
+      fetchMatchedHospitals(rep.specialists[0].specialtyName, userLat, userLng);
     } else {
       setMatchedHospitals([]);
     }
@@ -166,7 +191,7 @@ export const ReportCenter: React.FC = () => {
       setSelectedFiles([]);
     } catch (err) {
       console.error(err);
-      alert('OCR extraction failed. Let us try fallback simulators.');
+      toast.error('OCR extraction failed. Please try a clearer image or a higher-quality PDF.'); // BUG-07 FIX
     } finally {
       setUploading(false);
     }
@@ -616,7 +641,9 @@ export const ReportCenter: React.FC = () => {
                         
                         <div className="space-y-3">
                           {matchedHospitals.length === 0 ? (
-                            <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 py-4 text-center">Locating matching specialist clinics near Delhi...</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 py-4 text-center">
+                              Locating matching specialist clinics near {localStorage.getItem('pulse_city_name') || 'your area'}...
+                            </p>
                           ) : (
                             matchedHospitals.map(h => (
                               <div 

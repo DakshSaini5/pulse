@@ -3,7 +3,15 @@ import { Bell, Check, Trash2, Settings, Info, Activity, AlertCircle } from 'luci
 import { notificationAPI, Notification } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
-export const NotificationCenter: React.FC = () => {
+interface NotificationCenterProps {
+  iconColorClass?: string;
+  hoverBgClass?: string;
+}
+
+export const NotificationCenter: React.FC<NotificationCenterProps> = ({
+  iconColorClass = 'text-slate-400 hover:text-primary',
+  hoverBgClass = 'hover:bg-primary/5'
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -97,7 +105,7 @@ export const NotificationCenter: React.FC = () => {
     <div className="relative" ref={dropdownRef}>
       <button 
         onClick={handleToggle}
-        className="relative p-2 text-slate-400 hover:text-primary transition-colors rounded-xl hover:bg-primary/5 focus:outline-none"
+        className={`relative p-2 transition-colors rounded-xl focus:outline-none ${iconColorClass} ${hoverBgClass}`}
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
