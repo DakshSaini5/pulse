@@ -169,6 +169,20 @@ export const ReportCenter: React.FC = () => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== idx));
   };
 
+  // BUG-20 FIX: Delete report from history
+  const handleDeleteReport = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm('Delete this medical report? This cannot be undone.')) return;
+    try {
+      await reportAPI.delete(id);
+      setReports(prev => prev.filter(r => r.id !== id));
+      if (activeReport?.id === id) setActiveReport(null);
+      toast.success('Report deleted.');
+    } catch (err) {
+      toast.error('Failed to delete report.');
+    }
+  };
+
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedFiles.length === 0) return;
@@ -340,16 +354,16 @@ export const ReportCenter: React.FC = () => {
             ) : (
               <div className="space-y-2">
                 {reports.map(rep => (
-                  <button
+                  <div
                     key={rep.id}
                     onClick={() => selectReport(rep)}
-                    className={`w-full p-3 rounded-xl border text-left flex items-center justify-between text-xs transition-all ${
+                    className={`w-full p-3 rounded-xl border text-left flex items-center justify-between text-xs transition-all cursor-pointer ${
                       activeReport?.id === rep.id
                         ? 'border-primary bg-primary/10 text-slate-900 dark:text-white font-bold'
-                        : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:text-white'
+                        : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <FileText className="w-4 h-4 text-primary shrink-0" />
                       <div>
                         <span className="block truncate max-w-[140px] text-xs font-semibold">
@@ -357,11 +371,22 @@ export const ReportCenter: React.FC = () => {
                             ? `${rep.reportType === 'GENERAL' ? 'Medical' : rep.reportType} Report`
                             : `Scan #${rep.id.slice(0, 8)}`}
                         </span>
-                        <span className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-500 block leading-none mt-1">Status: {rep.status}</span>
+                        <span className="text-[9px] text-slate-500 dark:text-slate-400 block leading-none mt-1">Status: {rep.status}</span>
                       </div>
                     </div>
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500">{new Date(rep.createdAt).toLocaleDateString()}</span>
-                  </button>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">{new Date(rep.createdAt).toLocaleDateString()}</span>
+                      {/* BUG-20 FIX: Delete button */}
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteReport(rep.id, e)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-danger hover:bg-danger/10 transition-all"
+                        title="Delete report"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}

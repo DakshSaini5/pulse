@@ -255,4 +255,27 @@ router.post('/:id/verify', authenticateToken, aiLimiter, async (req: Authenticat
   }
 });
 
+// BUG-20 FIX: DELETE /api/prescriptions/:id
+router.delete('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user!.id;
+  const { id } = req.params;
+
+  try {
+    const item = await prisma.prescription.findUnique({ where: { id } });
+    if (!item || item.userId !== userId) {
+      return res.status(404).json({ message: 'Prescription not found.' });
+    }
+
+    // Delete child records first (cascade not guaranteed by all DBs without explicit setup)
+    await prisma.prescriptionAnalysis.deleteMany({ where: { prescriptionId: id } });
+    await prisma.oCRResult.deleteMany({ where: { prescriptionId: id } });
+    await prisma.prescription.delete({ where: { id } });
+
+    return res.json({ message: 'Prescription deleted successfully.' });
+  } catch (err) {
+    console.error('Delete prescription failed:', err);
+    return res.status(500).json({ message: 'Failed to delete prescription.' });
+  }
+});
+
 export default router;

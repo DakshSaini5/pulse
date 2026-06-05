@@ -18,19 +18,40 @@ interface MapProps {
   userLng?: number;
 }
 
+// BUG-15 FIX: map tile URLs per style key saved in localStorage
+const TILE_LAYERS: Record<string, { url: string; attribution: string }> = {
+  'clinical-light': {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '© OpenStreetMap contributors',
+  },
+  'charcoal-dark': {
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    attribution: '© OpenStreetMap contributors © CARTO',
+  },
+  'streets-satellite': {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Tiles © Esri',
+  },
+};
+
 export const Map: React.FC<MapProps> = ({ 
   hospitals, 
   selectedHospitalId, 
   onSelectHospital,
-  userLat = 28.6139, // Default user coordinates (e.g. New Delhi region)
+  userLat = 28.6139,
   userLng = 77.2090
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersGroupRef = useRef<L.LayerGroup | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
+
+    // BUG-15 FIX: read user's saved map style preference
+    const savedStyle = localStorage.getItem('pulse_pref_map_style') || 'clinical-light';
+    const tileConfig = TILE_LAYERS[savedStyle] || TILE_LAYERS['clinical-light'];
 
     // Instantiate map if not already present
     if (!mapInstanceRef.current) {
@@ -40,16 +61,14 @@ export const Map: React.FC<MapProps> = ({
         zoomControl: true,
       });
 
-      // Use dark themed openstreetmap tile layer
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
+      tileLayerRef.current = L.tileLayer(tileConfig.url, {
+        attribution: tileConfig.attribution,
       }).addTo(mapInstanceRef.current);
 
       markersGroupRef.current = L.layerGroup().addTo(mapInstanceRef.current);
     }
 
     return () => {
-      // Clean up on component unmount
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;

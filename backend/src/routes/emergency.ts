@@ -39,6 +39,13 @@ router.post('/contacts', authenticateToken, async (req: AuthenticatedRequest, re
     return res.status(400).json({ message: 'Name, phone number, and relationship are required.' });
   }
 
+  // BUG-19 FIX: Validate phone number format (E.164 Indian: +91XXXXXXXXXX or 10-digit)
+  const normalised = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber.replace(/\D/g, '')}`;
+  const INDIAN_PHONE_REGEX = /^\+91[6-9]\d{9}$/;
+  if (!INDIAN_PHONE_REGEX.test(normalised)) {
+    return res.status(400).json({ message: 'Please provide a valid Indian mobile number (10 digits starting with 6-9).' });
+  }
+
   try {
     // Check if limit reached (e.g., max 5 contacts)
     const count = await prisma.emergencyContact.count({ where: { userId: req.user!.id } });
@@ -50,7 +57,7 @@ router.post('/contacts', authenticateToken, async (req: AuthenticatedRequest, re
       data: {
         userId: req.user!.id,
         name,
-        phoneNumber,
+        phoneNumber: normalised, // BUG-19: always store in E.164 format
         relationship,
       },
     });

@@ -20,7 +20,11 @@ export const Search: React.FC = () => {
   // Search parameters state initialized from URL if present
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [specialty, setSpecialty] = useState(searchParams.get('specialty') || '');
-  const [radius, setRadius] = useState(15);
+  // BUG-11 + BUG-16 FIX: read saved radius from Settings localStorage preference
+  const [radius, setRadius] = useState(() => {
+    const saved = localStorage.getItem('pulse_pref_radius');
+    return saved ? parseInt(saved) : 15;
+  });
   const [emergencyOnly, setEmergencyOnly] = useState(searchParams.get('emergency') === 'true');
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'match');
 
@@ -307,7 +311,7 @@ export const Search: React.FC = () => {
         return prev.filter(cid => cid !== id);
       }
       if (prev.length >= 3) {
-        alert('You can select a maximum of 3 hospitals to compare at once.');
+        toast.error('You can select a maximum of 3 hospitals to compare at once.');
         return prev;
       }
       return [...prev, id];

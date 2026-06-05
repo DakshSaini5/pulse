@@ -345,6 +345,11 @@ export const prescriptionAPI = {
     const res = await api.get(`/api/prescriptions/${id}`);
     return res.data as Prescription;
   },
+  // BUG-20 FIX
+  delete: async (id: string) => {
+    const res = await api.delete(`/api/prescriptions/${id}`);
+    return res.data;
+  },
 };
 
 export const reportAPI = {
@@ -370,6 +375,11 @@ export const reportAPI = {
   getById: async (id: string) => {
     const res = await api.get(`/api/reports/${id}`);
     return res.data as MedicalReport;
+  },
+  // BUG-20 FIX
+  delete: async (id: string) => {
+    const res = await api.delete(`/api/reports/${id}`);
+    return res.data;
   },
 };
 

@@ -93,6 +93,20 @@ export const PrescriptionCenter: React.FC = () => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== idx));
   };
 
+  // BUG-20 FIX: Delete prescription from history
+  const handleDeletePrescription = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm('Delete this prescription record? This cannot be undone.')) return;
+    try {
+      await prescriptionAPI.delete(id);
+      setPrescriptions(prev => prev.filter(p => p.id !== id));
+      if (activePrescription?.id === id) setActivePrescription(null);
+      toast.success('Prescription deleted.');
+    } catch (err) {
+      toast.error('Failed to delete prescription.');
+    }
+  };
+
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedFiles.length === 0) return;
@@ -286,16 +300,16 @@ export const PrescriptionCenter: React.FC = () => {
             ) : (
               <div className="space-y-2">
                 {prescriptions.map(pres => (
-                  <button
+                  <div
                     key={pres.id}
                     onClick={() => selectPrescription(pres)}
-                    className={`w-full p-3 rounded-xl border text-left flex items-center justify-between text-xs transition-all ${
+                    className={`w-full p-3 rounded-xl border text-left flex items-center justify-between text-xs transition-all cursor-pointer ${
                       activePrescription?.id === pres.id
                         ? 'border-primary bg-primary/10 text-slate-900 dark:text-white font-bold'
-                        : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:text-white'
+                        : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <FileText className="w-4 h-4 text-primary shrink-0" />
                       <div>
                         <span className="block truncate max-w-[140px] text-xs font-semibold">
@@ -303,11 +317,22 @@ export const PrescriptionCenter: React.FC = () => {
                             ? pres.prescriptionAnalysis.map(m => m.medicineName).join(', ')
                             : `Scan #${pres.id.slice(0, 8)}`}
                         </span>
-                        <span className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-500 block leading-none mt-1">Status: {pres.status}</span>
+                        <span className="text-[9px] text-slate-500 dark:text-slate-400 block leading-none mt-1">Status: {pres.status}</span>
                       </div>
                     </div>
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500">{new Date(pres.createdAt).toLocaleDateString()}</span>
-                  </button>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">{new Date(pres.createdAt).toLocaleDateString()}</span>
+                      {/* BUG-20 FIX: Delete button */}
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeletePrescription(pres.id, e)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-danger hover:bg-danger/10 transition-all"
+                        title="Delete prescription"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}

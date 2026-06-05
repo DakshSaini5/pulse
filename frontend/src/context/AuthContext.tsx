@@ -61,6 +61,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const data = await authAPI.login(identifier, password);
       setUser(data.user);
+    } catch (err) {
+      setLoading(false);
+      throw err; // BUG-13 FIX: re-throw so Login.tsx can show the error toast
     } finally {
       setLoading(false);
     }
@@ -71,6 +74,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const data = await authAPI.googleAuth(credential);
       setUser(data.user);
+    } catch (err) {
+      setLoading(false);
+      throw err; // BUG-13 FIX
     } finally {
       setLoading(false);
     }
@@ -81,6 +87,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const data = await authAPI.register(name, email, mobileNumber, password, code);
       setUser(data.user);
+    } catch (err) {
+      setLoading(false);
+      throw err; // BUG-13 FIX
     } finally {
       setLoading(false);
     }
@@ -91,6 +100,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const data = await authAPI.loginMobile(token);
       setUser(data.user);
+    } catch (err) {
+      setLoading(false);
+      throw err; // BUG-13 FIX
     } finally {
       setLoading(false);
     }
