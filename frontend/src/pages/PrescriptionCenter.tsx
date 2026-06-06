@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import imageCompression from 'browser-image-compression';
 import { prescriptionAPI, Prescription } from '../services/api';
 import { 
   ClipboardList, UploadCloud, CheckCircle, AlertTriangle, 
-  HelpCircle, Sparkles, Plus, Trash2, Edit, Save, FileText
+  HelpCircle, Sparkles, Plus, Trash2, Edit, Save, FileText,
+  Activity, ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -57,6 +59,8 @@ export const PrescriptionCenter: React.FC = () => {
   const [verifying, setVerifying] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
   const [hasAcknowledgedAi, setHasAcknowledgedAi] = useState(false);
+  const [checkingInteractions, setCheckingInteractions] = useState(false);
+  const [interactionResult, setInteractionResult] = useState<{ interactions: string, severity: string, checked: number } | null>(null);
 
   const fetchPrescriptions = async () => {
     if (!user) {
@@ -115,7 +119,20 @@ export const PrescriptionCenter: React.FC = () => {
       let lastRes: Prescription | null = null;
       const uploadedList: Prescription[] = [];
 
-      for (const file of selectedFiles) {
+      for (let file of selectedFiles) {
+        if (file.type.startsWith('image/')) {
+          try {
+            const options = {
+              maxSizeMB: 1,
+              maxWidthOrHeight: 1200,
+              useWebWorker: true,
+            };
+            const compressedBlob = await imageCompression(file, options);
+            file = new File([compressedBlob], file.name, { type: compressedBlob.type, lastModified: Date.now() });
+          } catch (compressErr) {
+            console.error('Image compression failed, using original file', compressErr);
+          }
+        }
         const res = await prescriptionAPI.upload(file);
         uploadedList.push(res);
         lastRes = res;
@@ -208,6 +225,19 @@ export const PrescriptionCenter: React.FC = () => {
       })));
     } else {
       setMedicineFields(parseMedicinesFromRawText(rawOcrText));
+    }
+  };
+
+  const handleCheckInteractions = async () => {
+    setCheckingInteractions(true);
+    try {
+      const res = await prescriptionAPI.checkInteractions();
+      setInteractionResult({ interactions: res.interactions, severity: res.severity, checked: res.medicinesChecked });
+    } catch (err) {
+      console.error(err);
+      alert('Failed to check interactions.');
+    } finally {
+      setCheckingInteractions(false);
     }
   };
 
@@ -337,6 +367,36 @@ export const PrescriptionCenter: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* AI Drug Interaction Checker Widget */}
+          <div className="glass-panel rounded-3xl p-6 border border-slate-200 dark:border-slate-700 space-y-4 bg-gradient-to-b from-primary/5 to-transparent">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+              <Activity className="w-4 h-4 text-primary" />
+              Global Drug Interaction Check
+            </h3>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400">
+              Cross-reference all active medications across all your uploaded prescriptions to detect any dangerous overlapping side effects or interactions.
+            </p>
+            
+            {interactionResult ? (
+              <div className={`p-4 rounded-xl border ${interactionResult.severity === 'HIGH' ? 'bg-danger/10 border-danger/20 text-danger' : interactionResult.severity === 'MODERATE' ? 'bg-warning/10 border-warning/20 text-warning' : 'bg-success/10 border-success/20 text-success'}`}>
+                <p className="text-xs font-bold mb-1">Severity: {interactionResult.severity}</p>
+                <p className="text-[10px] leading-relaxed">{interactionResult.interactions}</p>
+                <p className="text-[9px] mt-2 opacity-70">Analyzed {interactionResult.checked} active medications.</p>
+                <button onClick={() => setInteractionResult(null)} className="text-[9px] mt-2 underline hover:opacity-80">Reset</button>
+              </div>
+            ) : (
+              <button
+                onClick={handleCheckInteractions}
+                disabled={checkingInteractions || prescriptions.length === 0}
+                className="w-full py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 text-xs font-bold rounded-xl shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+              >
+                {checkingInteractions ? <Sparkles className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                {checkingInteractions ? 'Checking with AI...' : 'Run Interaction Scan'}
+              </button>
+            )}
+          </div>
+
         </div>
 
         {/* Right Side: Active Workspace */}

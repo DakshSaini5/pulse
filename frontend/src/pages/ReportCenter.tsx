@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import imageCompression from 'browser-image-compression';
 import { reportAPI, hospitalAPI, Hospital, MedicalReport } from '../services/api';
 import { getInitialLocation } from '../utils/geolocation';
 import { 
@@ -191,7 +192,20 @@ export const ReportCenter: React.FC = () => {
       let lastRes: MedicalReport | null = null;
       const uploadedList: MedicalReport[] = [];
 
-      for (const file of selectedFiles) {
+      for (let file of selectedFiles) {
+        if (file.type.startsWith('image/')) {
+          try {
+            const options = {
+              maxSizeMB: 1,
+              maxWidthOrHeight: 1200,
+              useWebWorker: true,
+            };
+            const compressedBlob = await imageCompression(file, options);
+            file = new File([compressedBlob], file.name, { type: compressedBlob.type, lastModified: Date.now() });
+          } catch (compressErr) {
+            console.error('Image compression failed, using original file', compressErr);
+          }
+        }
         const res = await reportAPI.upload(file);
         uploadedList.push(res);
         lastRes = res;

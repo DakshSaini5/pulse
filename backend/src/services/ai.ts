@@ -433,3 +433,92 @@ export const parseMedicalReportWithGemini = async (rawText: string, reportType: 
     return { result: simulateMedicalReport(rawText, reportType), tokensUsed: 0 };
   }
 };
+
+export const checkDrugInteractionsWithGemini = async (medicinesList: string[]) => {
+  const genAI = getGenAI();
+  if (!genAI || isCircuitOpen() || medicinesList.length === 0) {
+    return {
+      interactions: "Simulator: No critical drug interactions detected among your current active prescriptions.",
+      severity: "LOW",
+      tokensUsed: 0
+    };
+  }
+
+  try {
+    const prompt = `
+      You are an expert clinical pharmacologist.
+      The user is currently taking the following list of medications:
+      ${JSON.stringify(medicinesList)}
+
+      Analyze this list for any known drug-drug interactions, contraindications, or overlapping side effects.
+      
+      Output must be strictly a valid JSON object matching this schema exactly:
+      {
+        "interactions": "A clear, patient-friendly explanation of any interactions found. If none, say so.",
+        "severity": "NONE | LOW | MODERATE | HIGH"
+      }
+      
+      Output ONLY the raw JSON string with no wrapper markdown brackets.
+    `;
+
+    const { result } = await generateContentWithFallback(genAI, prompt, {
+      responseMimeType: "application/json",
+      maxOutputTokens: 2048
+    });
+    
+    const parsed = safeParseJSON(result.response.text().trim());
+    return {
+      interactions: parsed?.interactions || "No significant interactions found.",
+      severity: parsed?.severity || "NONE",
+      tokensUsed: extractTokenUsage(result).totalTokens
+    };
+  } catch (err) {
+    console.error('Drug interaction check failed.', err);
+    return { interactions: "Could not analyze interactions at this time.", severity: "UNKNOWN", tokensUsed: 0 };
+  }
+};
+
+export const assessHealthRiskWithGemini = async (biomarkers: any[]) => {
+  const genAI = getGenAI();
+  if (!genAI || isCircuitOpen() || biomarkers.length === 0) {
+    return {
+      score: 85,
+      summary: "Simulator: Based on available data, your overall health parameters are mostly stable. Continue monitoring routine biomarkers.",
+      tokensUsed: 0
+    };
+  }
+
+  try {
+    const prompt = `
+      You are an expert medical AI.
+      The user has the following aggregated biomarker data from their recent lab reports:
+      ${JSON.stringify(biomarkers.slice(0, 50))} // Limit to 50 to avoid huge context
+
+      Calculate a general 'Health Risk Score' from 0 to 100 (where 100 is perfectly healthy, 0 is critical risk) based on the number of abnormal values and their severity.
+      Also provide a 2-3 sentence summary of their overall health trajectory.
+      
+      Output must be strictly a valid JSON object matching this schema exactly:
+      {
+        "score": 85,
+        "summary": "Patient-friendly summary of overall health risks based on the provided markers."
+      }
+      
+      Output ONLY the raw JSON string with no wrapper markdown brackets.
+    `;
+
+    const { result } = await generateContentWithFallback(genAI, prompt, {
+      responseMimeType: "application/json",
+      maxOutputTokens: 2048
+    });
+    
+    const parsed = safeParseJSON(result.response.text().trim());
+    return {
+      score: parsed?.score || 80,
+      summary: parsed?.summary || "Unable to fully assess risk score at this time.",
+      tokensUsed: extractTokenUsage(result).totalTokens
+    };
+  } catch (err) {
+    console.error('Health risk assessment failed.', err);
+    return { score: 80, summary: "Could not calculate risk score.", tokensUsed: 0 };
+  }
+};

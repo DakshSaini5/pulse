@@ -28,6 +28,14 @@
   background: #94A3B8;
 }
 
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Premium Light Panel Styles (Clean Corporate Aesthetic) */
 .glass-panel {
   @apply bg-pulseCard border border-pulseBorder shadow-ambient rounded-2xl transition-all duration-300;

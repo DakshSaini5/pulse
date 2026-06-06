@@ -64,7 +64,7 @@ export const Profile: React.FC = () => {
     e.preventDefault();
     setSavingProfile(true);
     try {
-      const updated = await userAPI.updateProfile({ name, email });
+      const updated = await userAPI.updateProfile({ name });
       setProfile(prev => prev ? { ...prev, ...updated } : null);
       
       // Update local storage user data

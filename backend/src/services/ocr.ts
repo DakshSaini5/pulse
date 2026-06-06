@@ -37,44 +37,15 @@ async function getFileBuffer(filePath: string): Promise<Buffer> {
   }
 }
 
-const tesseractWorkerCode = `
-  const { parentPort, workerData } = require('worker_threads');
-  const Tesseract = require('tesseract.js');
-
-  Tesseract.recognize(Buffer.from(workerData.buffer), 'eng')
-    .then(result => {
-      parentPort.postMessage({ success: true, text: result.data.text.trim() });
-    })
-    .catch(err => {
-      parentPort.postMessage({ success: false, error: err.message || String(err) });
-    });
-`;
-
 async function performTesseractOCR(fileBuffer: Buffer): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const worker = new Worker(tesseractWorkerCode, {
-      eval: true,
-      workerData: { buffer: fileBuffer }
+  try {
+    const result = await Tesseract.recognize(fileBuffer, 'eng', {
+      logger: (m) => { if (m.status === 'recognizing text' && m.progress % 0.1 === 0) console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`); }
     });
-
-    worker.on('message', (message) => {
-      if (message.success) {
-        resolve(message.text);
-      } else {
-        reject(new Error(message.error));
-      }
-    });
-
-    worker.on('error', (err) => {
-      reject(err);
-    });
-
-    worker.on('exit', (code) => {
-      if (code !== 0) {
-        reject(new Error(`OCR Worker stopped with exit code ${code}`));
-      }
-    });
-  });
+    return result.data.text.trim();
+  } catch (err: any) {
+    throw new Error(err.message || String(err));
+  }
 }
 
 async function fileToGenerativePart(filePath: string, mimeType: string) {
@@ -122,42 +93,16 @@ export const performOCR = async (filePath: string): Promise<OCRResult> => {
       else if (ext === '.webp') mimeType = 'image/webp';
 
       const imagePart = await fileToGenerativePart(filePath, mimeType);
-      const prompt = `You are a medical document OCR scanner. Extract ALL text from this medical document image.
-
-OUTPUT FORMAT: Return a JSON object with this exact structure:
-{
-  "lines": ["line 1 text here", "line 2 text here", ...]
-}
-
-RULES:
-- Every single line of text visible in the document must be captured as a separate string in the "lines" array.
-- Include ALL headers, patient info, test names, values, units, reference ranges, doctor names, dates, addresses, stamps, signatures text, footnotes.
-- Preserve the reading order (top to bottom, left to right).
-- For tabular data, combine columns into a single string per row (e.g. "TSH 5.85 uIU/mL 0.40 - 4.50").
-- Do NOT add any commentary, explanation, or markdown formatting. Return ONLY the raw JSON object.`;
+      const prompt = `Extract all text from this medical document image exactly as it appears. Preserve layout and reading order. Return ONLY the raw extracted text, with NO commentary and NO markdown formatting.`;
 
       const { result, modelName } = await generateContentWithFallback(genAI, [prompt, imagePart], {
-        responseMimeType: "application/json",
         maxOutputTokens: 8192
       });
       console.log(`[OCR] Extracted using model: ${modelName}`);
-      let responseText = result.response.text().trim();
+      let finalText = result.response.text().trim();
       
       // Strip markdown code fences if present
-      responseText = responseText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
-      
-      let finalText = '';
-      try {
-        const parsed = JSON.parse(responseText);
-        if (parsed.lines && Array.isArray(parsed.lines)) {
-          finalText = parsed.lines.join('\n').trim();
-        } else {
-          finalText = responseText;
-        }
-      } catch {
-        // If JSON parsing fails, use the raw text directly (still valid OCR output)
-        finalText = responseText;
-      }
+      finalText = finalText.replace(/^```(?:text)?\s*/i, '').replace(/\s*```$/i, '');
       
       console.log(`Gemini OCR completed successfully (${finalText.length} chars extracted).`);
 

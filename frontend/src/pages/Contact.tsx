@@ -54,7 +54,7 @@ export const Contact: React.FC = () => {
                 <div>
                   <a 
                     href="mailto:pulsehealthcare.app@gmail.com" 
-                    className="text-base sm:text-lg font-black text-primary hover:underline"
+                    className="text-base sm:text-lg font-black text-primary hover:underline break-all"
                   >
                     pulsehealthcare.app@gmail.com
                   </a>
@@ -117,7 +117,7 @@ export const Contact: React.FC = () => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Enter your full name"
-                    className="w-full bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-xl px-4 py-3 text-xs placeholder-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium text-slate-900 dark:text-white"
+                    className="w-full bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-xl px-4 py-3 text-base placeholder-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium text-slate-900 dark:text-white"
                   />
                 </div>
 
@@ -130,7 +130,7 @@ export const Contact: React.FC = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@example.com"
-                    className="w-full bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-xl px-4 py-3 text-xs placeholder-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium text-slate-900 dark:text-white"
+                    className="w-full bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-xl px-4 py-3 text-base placeholder-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium text-slate-900 dark:text-white"
                   />
                 </div>
 
@@ -143,7 +143,7 @@ export const Contact: React.FC = () => {
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Write your query here..."
                     rows={4}
-                    className="w-full bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-xl px-4 py-3 text-xs placeholder-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium resize-none text-slate-900 dark:text-white"
+                    className="w-full bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-xl px-4 py-3 text-base placeholder-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium resize-none text-slate-900 dark:text-white"
                   />
                 </div>
 

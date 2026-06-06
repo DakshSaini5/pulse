@@ -1,17 +1,20 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { Layout } from './components/Layout';
 import { Landing } from './pages/Landing';
-import { Search } from './pages/Search';
-import { HospitalDetail } from './pages/HospitalDetail';
 import { Comparison } from './pages/Comparison';
 import { SavedHospitals } from './pages/SavedHospitals';
 import { PrescriptionCenter } from './pages/PrescriptionCenter';
-import { ReportCenter } from './pages/ReportCenter';
 import { HealthTrends } from './pages/HealthTrends';
+import { Terms } from './pages/Terms';
+
+// Lazy load heavy pages
+const Search = lazy(() => import('./pages/Search').then(m => ({ default: m.Search })));
+const HospitalDetail = lazy(() => import('./pages/HospitalDetail').then(m => ({ default: m.HospitalDetail })));
+const ReportCenter = lazy(() => import('./pages/ReportCenter').then(m => ({ default: m.ReportCenter })));
 import { AdminDashboard } from './pages/AdminDashboard';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
@@ -88,82 +91,85 @@ export const App: React.FC = () => {
         <AuthProvider>
           <ThemeProvider>
             <Layout>
-              <Routes>
-              {/* Public Pages */}
-              <Route path="/" element={<Landing />} />
-              <Route path="/search" element={<Search />} />
-              <Route path="/hospitals/:id" element={<HospitalDetail />} />
-              <Route path="/compare" element={<Comparison />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot" element={<Forgot />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/privacy" element={<Privacy />} />
+              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-50"><div className="w-12 h-12 rounded-full border-4 border-slate-800 border-t-primary animate-spin" /></div>}>
+                <Routes>
+                {/* Public Pages */}
+                <Route path="/" element={<Landing />} />
+                <Route path="/search" element={<Search />} />
+                <Route path="/hospitals/:id" element={<HospitalDetail />} />
+                <Route path="/compare" element={<Comparison />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/forgot" element={<Forgot />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<Terms />} />
 
-              {/* Guarded Dashboard Pages */}
-              <Route 
-                path="/saved" 
-                element={
-                  <ProtectedRoute>
-                    <SavedHospitals />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/prescriptions" 
-                element={
-                  <ProtectedRoute>
-                    <PrescriptionCenter />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/reports" 
-                element={
-                  <ProtectedRoute>
-                    <ReportCenter />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/trends" 
-                element={
-                  <ProtectedRoute>
-                    <HealthTrends />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/profile" 
-                element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/settings" 
-                element={
-                  <ProtectedRoute>
-                    <Settings />
-                  </ProtectedRoute>
-                } 
-              />
+                {/* Guarded Dashboard Pages */}
+                <Route 
+                  path="/saved" 
+                  element={
+                    <ProtectedRoute>
+                      <SavedHospitals />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/prescriptions" 
+                  element={
+                    <ProtectedRoute>
+                      <PrescriptionCenter />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/reports" 
+                  element={
+                    <ProtectedRoute>
+                      <ReportCenter />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/trends" 
+                  element={
+                    <ProtectedRoute>
+                      <HealthTrends />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/profile" 
+                  element={
+                    <ProtectedRoute>
+                      <Profile />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/settings" 
+                  element={
+                    <ProtectedRoute>
+                      <Settings />
+                    </ProtectedRoute>
+                  } 
+                />
 
-              {/* Guarded Admin Dashboard */}
-              <Route 
-                path="/admin" 
-                element={
-                  <AdminRoute>
-                    <AdminDashboard />
-                  </AdminRoute>
-                } 
-              />
+                {/* Guarded Admin Dashboard */}
+                <Route 
+                  path="/admin" 
+                  element={
+                    <AdminRoute>
+                      <AdminDashboard />
+                    </AdminRoute>
+                  } 
+                />
 
-              {/* Fallback Redirect */}
-              <Route path="*" element={<NotFound />} />
-              </Routes>
+                {/* Fallback Redirect */}
+                <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
             </Layout>
           </ThemeProvider>
         </AuthProvider>

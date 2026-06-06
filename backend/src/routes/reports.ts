@@ -2,27 +2,18 @@ import { Router, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { prisma } from '../db';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { performOCR } from '../services/ocr';
-import { parseMedicalReportWithGemini } from '../services/ai';
+import { parseMedicalReportWithGemini, assessHealthRiskWithGemini } from '../services/ai';
 import { uploadLimiter, aiLimiter } from '../middleware/rateLimiter';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import cloudinary from '../config/cloudinary';
 
 const router = Router();
 
-// Pure Cloudinary storage setup for production uploads
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: async (req, file) => {
-    return {
-      folder: 'pulse_reports',
-      format: 'jpg', // auto-convert to jpg for optimized OCR
-      public_id: `rep-${Date.now()}`,
-    };
-  },
-});
+// Store files in memory to parallelize OCR and Cloudinary uploads
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
@@ -78,6 +69,44 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
   }
 });
 
+// GET /api/reports/risk-assessment (Guarded - AI Health Risk Assessment)
+router.get('/risk-assessment', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user!.id;
+  try {
+    const reportValues = await prisma.medicalReportValue.findMany({
+      where: { medicalReport: { userId } },
+      select: { key: true, value: true, unit: true, referenceRange: true, isAbnormal: true, category: true },
+      orderBy: { medicalReport: { reportDate: 'desc' } },
+      take: 50
+    });
+
+    if (reportValues.length === 0) {
+      return res.json({ score: 100, summary: "No lab reports available to assess risk." });
+    }
+
+    const result = await assessHealthRiskWithGemini(reportValues);
+
+    // Optional: Log AI usage here
+    await prisma.aIUsage.create({
+      data: {
+        userId,
+        feature: 'HEALTH_RISK_ASSESSMENT',
+        tokensUsed: result.tokensUsed || 500,
+        modelName: 'Gemini 2.5 Flash'
+      }
+    });
+
+    return res.json({
+      score: result.score,
+      summary: result.summary,
+      biomarkersAnalyzed: reportValues.length
+    });
+  } catch (err) {
+    console.error('Health risk assessment failed:', err);
+    return res.status(500).json({ message: 'Error assessing health risk.' });
+  }
+});
+
 // GET /api/reports/:id (Guarded - single report details)
 router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
@@ -113,10 +142,27 @@ router.post('/upload', authenticateToken, uploadLimiter, upload.single('file'), 
     return res.status(400).json({ message: 'Please attach a report image/PDF file.' });
   }
 
-  const fileUrl = req.file.path; // Cloudinary secure URL
-
   try {
-    const ocr = await performOCR(fileUrl);
+    const tempFilePath = path.join(os.tmpdir(), `upload-${Date.now()}-${Math.random().toString(36).substring(7)}${path.extname(req.file.originalname)}`);
+    fs.writeFileSync(tempFilePath, req.file.buffer);
+
+    // Run OCR and Cloudinary upload in parallel
+    const ocrPromise = performOCR(tempFilePath);
+    const cloudinaryPromise = new Promise<string>((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: 'pulse_reports', format: 'jpg' },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result!.secure_url);
+        }
+      );
+      stream.end(req.file!.buffer);
+    });
+
+    const [ocr, fileUrl] = await Promise.all([ocrPromise, cloudinaryPromise]);
+
+    if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
+
     const text = ocr.text.toLowerCase();
 
     // Proactive report category detector

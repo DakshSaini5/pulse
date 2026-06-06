@@ -6,7 +6,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 15000, // 15 seconds timeout
+  timeout: 60000, // Increased to 60 seconds for large mobile uploads and OCR processing
 });
 
 // Automatic JWT Token Injection Middleware
@@ -350,6 +350,10 @@ export const prescriptionAPI = {
     const res = await api.delete(`/api/prescriptions/${id}`);
     return res.data;
   },
+  checkInteractions: async () => {
+    const res = await api.get<{ interactions: string; severity: string; medicinesChecked: number }>('/api/prescriptions/interactions');
+    return res.data;
+  }
 };
 
 export const reportAPI = {
@@ -364,23 +368,26 @@ export const reportAPI = {
   },
   verify: async (id: string, verifiedData: any) => {
     const res = await api.post(`/api/reports/${id}/verify`, { verifiedData }, {
-      timeout: 60000, // 60 seconds for detailed AI analysis
+      timeout: 60000,
     });
     return res.data as MedicalReport;
   },
-  getAll: async () => {
-    const res = await api.get('/api/reports');
-    return res.data.data as MedicalReport[];
+  getAll: async (page = 1, limit = 10) => {
+    const res = await api.get(`/api/reports?page=${page}&limit=${limit}`);
+    return res.data;
   },
   getById: async (id: string) => {
     const res = await api.get(`/api/reports/${id}`);
     return res.data as MedicalReport;
   },
-  // BUG-20 FIX
   delete: async (id: string) => {
     const res = await api.delete(`/api/reports/${id}`);
     return res.data;
   },
+  getRiskAssessment: async () => {
+    const res = await api.get<{ score: number; summary: string; biomarkersAnalyzed: number }>('/api/reports/risk-assessment');
+    return res.data;
+  }
 };
 
 export const trendAPI = {

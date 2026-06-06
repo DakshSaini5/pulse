@@ -60,8 +60,8 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-6 bg-white border border-slate-200 dark:border-slate-700 rounded-3xl p-8 sm:p-10 shadow-ambient relative overflow-hidden dark:bg-slate-900">
+    <div className="min-h-[70vh] flex items-center justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-6 bg-white border border-slate-200 dark:border-slate-700 rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-ambient relative overflow-hidden dark:bg-slate-900">
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] pointer-events-none" />
 
         <div className="flex flex-col items-center space-y-2">
@@ -91,7 +91,7 @@ export const Login: React.FC = () => {
                   required
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 glass-input text-xs font-medium"
+                  className="w-full pl-10 pr-4 py-3 glass-input text-base font-medium"
                   placeholder="name@example.com or +919999999999"
                 />
               </div>
@@ -112,7 +112,7 @@ export const Login: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 glass-input text-xs font-medium"
+                  className="w-full pl-10 pr-4 py-3 glass-input text-base font-medium"
                   placeholder="••••••••••••"
                 />
               </div>

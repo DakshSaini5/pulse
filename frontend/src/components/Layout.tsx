@@ -37,13 +37,15 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   ];
 
   return (
-    <div className="min-h-screen bg-pulseBg dark:bg-[#181c1e] text-slate-800 dark:text-slate-100 flex flex-col relative overflow-x-hidden selection:bg-primary selection:text-white transition-colors duration-300">
+    <div className="min-h-screen bg-pulseBg dark:bg-[#181c1e] text-slate-800 dark:text-slate-100 flex flex-col relative selection:bg-primary selection:text-white transition-colors duration-300">
       {/* Background visual graphics */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[radial-gradient(circle_at_center,rgba(239,68,68,0.06)_0%,transparent_70%)] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[radial-gradient(circle_at_center,rgba(239,68,68,0.03)_0%,transparent_70%)] pointer-events-none" />
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[radial-gradient(circle_at_center,rgba(239,68,68,0.06)_0%,transparent_70%)]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[radial-gradient(circle_at_center,rgba(239,68,68,0.03)_0%,transparent_70%)]" />
+      </div>
 
       {/* Top Header */}
-      <header className="sticky top-0 z-40 w-full glass-panel border-b border-pulseBorder dark:border-slate-800 backdrop-blur-md rounded-none">
+      <header className="sticky top-0 z-40 w-full bg-white/90 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center group">
@@ -56,13 +58,14 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 <Link
                   key={item.path}
                   to={item.path}
+                  aria-label={`Navigate to ${item.name}`}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
                     isActive(item.path)
                       ? 'bg-primary/10 text-primary border border-primary/20'
                       : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent'
                   }`}
                 >
-                  <item.icon className="w-4 h-4" />
+                  <item.icon className="w-4 h-4" aria-hidden="true" />
                   {item.name}
                 </Link>
               ))}
@@ -94,6 +97,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 <div className="relative hidden sm:flex items-center gap-3 pl-4 border-l border-slate-200">
                   <button 
                     onClick={() => setProfileOpen(!profileOpen)}
+                    aria-label="Toggle user profile menu"
+                    aria-expanded={profileOpen}
                     className="flex items-center gap-3 text-left focus:outline-none group"
                   >
                     <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 text-primary font-extrabold text-sm group-hover:bg-primary/20 transition-colors">

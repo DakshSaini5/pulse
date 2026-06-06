@@ -2,27 +2,19 @@ import { Router, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { prisma } from '../db';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { performOCR } from '../services/ocr';
-import { parsePrescriptionWithGemini, enrichMedicinesWithGemini } from '../services/ai';
+import { parsePrescriptionWithGemini, enrichMedicinesWithGemini, checkDrugInteractionsWithGemini } from '../services/ai';
 import { uploadLimiter, aiLimiter } from '../middleware/rateLimiter';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import cloudinary from '../config/cloudinary';
 
 const router = Router();
 
-// Pure Cloudinary storage setup for production uploads
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: async (req, file) => {
-    return {
-      folder: 'pulse_prescriptions',
-      format: 'jpg', // auto-convert to jpg for optimized OCR
-      public_id: `pres-${Date.now()}`,
-    };
-  },
-});
+// Store files in memory to parallelize OCR and Cloudinary uploads
+const storage = multer.memoryStorage();
+
 
 const upload = multer({
   storage,
@@ -76,6 +68,47 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
   }
 });
 
+// GET /api/prescriptions/interactions (Guarded - check cross-prescription interactions)
+router.get('/interactions', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user!.id;
+  try {
+    const analysisRecords = await prisma.prescriptionAnalysis.findMany({
+      where: { prescription: { userId } },
+      select: { medicineName: true, dosage: true }
+    });
+
+    if (analysisRecords.length === 0) {
+      return res.json({ interactions: "No active prescriptions found to analyze.", severity: "NONE" });
+    }
+
+    const medicinesList = analysisRecords.map(a => `${a.medicineName} (${a.dosage})`);
+    
+    // Deduplicate just in case
+    const uniqueMedicines = Array.from(new Set(medicinesList));
+
+    const result = await checkDrugInteractionsWithGemini(uniqueMedicines);
+
+    // Optional: Log AI usage here
+    await prisma.aIUsage.create({
+      data: {
+        userId,
+        feature: 'DRUG_INTERACTION_CHECKER',
+        tokensUsed: result.tokensUsed || 500,
+        modelName: 'Gemini 2.5 Flash'
+      }
+    });
+
+    return res.json({
+      interactions: result.interactions,
+      severity: result.severity,
+      medicinesChecked: uniqueMedicines.length
+    });
+  } catch (err) {
+    console.error('Interaction check failed:', err);
+    return res.status(500).json({ message: 'Error analyzing drug interactions.' });
+  }
+});
+
 // GET /api/prescriptions/:id (Guarded - retrieve single prescription)
 router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
@@ -109,13 +142,26 @@ router.post('/upload', authenticateToken, uploadLimiter, upload.single('file'), 
     return res.status(400).json({ message: 'Please attach a prescription image/PDF file.' });
   }
 
-  const fileUrl = req.file.path; // Cloudinary returns the secure URL in req.file.path
-  
-  // Since we are doing Tesseract locally right now, we need to fetch the image from Cloudinary to OCR it.
-  // Alternatively, Tesseract.js accepts a URL directly in Node!
   try {
-    // Triggers Tesseract scanning asynchronously
-    const ocr = await performOCR(fileUrl);
+    const tempFilePath = path.join(os.tmpdir(), `upload-${Date.now()}-${Math.random().toString(36).substring(7)}${path.extname(req.file.originalname)}`);
+    fs.writeFileSync(tempFilePath, req.file.buffer);
+
+    // Run OCR and Cloudinary upload in parallel
+    const ocrPromise = performOCR(tempFilePath);
+    const cloudinaryPromise = new Promise<string>((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: 'pulse_prescriptions', format: 'jpg' },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result!.secure_url);
+        }
+      );
+      stream.end(req.file!.buffer);
+    });
+
+    const [ocr, fileUrl] = await Promise.all([ocrPromise, cloudinaryPromise]);
+
+    if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
 
     // Save record to database
     const prescription = await prisma.prescription.create({

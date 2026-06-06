@@ -17,7 +17,6 @@ export const Register: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'INPUT' | 'OTP'>('INPUT');
   const [code, setCode] = useState('');
-  const [devOtp, setDevOtp] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
 
   useEffect(() => {
@@ -66,11 +65,6 @@ export const Register: React.FC = () => {
     setError(null);
     try {
       const res = await authAPI.sendRegisterOTP(email);
-      if (res.devOtp) {
-        setDevOtp(res.devOtp);
-      } else {
-        setDevOtp(null);
-      }
       setStep('OTP');
       setResendCooldown(30);
     } catch (err: any) {
@@ -85,11 +79,6 @@ export const Register: React.FC = () => {
     setError(null);
     try {
       const res = await authAPI.sendRegisterOTP(email);
-      if (res.devOtp) {
-        setDevOtp(res.devOtp);
-      } else {
-        setDevOtp(null);
-      }
       setResendCooldown(30);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to send verification code.');
@@ -121,8 +110,8 @@ export const Register: React.FC = () => {
 
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 glass-panel border border-slate-200 dark:border-slate-700 p-8 sm:p-10 rounded-3xl shadow-2xl relative overflow-hidden bg-white dark:bg-slate-900">
+    <div className="min-h-[70vh] flex items-center justify-center py-6 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 glass-panel border border-slate-200 dark:border-slate-700 p-5 sm:p-10 rounded-3xl shadow-2xl relative overflow-hidden bg-white dark:bg-slate-900">
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] pointer-events-none" />
 
         <div className="flex flex-col items-center space-y-2">
@@ -152,8 +141,8 @@ export const Register: React.FC = () => {
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-xs placeholder-slate-500 font-medium"
-                    placeholder="John Doe"
+                    className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-base placeholder-slate-500 font-medium"
+                    placeholder="Enter your name"
                   />
                 </div>
               </div>
@@ -170,7 +159,7 @@ export const Register: React.FC = () => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-xs placeholder-slate-500 font-medium"
+                    className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-base placeholder-slate-500 font-medium"
                     placeholder="john@example.com"
                   />
                 </div>
@@ -283,15 +272,6 @@ export const Register: React.FC = () => {
                   />
                 </div>
               </div>
-
-              {devOtp && (
-                <div className="p-3 bg-primary/10 border border-primary/20 rounded-xl text-[11px] text-primary flex flex-col gap-1">
-                  <span className="font-bold uppercase tracking-wider text-[9px]">Developer Helper</span>
-                  <span>Since you are running locally or no Resend key is set, use this code:</span>
-                  <span className="font-mono font-bold text-sm bg-white/40 dark:bg-slate-900/40 px-2 py-1 rounded text-center border border-primary/20 select-all">{devOtp}</span>
-                </div>
-              )}
-
               <button
                 type="submit"
                 disabled={loading || code.length !== 6}

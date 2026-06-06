@@ -18,6 +18,8 @@ export const HealthTrends: React.FC = () => {
   const [trends, setTrends] = useState<HealthTrend[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeMarker, setActiveMarker] = useState('Hemoglobin');
+  const [assessingRisk, setAssessingRisk] = useState(false);
+  const [riskResult, setRiskResult] = useState<{ score: number, summary: string, biomarkersAnalyzed: number } | null>(null);
 
   const fetchTrends = async () => {
     if (!user) {
@@ -57,6 +59,20 @@ export const HealthTrends: React.FC = () => {
     .reverse(); // chronological order
 
   const activeMarkerInfo = markers.find(m => m.name === activeMarker);
+
+  const handleAssessRisk = async () => {
+    setAssessingRisk(true);
+    try {
+      const { reportAPI } = await import('../services/api');
+      const res = await reportAPI.getRiskAssessment();
+      setRiskResult(res);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to calculate health risk score.');
+    } finally {
+      setAssessingRisk(false);
+    }
+  };
 
   return (
     <div className="space-y-8 pb-16 text-left">
@@ -113,6 +129,39 @@ export const HealthTrends: React.FC = () => {
               </p>
             </div>
           )}
+
+          {/* AI Risk Assessment Widget */}
+          <div className="glass-panel rounded-3xl p-6 border border-slate-200 dark:border-slate-700 space-y-4 bg-gradient-to-b from-primary/5 to-transparent">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+              <Activity className="w-4 h-4 text-primary" />
+              AI Health Risk Score
+            </h3>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400">
+              Calculate an overall risk score from 0-100 based on your latest uploaded medical lab markers.
+            </p>
+            
+            {riskResult ? (
+              <div className={`p-4 rounded-xl border ${riskResult.score < 60 ? 'bg-danger/10 border-danger/20 text-danger' : riskResult.score < 80 ? 'bg-warning/10 border-warning/20 text-warning' : 'bg-success/10 border-success/20 text-success'}`}>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs font-bold">Health Score</span>
+                  <span className="text-xl font-black">{riskResult.score} / 100</span>
+                </div>
+                <p className="text-[10px] leading-relaxed mb-2 text-slate-700 dark:text-slate-200">{riskResult.summary}</p>
+                <p className="text-[9px] mt-2 opacity-70">Analyzed {riskResult.biomarkersAnalyzed} recent lab markers.</p>
+                <button onClick={() => setRiskResult(null)} className="text-[9px] mt-2 underline hover:opacity-80">Reset</button>
+              </div>
+            ) : (
+              <button
+                onClick={handleAssessRisk}
+                disabled={assessingRisk || trends.length === 0}
+                className="w-full py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 text-xs font-bold rounded-xl shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+              >
+                {assessingRisk ? <div className="w-4 h-4 rounded-full border-2 border-white/20 border-t-white animate-spin" /> : <Award className="w-4 h-4" />}
+                {assessingRisk ? 'Analyzing Lab Data...' : 'Calculate Risk Score'}
+              </button>
+            )}
+          </div>
+
         </div>
 
         {/* Right pane: Charts visualizer */}

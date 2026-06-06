@@ -88,12 +88,12 @@ const ChatAssistant: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-4 left-4 right-4 sm:bottom-6 sm:right-6 sm:left-auto z-50 flex flex-col items-end pointer-events-none">
       {/* Floating Button */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg shadow-blue-500/30 transition-transform hover:scale-110 active:scale-95 flex items-center justify-center"
+          className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg shadow-blue-500/30 transition-transform hover:scale-110 active:scale-95 flex items-center justify-center pointer-events-auto"
         >
           <MessageCircle size={28} />
         </button>
@@ -101,7 +101,7 @@ const ChatAssistant: React.FC = () => {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="w-[350px] sm:w-[400px] h-[500px] max-h-[80vh] flex flex-col bg-[#0B0F19]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-blue-900/20 overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300">
+        <div className="w-full sm:w-[400px] h-[450px] sm:h-[500px] max-h-[80vh] flex flex-col bg-[#0B0F19]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-blue-900/20 overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300 pointer-events-auto">
           
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/5">

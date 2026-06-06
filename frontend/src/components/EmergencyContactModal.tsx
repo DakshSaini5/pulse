@@ -74,7 +74,7 @@ const EmergencyContactModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Jane Doe"
+                placeholder="Enter your name"
                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-[#1F2937] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-red-500/20 focus:border-red-500 dark:focus:ring-red-500/20 text-gray-900 dark:text-white placeholder-gray-400"
               />
             </div>
@@ -88,7 +88,7 @@ const EmergencyContactModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="+1 (555) 000-0000"
+                placeholder="Enter your mobile number"
                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-[#1F2937] border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-red-500/20 focus:border-red-500 dark:focus:ring-red-500/20 text-gray-900 dark:text-white placeholder-gray-400"
               />
             </div>
