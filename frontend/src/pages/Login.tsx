@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { GoogleLogin } from '@react-oauth/google';
 import { LogIn, Mail, Lock, ShieldAlert, CheckCircle, Phone, MessageSquare, KeyRound } from 'lucide-react';
 import { PulseLogo } from '../components/PulseLogo';
-import { sendSMSVerification, isFirebaseMockMode } from '../utils/firebase';
 import { authAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -45,17 +44,6 @@ export const Login: React.FC = () => {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Quick fill triggers for smooth developer evaluations
-  const handleQuickLogin = (role: 'user' | 'admin') => {
-    if (role === 'user') {
-      setIdentifier('user@pulse.com');
-      setPassword('userpassword123');
-    } else {
-      setIdentifier('admin@pulse.com');
-      setPassword('adminpassword123');
     }
   };
 
@@ -149,28 +137,7 @@ export const Login: React.FC = () => {
             />
           </div>
 
-          <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-pulseBorder dark:border-slate-700"></div>
-            <span className="flex-shrink mx-4 text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Zero Config Dev Shortcut</span>
-            <div className="flex-grow border-t border-pulseBorder dark:border-slate-700"></div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => handleQuickLogin('user')}
-              className="py-2.5 px-3 rounded-xl border border-pulseBorder dark:border-slate-700 hover:border-primary/20 bg-slate-50 dark:bg-slate-800 hover:bg-primary/5 transition-all text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary-light flex items-center justify-center gap-1.5 group"
-            >
-              <CheckCircle className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-              Demo User
-            </button>
-            <button
-              onClick={() => handleQuickLogin('admin')}
-              className="py-2.5 px-3 rounded-xl border border-pulseBorder dark:border-slate-700 hover:border-warning/20 bg-slate-50 dark:bg-slate-800 hover:bg-warning/5 transition-all text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:text-warning flex items-center justify-center gap-1.5 group"
-            >
-              <CheckCircle className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-              Demo Admin
-            </button>
-          </div>
         </div>
 
         <div className="text-center pt-2">

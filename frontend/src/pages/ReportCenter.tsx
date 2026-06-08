@@ -93,10 +93,11 @@ export const ReportCenter: React.FC = () => {
     }
     setLoading(true);
     try {
-      const data = await reportAPI.getAll();
-      setReports(data);
-      if (data.length > 0) {
-        selectReport(data[0], userLat, userLng);
+      const resData = await reportAPI.getAll();
+      const reportList = Array.isArray(resData) ? resData : (resData?.data || []);
+      setReports(reportList);
+      if (reportList.length > 0) {
+        selectReport(reportList[0], userLat, userLng);
       }
     } catch (err) {
       console.error(err);
@@ -121,6 +122,10 @@ export const ReportCenter: React.FC = () => {
           setLat(res.latitude);
           setLng(res.longitude);
           fetchReports(res.latitude, res.longitude);
+        })
+        .catch(err => {
+          console.warn('Geolocation failed:', err);
+          fetchReports();
         });
     };
 
@@ -611,7 +616,7 @@ export const ReportCenter: React.FC = () => {
                     </h3>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {activeReport.values.map((val) => (
+                      {(activeReport.values || []).map((val) => (
                         <div 
                           key={val.id} 
                           className={`p-4 border rounded-2xl flex flex-col justify-between space-y-3 ${
@@ -658,7 +663,7 @@ export const ReportCenter: React.FC = () => {
                         <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">🔬 Specialist Referral</h3>
                         
                         <div className="space-y-4">
-                          {activeReport.specialists.map((spec, i) => (
+                          {(activeReport.specialists || []).map((spec, i) => (
                             <div key={i} className="p-4 bg-primary/10 border border-primary/20 rounded-2xl space-y-3">
                               <div className="flex justify-between items-center">
                                 <span className="text-sm font-extrabold text-slate-900 dark:text-white">{spec.specialtyName}</span>

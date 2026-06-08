@@ -50,6 +50,10 @@ export const HospitalDetail: React.FC = () => {
           setLat(res.latitude);
           setLng(res.longitude);
           fetchDetails(res.latitude, res.longitude);
+        })
+        .catch((err) => {
+          console.warn('Geolocation failed:', err);
+          fetchDetails();
         });
     };
 

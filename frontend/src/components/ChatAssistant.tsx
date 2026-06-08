@@ -35,10 +35,11 @@ const ChatAssistant: React.FC = () => {
   useEffect(() => {
     // Only connect when opened for the first time
     if (isOpen && !socketRef.current) {
-      const url = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const url = import.meta.env.VITE_API_URL || undefined;
       const token = localStorage.getItem('pulse_token');
-      const socket = io(url, {
-        auth: { token }
+      const socket = io(url as any, {
+        auth: { token },
+        transports: ['websocket']
       });
       
       socket.on('connect', () => {

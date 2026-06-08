@@ -16,7 +16,6 @@ interface AuthContextType {
   login: (identifier: string, password: string) => Promise<void>;
   googleLogin: (credential: string) => Promise<void>;
   register: (name: string, email: string, mobileNumber: string, password: string, code: string) => Promise<void>;
-  loginWithMobileToken: (token: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -95,26 +94,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginWithMobileToken = async (token: string) => {
-    setLoading(true);
-    try {
-      const data = await authAPI.loginMobile(token);
-      setUser(data.user);
-    } catch (err) {
-      setLoading(false);
-      throw err; // BUG-13 FIX
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const logout = () => {
     authAPI.logout();
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, googleLogin, register, loginWithMobileToken, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, googleLogin, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

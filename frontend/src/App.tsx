@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { LocationProvider } from './context/LocationContext';
 import { Layout } from './components/Layout';
 import { Landing } from './pages/Landing';
 import { Comparison } from './pages/Comparison';
@@ -51,8 +52,8 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="w-12 h-12 rounded-full border-4 border-slate-800 border-t-primary animate-spin" />
+      <div className="min-h-[60vh] flex items-center justify-center bg-transparent">
+        <div className="w-12 h-12 rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-primary animate-spin" />
       </div>
     );
   }
@@ -70,8 +71,8 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="w-12 h-12 rounded-full border-4 border-slate-800 border-t-primary animate-spin" />
+      <div className="min-h-[60vh] flex items-center justify-center bg-transparent">
+        <div className="w-12 h-12 rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-primary animate-spin" />
       </div>
     );
   }
@@ -90,8 +91,9 @@ export const App: React.FC = () => {
         <ScrollToTop />
         <AuthProvider>
           <ThemeProvider>
-            <Layout>
-              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-50"><div className="w-12 h-12 rounded-full border-4 border-slate-800 border-t-primary animate-spin" /></div>}>
+            <LocationProvider>
+              <Layout>
+                <Suspense fallback={<div className="min-h-[60vh] flex items-center justify-center bg-transparent"><div className="w-12 h-12 rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-primary animate-spin" /></div>}>
                 <Routes>
                 {/* Public Pages */}
                 <Route path="/" element={<Landing />} />
@@ -170,7 +172,8 @@ export const App: React.FC = () => {
                 <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
-            </Layout>
+              </Layout>
+            </LocationProvider>
           </ThemeProvider>
         </AuthProvider>
       </Router>

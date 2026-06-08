@@ -5,6 +5,7 @@ import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { searchLimiter } from '../middleware/rateLimiter';
 import { hospitalService } from '../services/HospitalService';
 import { findMappedSpecialty } from '../utils/intentMapper';
+import { z } from 'zod';
 import https from 'https';
 
 const router = Router();
@@ -12,10 +13,18 @@ const router = Router();
 function fetchCityName(lat: number, lng: number): Promise<string> {
   return new Promise((resolve) => {
     const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`;
+    
+    // 3-second timeout to prevent indefinite hangs if BigDataCloud is down
+    const timeoutId = setTimeout(() => {
+      console.warn('[geocoding] BigDataCloud request timed out after 3s');
+      resolve('');
+    }, 3000);
+
     https.get(url, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
+        clearTimeout(timeoutId);
         try {
           const json = JSON.parse(data);
           resolve(json.city || json.locality || json.principalSubdivision || '');
@@ -24,10 +33,25 @@ function fetchCityName(lat: number, lng: number): Promise<string> {
         }
       });
     }).on('error', () => {
+      clearTimeout(timeoutId);
       resolve('');
     });
   });
 }
+
+// Zod schema for admin hospital creation
+const hospitalCreateSchema = z.object({
+  name: z.string().min(2, 'Hospital name must be at least 2 characters.').max(200),
+  address: z.string().min(5, 'Address must be at least 5 characters.').max(500),
+  latitude: z.coerce.number().min(-90).max(90),
+  longitude: z.coerce.number().min(-180).max(180),
+  phone: z.string().optional(),
+  email: z.string().email('Invalid email format.').optional().or(z.literal('')),
+  website: z.string().url('Invalid website URL.').optional().or(z.literal('')),
+  workingHours: z.string().optional(),
+  emergencyAvailable: z.coerce.boolean().optional(),
+  rating: z.coerce.number().min(0).max(5).optional(),
+});
 
 // GET /api/hospitals (Public - search hospitals with pagination)
 router.get('/', searchLimiter, async (req: AuthenticatedRequest, res: Response) => {
@@ -66,38 +90,6 @@ router.get('/', searchLimiter, async (req: AuthenticatedRequest, res: Response) 
     const cosLat = Math.cos((userLat * Math.PI) / 180);
     const lngDiff = radius / (111 * (cosLat > 0.1 ? cosLat : 0.1));
 
-    // Determine the user's city dynamically to restrict results to that city only
-    let userCity = (city as string) || '';
-    if (!userCity && lat && lng) {
-      userCity = await fetchCityName(userLat, userLng);
-    }
-
-    const citySynonyms: Record<string, string[]> = {
-      'bengaluru': ['bengaluru', 'bangalore'],
-      'bangalore': ['bengaluru', 'bangalore'],
-      'mumbai': ['mumbai', 'bombay'],
-      'bombay': ['mumbai', 'bombay'],
-      'delhi': ['delhi', 'new delhi', 'noida', 'gurugram', 'ghaziabad', 'faridabad'],
-      'new delhi': ['delhi', 'new delhi', 'noida', 'gurugram', 'ghaziabad', 'faridabad'],
-      'chennai': ['chennai', 'madras'],
-      'madras': ['chennai', 'madras'],
-      'kolkata': ['kolkata', 'calcutta'],
-      'calcutta': ['kolkata', 'calcutta']
-    };
-
-    const cityTerms = userCity
-      .split(/[\s,.-]+/)
-      .filter(term => term.length > 2 && !['near', 'east', 'west', 'north', 'south', 'central', 'city', 'town'].includes(term.toLowerCase()));
-
-    const expandedTerms = new Set<string>();
-    for (const term of cityTerms) {
-      const lowerTerm = term.toLowerCase();
-      expandedTerms.add(lowerTerm);
-      if (citySynonyms[lowerTerm]) {
-        citySynonyms[lowerTerm].forEach(syn => expandedTerms.add(syn));
-      }
-    }
-
     const andConditions: any[] = [
       {
         latitude: {
@@ -112,14 +104,6 @@ router.get('/', searchLimiter, async (req: AuthenticatedRequest, res: Response) 
         }
       }
     ];
-
-    if (expandedTerms.size > 0) {
-      andConditions.push({
-        OR: Array.from(expandedTerms).map(term => ({
-          address: { contains: term, mode: 'insensitive' }
-        }))
-      });
-    }
 
     const targetSpecialty = specialty ? (findMappedSpecialty(specialty as string) || specialty as string) : null;
     const querySpecialty = query ? findMappedSpecialty(query as string) : null;
@@ -170,25 +154,6 @@ router.get('/', searchLimiter, async (req: AuthenticatedRequest, res: Response) 
         },
       },
     });
-
-    // Smart Cache Strategy: If we have very few results locally, ask our Provider (Google Places)
-    // and cache them for the future.
-    if (hospitalsList.length < 3) {
-      const searchKeyword = (query as string) || targetSpecialty || (specialty as string) || 'Hospital';
-      await hospitalService.ensureHospitalsCached(userLat, userLng, searchKeyword, radius);
-
-      // Re-fetch from our DB now that the cache is populated
-      hospitalsList = await prisma.hospital.findMany({
-        where: whereClause,
-        include: {
-          specialties: {
-            include: {
-              specialty: true,
-            },
-          },
-        },
-      });
-    }
 
     // Score and filter by distance radius
     const activeSpecialty = targetSpecialty || querySpecialty || 'General Medicine';
@@ -473,24 +438,30 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Respo
     return res.status(403).json({ message: 'Only admins can add hospitals.' });
   }
 
+  // Validate request body with Zod
+  const parsed = hospitalCreateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      message: 'Validation failed. Please check your input.',
+      errors: parsed.error.issues.map(e => ({ field: e.path.join('.'), message: e.message }))
+    });
+  }
+
   try {
-    const { 
-      name, address, latitude, longitude, phone, email, website, 
-      workingHours, emergencyAvailable, rating 
-    } = req.body;
+    const { name, address, latitude, longitude, phone, email, website, workingHours, emergencyAvailable, rating } = parsed.data;
 
     const newHospital = await prisma.hospital.create({
       data: {
         name,
         address,
-        latitude: parseFloat(latitude),
-        longitude: parseFloat(longitude),
+        latitude,
+        longitude,
         phone,
         email,
         website,
         workingHours: workingHours || '9:00 AM - 5:00 PM',
         emergencyAvailable: Boolean(emergencyAvailable),
-        rating: rating ? parseFloat(rating) : 0,
+        rating: rating ?? 0,
       }
     });
 

@@ -10,7 +10,8 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
   try {
     const records = await prisma.healthTrend.findMany({
       where: { userId },
-      orderBy: { recordedAt: 'desc' }
+      orderBy: { recordedAt: 'desc' },
+      take: 200, // Limit to most recent 200 data points — sufficient for trend charts
     });
 
     return res.json(records);

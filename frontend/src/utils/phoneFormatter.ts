@@ -1,19 +1,82 @@
+const STD_CODES: Record<string, string> = {
+  // Metros
+  'delhi': '011',
+  'new delhi': '011',
+  'bangalore': '080',
+  'bengaluru': '080',
+  'mumbai': '022',
+  'bombay': '022',
+  'chennai': '044',
+  'madras': '044',
+  'kolkata': '033',
+  'calcutta': '033',
+  'hyderabad': '040',
+  'pune': '020',
+  'ahmedabad': '079',
+
+  // Other Major Cities
+  'surat': '0261',
+  'jaipur': '0141',
+  'lucknow': '0522',
+  'kanpur': '0512',
+  'nagpur': '0712',
+  'indore': '0731',
+  'bhopal': '0755',
+  'patna': '0612',
+  'vadodara': '0265',
+  'ludhiana': '0161',
+  'coimbatore': '0422',
+  'agra': '0562',
+  'visakhapatnam': '0891',
+  'rajkot': '0281',
+  'amritsar': '0183',
+  'dehradun': '0135',
+  'guwahati': '0361',
+  'chandigarh': '0172',
+  'shimla': '0177',
+  'srinagar': '0194',
+  'jammu': '0191',
+  'jodhpur': '0291',
+  'udaipur': '0294',
+  'varanasi': '0542',
+  'prayagraj': '0532',
+  'allahabad': '0532',
+  'ranchi': '0651',
+  'jamshedpur': '0657',
+  'bhubaneswar': '0674',
+  'cuttack': '0671',
+  'raipur': '0771',
+  'gwalior': '0751',
+  'mysore': '0821',
+  'mangalore': '0824',
+  'madurai': '0452',
+  'warangal': '0870',
+  'vijayawada': '0866',
+  'kochi': '0484',
+  'thiruvananthapuram': '0471',
+  'kozhikode': '0495',
+  'panaji': '0832',
+  'goa': '0832',
+  'siliguri': '0353',
+  'shillong': '0364',
+  'imphal': '0385',
+  'agartala': '0381',
+  'aizawl': '0389',
+  'kohima': '0370',
+  'itanagar': '0360',
+  'gangtok': '03592'
+};
+
 /**
  * Formats a phone number according to the Indian dialing system.
  * Specifically prefixes 8-digit landline numbers with the city's STD code
  * based on the hospital's address.
- * 
- * Delhi -> 011
- * Bangalore / Bengaluru -> 080
- * Mumbai -> 022
  */
 export function formatIndianPhoneNumber(phone: string, address: string): string {
   if (!phone) return '';
   
-  // Clean spaces, hyphens, and parentheses for length checking
   const cleaned = phone.trim();
   
-  // If there are multiple numbers (e.g. separated by semicolon or comma), we handle them
   if (cleaned.includes(';') || cleaned.includes(',')) {
     const separator = cleaned.includes(';') ? ';' : ',';
     return cleaned
@@ -29,12 +92,10 @@ export function formatIndianPhoneNumber(phone: string, address: string): string 
 function formatSingleIndianPhoneNumber(phone: string, address: string): string {
   if (!phone) return '';
 
-  // If it already has +91 or starts with 0, keep it as is
   if (phone.startsWith('+') || phone.startsWith('0')) {
     return phone;
   }
   
-  // Clean formatting for check
   const digitsOnly = phone.replace(/[\s\-\(\)]/g, '');
   
   // Check if it's an 8-digit landline number (like 25318335)
@@ -42,28 +103,34 @@ function formatSingleIndianPhoneNumber(phone: string, address: string): string {
     const lowerAddress = address.toLowerCase();
     let stdPrefix = '';
     
-    if (lowerAddress.includes('delhi') || lowerAddress.includes('new delhi')) {
-      stdPrefix = '011';
-    } else if (lowerAddress.includes('bangalore') || lowerAddress.includes('bengaluru')) {
-      stdPrefix = '080';
-    } else if (lowerAddress.includes('mumbai') || lowerAddress.includes('bombay')) {
-      stdPrefix = '022';
+    for (const city in STD_CODES) {
+      if (lowerAddress.includes(city)) {
+        stdPrefix = STD_CODES[city];
+        break;
+      }
     }
     
     if (stdPrefix) {
-      // Format 8-digit number into 4-4 for readability, e.g. 011 2531 8335
       return `${stdPrefix} ${digitsOnly.substring(0, 4)} ${digitsOnly.substring(4)}`;
     }
   }
   
   // If it's a 10-digit number starting with city code without leading 0 (like 8022868423 or 1126588500)
   if (digitsOnly.length === 10 && /^\d+$/.test(digitsOnly)) {
-    if (digitsOnly.startsWith('11')) {
-      return `011 ${digitsOnly.substring(2, 6)} ${digitsOnly.substring(6)}`;
-    } else if (digitsOnly.startsWith('80')) {
-      return `080 ${digitsOnly.substring(2, 6)} ${digitsOnly.substring(6)}`;
-    } else if (digitsOnly.startsWith('22')) {
-      return `022 ${digitsOnly.substring(2, 6)} ${digitsOnly.substring(6)}`;
+    for (const city in STD_CODES) {
+      const stdCode = STD_CODES[city];
+      const prefixWithoutZero = stdCode.substring(1);
+      if (digitsOnly.startsWith(prefixWithoutZero)) {
+        const prefixLen = prefixWithoutZero.length;
+        const rest = digitsOnly.substring(prefixLen);
+        if (rest.length === 8) {
+          return `${stdCode} ${rest.substring(0, 4)} ${rest.substring(4)}`;
+        } else if (rest.length === 7) {
+          return `${stdCode} ${rest.substring(0, 3)} ${rest.substring(3)}`;
+        } else if (rest.length === 6) {
+          return `${stdCode} ${rest.substring(0, 3)} ${rest.substring(3)}`;
+        }
+      }
     }
   }
   
@@ -76,7 +143,6 @@ function formatSingleIndianPhoneNumber(phone: string, address: string): string {
 export function getDialerHref(phone: string, address: string): string {
   if (!phone) return '';
   
-  // If there are multiple numbers, take the first one for the main dialer link
   const firstPhone = (phone.includes(';') ? phone.split(';')[0] : phone.includes(',') ? phone.split(',')[0] : phone).trim();
   
   const cleaned = firstPhone.replace(/[\s\-\(\)]/g, '');
@@ -88,12 +154,11 @@ export function getDialerHref(phone: string, address: string): string {
     const lowerAddress = address.toLowerCase();
     let stdPrefix = '';
     
-    if (lowerAddress.includes('delhi') || lowerAddress.includes('new delhi')) {
-      stdPrefix = '011';
-    } else if (lowerAddress.includes('bangalore') || lowerAddress.includes('bengaluru')) {
-      stdPrefix = '080';
-    } else if (lowerAddress.includes('mumbai') || lowerAddress.includes('bombay')) {
-      stdPrefix = '022';
+    for (const city in STD_CODES) {
+      if (lowerAddress.includes(city)) {
+        stdPrefix = STD_CODES[city];
+        break;
+      }
     }
     
     if (stdPrefix) {
@@ -102,8 +167,12 @@ export function getDialerHref(phone: string, address: string): string {
   }
   
   if (cleaned.length === 10 && /^\d+$/.test(cleaned)) {
-    if (cleaned.startsWith('11') || cleaned.startsWith('80') || cleaned.startsWith('22')) {
-      return `tel:0${cleaned}`;
+    for (const city in STD_CODES) {
+      const stdCode = STD_CODES[city];
+      const prefixWithoutZero = stdCode.substring(1);
+      if (cleaned.startsWith(prefixWithoutZero)) {
+        return `tel:${stdCode}${cleaned.substring(prefixWithoutZero.length)}`;
+      }
     }
   }
   

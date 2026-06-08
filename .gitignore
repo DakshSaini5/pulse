@@ -42,3 +42,8 @@ backend/test-keys.*
 
 # Service Accounts
 firebase-service-account.json
+
+# Large map data files
+backend/data/
+*.pbf
+

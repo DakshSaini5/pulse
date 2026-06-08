@@ -2,9 +2,11 @@ import { Server, Socket } from 'socket.io';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getWorkingModelName } from './gemini';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../db'; // FIX: Use shared singleton instead of new PrismaClient()
 
-const prisma = new PrismaClient();
+// Per-socket rate limiting: max 10 messages per 60 seconds
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 
 export const setupChatSocket = (io: Server) => {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -18,6 +20,9 @@ export const setupChatSocket = (io: Server) => {
 
     let chatSession: any = null;
     let userId: string | null = null;
+
+    // Per-socket message rate limiting state
+    const messageTimestamps: number[] = [];
 
     // Authenticate user via token
     const token = socket.handshake.auth?.token;
@@ -126,6 +131,23 @@ ${medicalHistoryContext}` }],
 
     socket.on('chat:message', async (message: string) => {
       if (!message || typeof message !== 'string') return;
+
+      // Rate limiting: sliding window of RATE_LIMIT_MAX messages per RATE_LIMIT_WINDOW_MS
+      const now = Date.now();
+      // Remove timestamps outside the current window
+      while (messageTimestamps.length > 0 && messageTimestamps[0] < now - RATE_LIMIT_WINDOW_MS) {
+        messageTimestamps.shift();
+      }
+
+      if (messageTimestamps.length >= RATE_LIMIT_MAX) {
+        socket.emit('chat:response', {
+          text: '⚠️ You are sending messages too quickly. Please wait a moment before sending another message (limit: 10 messages per minute).',
+          isError: true
+        });
+        return;
+      }
+
+      messageTimestamps.push(now);
       
       try {
         if (!chatSession) {

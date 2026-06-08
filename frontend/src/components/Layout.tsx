@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { 
-  Activity, Search, Heart, FileText, ClipboardList, TrendingUp, 
+import {
+  Activity, Search, Heart, FileText, ClipboardList, TrendingUp,
   LogOut, LogIn, UserPlus, Menu, X, Bell, User as UserIcon, ShieldAlert, Settings,
   Phone, KeyRound, MessageSquare, CheckCircle2
 } from 'lucide-react';
 import ChatAssistant from './ChatAssistant';
 import { NotificationCenter } from './NotificationCenter';
 import { PulseLogo } from './PulseLogo';
-import { sendSMSVerification, isFirebaseMockMode } from '../utils/firebase';
 import { userAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -59,11 +58,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   key={item.path}
                   to={item.path}
                   aria-label={`Navigate to ${item.name}`}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
-                    isActive(item.path)
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${isActive(item.path)
                       ? 'bg-primary/10 text-primary border border-primary/20'
                       : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent'
-                  }`}
+                    }`}
                 >
                   <item.icon className="w-4 h-4" aria-hidden="true" />
                   {item.name}
@@ -79,11 +77,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 {user.role === 'ADMIN' && (
                   <Link
                     to="/admin"
-                    className={`p-2 rounded-lg border flex items-center gap-1 text-xs font-semibold ${
-                      isActive('/admin') 
-                        ? 'border-warning/30 bg-warning/10 text-warning' 
+                    className={`p-2 rounded-lg border flex items-center gap-1 text-xs font-semibold ${isActive('/admin')
+                        ? 'border-warning/30 bg-warning/10 text-warning'
                         : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'
-                    }`}
+                      }`}
                   >
                     <ShieldAlert className="w-4 h-4" />
                     Admin
@@ -95,7 +92,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
                 {/* Profile card summary and dropdown */}
                 <div className="relative hidden sm:flex items-center gap-3 pl-4 border-l border-slate-200">
-                  <button 
+                  <button
                     onClick={() => setProfileOpen(!profileOpen)}
                     aria-label="Toggle user profile menu"
                     aria-expanded={profileOpen}
@@ -113,7 +110,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   {profileOpen && (
                     <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-900 border border-pulseBorder dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-black/50 rounded-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                       <div className="py-2">
-                        <Link 
+                        <Link
                           to="/profile"
                           onClick={() => setProfileOpen(false)}
                           className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary transition-colors"
@@ -121,7 +118,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                           <UserIcon className="w-4 h-4" />
                           My Profile
                         </Link>
-                        <Link 
+                        <Link
                           to="/settings"
                           onClick={() => setProfileOpen(false)}
                           className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary transition-colors"
@@ -145,20 +142,20 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 </div>
               </>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
                 <Link
                   to="/login"
-                  className="px-4 py-2 rounded-xl text-sm font-medium border border-pulseBorder dark:border-slate-700 hover:border-primary/50 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center gap-1.5"
+                  className="px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium border border-pulseBorder dark:border-slate-700 hover:border-primary/50 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap tracking-tight"
                 >
-                  <LogIn className="w-4 h-4" />
+                  <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   Sign In
                 </Link>
                 <Link
                   to="/register"
-                  className="px-4 py-2 rounded-xl text-sm font-medium bg-primary hover:bg-primary-hover text-white shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all flex items-center gap-1.5"
+                  className="px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium bg-primary hover:bg-primary-hover text-white shadow-md sm:shadow-lg transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap tracking-tight"
                 >
-                  <UserPlus className="w-4 h-4" />
-                  Join Free
+                  <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  Join
                 </Link>
               </div>
             )}
@@ -183,16 +180,49 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 key={item.path}
                 to={item.path}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-3 transition-all ${
-                  isActive(item.path)
+                className={`px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-3 transition-all ${isActive(item.path)
                     ? 'bg-primary/20 text-primary'
                     : 'hover:bg-slate-50 dark:hover:bg-slate-800'
-                }`}
+                  }`}
               >
                 <item.icon className="w-5 h-5" />
                 {item.name}
               </Link>
             ))}
+
+            {user && (
+              <>
+                <div className="h-px bg-slate-200 dark:bg-slate-800 my-2 mx-4" />
+                <Link
+                  to="/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-3 transition-all ${isActive('/profile') ? 'bg-primary/20 text-primary' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
+                >
+                  <UserIcon className="w-5 h-5" />
+                  My Profile
+                </Link>
+                <Link
+                  to="/settings"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-3 transition-all ${isActive('/settings') ? 'bg-primary/20 text-primary' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
+                >
+                  <Settings className="w-5 h-5" />
+                  Settings
+                </Link>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-3 transition-all text-danger hover:bg-danger/10 w-full text-left"
+                >
+                  <LogOut className="w-5 h-5" />
+                  Log out
+                </button>
+              </>
+            )}
           </nav>
         </div>
       )}
@@ -205,7 +235,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       {/* Footer */}
       <footer className="w-full glass-panel rounded-none border-b-0 border-x-0 border-pulseBorder dark:border-slate-800 mt-auto pt-8 pb-6 text-center md:text-left">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
+
           {/* Medical Disclaimer */}
           <div className="mb-8 p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed max-w-4xl">
             <span className="font-bold text-slate-700 dark:text-slate-300">Disclaimer:</span> The Pulse platform is intended for informational and educational purposes only. It does not provide medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition. Do not disregard professional medical advice or delay in seeking it because of information provided by this platform.

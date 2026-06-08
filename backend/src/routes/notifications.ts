@@ -10,6 +10,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
     const notifications = await prisma.notification.findMany({
       where: { userId: req.user!.id },
       orderBy: { createdAt: 'desc' },
+      take: 50, // Limit to most recent 50 to prevent unbounded queries
     });
     res.json(notifications);
   } catch (error) {

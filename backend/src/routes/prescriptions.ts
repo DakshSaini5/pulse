@@ -146,53 +146,58 @@ router.post('/upload', authenticateToken, uploadLimiter, upload.single('file'), 
     const tempFilePath = path.join(os.tmpdir(), `upload-${Date.now()}-${Math.random().toString(36).substring(7)}${path.extname(req.file.originalname)}`);
     fs.writeFileSync(tempFilePath, req.file.buffer);
 
-    // Run OCR and Cloudinary upload in parallel
-    const ocrPromise = performOCR(tempFilePath);
-    const cloudinaryPromise = new Promise<string>((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { folder: 'pulse_prescriptions', format: 'jpg' },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result!.secure_url);
-        }
-      );
-      stream.end(req.file!.buffer);
-    });
+    try {
+      // Run OCR and Cloudinary upload in parallel
+      const ocrPromise = performOCR(tempFilePath);
+      const cloudinaryPromise = new Promise<string>((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: 'pulse_prescriptions', format: 'jpg' },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result!.secure_url);
+          }
+        );
+        stream.end(req.file!.buffer);
+      });
 
-    const [ocr, fileUrl] = await Promise.all([ocrPromise, cloudinaryPromise]);
+      const [ocr, fileUrl] = await Promise.all([ocrPromise, cloudinaryPromise]);
 
-    if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
-
-    // Save record to database
-    const prescription = await prisma.prescription.create({
-      data: {
-        userId,
-        fileUrl,
-        status: 'OCR_COMPLETED',
-        ocrResult: {
-          create: {
-            rawText: ocr.text,
-            confidence: ocr.confidence,
+      // Save record to database
+      const prescription = await prisma.prescription.create({
+        data: {
+          userId,
+          fileUrl,
+          status: 'OCR_COMPLETED',
+          ocrResult: {
+            create: {
+              rawText: ocr.text,
+              confidence: ocr.confidence,
+            },
           },
         },
-      },
-      include: {
-        ocrResult: true,
-        prescriptionAnalysis: true,
-      },
-    });
+        include: {
+          ocrResult: true,
+          prescriptionAnalysis: true,
+        },
+      });
 
-    // Logging AI usage diagnostics
-    await prisma.aIUsage.create({
-      data: {
-        userId,
-        feature: 'PRESCRIPTION_OCR',
-        tokensUsed: 150,
-        modelName: 'Tesseract.js OCR'
+      // Logging AI usage diagnostics
+      await prisma.aIUsage.create({
+        data: {
+          userId,
+          feature: 'PRESCRIPTION_OCR',
+          tokensUsed: 150,
+          modelName: 'Tesseract.js OCR'
+        }
+      });
+
+      return res.status(201).json(prescription);
+    } finally {
+      // Always clean up temp file, even if OCR or Cloudinary upload fails
+      if (fs.existsSync(tempFilePath)) {
+        try { fs.unlinkSync(tempFilePath); } catch (_) {}
       }
-    });
-
-    return res.status(201).json(prescription);
+    }
   } catch (err) {
     console.error('Upload & OCR failed:', err);
     return res.status(500).json({ message: 'Error processing Tesseract OCR extraction.' });

@@ -40,6 +40,12 @@ router.post('/google', authLimiter, validate(googleAuthSchema), async (req: Requ
 
     const { email, name, picture, sub: googleId } = payload;
 
+    if (email && email.toLowerCase() === 'admin@pulse.com') {
+      return res.status(403).json({
+        message: 'Google Sign-In is disabled for the administrator account. Please log in with password.'
+      });
+    }
+
     // Check if user exists by email or googleId
     let user = await prisma.user.findFirst({
       where: {
@@ -83,9 +89,11 @@ router.post('/google', authLimiter, validate(googleAuthSchema), async (req: Requ
       });
     }
 
+    let userRole = user.role;
+
     // Issue JWT
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, email: user.email, role: userRole },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -96,7 +104,7 @@ router.post('/google', authLimiter, validate(googleAuthSchema), async (req: Requ
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: userRole,
         avatar: user.avatar,
       },
     });

@@ -9,8 +9,8 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { formatIndianPhoneNumber, getDialerHref } from '../utils/phoneFormatter';
 import toast from 'react-hot-toast';
-import { getCityNameFromCoords } from '../utils/geolocation';
-
+import { useUserLocation } from '../context/LocationContext';
+import LocationModal from '../components/LocationModal';
 
 export const Search: React.FC = () => {
   const { user } = useAuth();
@@ -19,36 +19,26 @@ export const Search: React.FC = () => {
 
   // Search parameters state initialized from URL if present
   const [query, setQuery] = useState(searchParams.get('q') || '');
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
   const [specialty, setSpecialty] = useState(searchParams.get('specialty') || '');
-  // BUG-11 + BUG-16 FIX: read saved radius from Settings localStorage preference
   const [radius, setRadius] = useState(() => {
     const saved = localStorage.getItem('pulse_pref_radius');
     return saved ? parseInt(saved) : 15;
   });
   const [emergencyOnly, setEmergencyOnly] = useState(searchParams.get('emergency') === 'true');
-  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'match');
+  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'distance');
 
-  // Map user coordinates
-  const [lat, setLat] = useState<number | null>(() => {
-    const storedLat = localStorage.getItem('pulse_latitude');
-    return storedLat ? parseFloat(storedLat) : null;
-  });
-  const [lng, setLng] = useState<number | null>(() => {
-    const storedLng = localStorage.getItem('pulse_longitude');
-    return storedLng ? parseFloat(storedLng) : null;
-  });
-  const [cityName, setCityName] = useState<string>(() => {
-    return localStorage.getItem('pulse_city_name') || '';
-  });
-  const [locationStatus, setLocationStatus] = useState<'checking' | 'granted' | 'denied'>(() => {
-    const latStr = localStorage.getItem('pulse_latitude');
-    const lngStr = localStorage.getItem('pulse_longitude');
-    const deniedFlag = localStorage.getItem('pulse_location_denied');
-    if (latStr && lngStr && !deniedFlag) return 'granted';
-    if (deniedFlag) return 'denied';
-    return 'checking';
-  });
-  const [isBlocked, setIsBlocked] = useState(false);
+  // Use global user location hook
+  const { latitude: lat, longitude: lng, label: cityName, locationStatus, requestGPSLocation } = useUserLocation();
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+
+  // Autocomplete Dropdown State
+  const [autocompleteResults, setAutocompleteResults] = useState<{
+    hospitals: Array<{ id: string; name: string }>;
+    specialties: Array<{ name: string }>;
+  }>({ hospitals: [], specialties: [] });
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [searchingAutocomplete, setSearchingAutocomplete] = useState(false);
 
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,21 +48,83 @@ export const Search: React.FC = () => {
   // Hospital comparison tracking state
   const [compareIds, setCompareIds] = useState<string[]>([]);
 
-  // Sample specialties list
+  // Expanded comprehensive specialties list
   const specialties = [
     { name: 'Cardiology', label: '🫀 Cardiology' },
-    { name: 'Endocrinology', label: '🦋 Endocrinology' },
-    { name: 'Hematology', label: '🩸 Hematology' },
+    { name: 'Orthopedics', label: '🦴 Orthopedics' },
     { name: 'Neurology', label: '🧠 Neurology' },
     { name: 'Pediatrics', label: '👶 Pediatrics' },
+    { name: 'Gynecology', label: '🤰 Gynecology' },
+    { name: 'Dermatology', label: ' छाला Dermatology' },
+    { name: 'Endocrinology', label: '🦋 Endocrinology' },
+    { name: 'Gastroenterology', label: '⚕️ Gastroenterology' },
+    { name: 'Oncology', label: '🎗️ Oncology' },
+    { name: 'Ophthalmology', label: '👁️ Ophthalmology' },
+    { name: 'Urology', label: '💧 Urology' },
+    { name: 'Psychiatry', label: '🧘 Psychiatry' },
+    { name: 'ENT', label: '👂 ENT' },
+    { name: 'Pulmonology', label: '🫁 Pulmonology' },
+    { name: 'General Surgery', label: '✂️ General Surgery' },
+    { name: 'Dental', label: '🦷 Dental' },
+    { name: 'Emergency Medicine', label: '🚑 Emergency Medicine' },
+    { name: 'Hematology', label: '🩸 Hematology' },
+    { name: 'Rheumatology', label: '🦴 Rheumatology' },
     { name: 'General Medicine', label: '🏥 General Medicine' }
   ];
 
-  const fetchHospitals = async () => {
+  // Debounce query (clears immediately if empty)
+  useEffect(() => {
+    if (query === '') {
+      setDebouncedQuery('');
+      return;
+    }
+    const handler = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [query]);
+
+  // Click outside to close autocomplete dropdown
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest('.search-container-main')) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
+  // Autocomplete query effect (debounced 300ms)
+  useEffect(() => {
+    if (query.trim().length < 2) {
+      setAutocompleteResults({ hospitals: [], specialties: [] });
+      setShowDropdown(false);
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(async () => {
+      setSearchingAutocomplete(true);
+      try {
+        const data = await hospitalAPI.autocomplete(query, lat, lng, cityName);
+        setAutocompleteResults(data);
+        setShowDropdown(true);
+      } catch (err) {
+        console.error('Error fetching autocomplete:', err);
+      } finally {
+        setSearchingAutocomplete(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [query, lat, lng, cityName]);
+
+  const fetchHospitals = async (searchVal = debouncedQuery) => {
     if (lat === null || lng === null) return;
     setLoading(true);
     try {
-      const data = await hospitalAPI.search(query, specialty, radius, lat, lng, cityName);
+      const data = await hospitalAPI.search(searchVal, specialty, radius, lat, lng, cityName);
       // Client-side emergency filter if checked
       let filtered = emergencyOnly ? data.filter(h => h.emergencyAvailable) : data;
       
@@ -91,6 +143,8 @@ export const Search: React.FC = () => {
       // Auto highlight first search match if available
       if (filtered.length > 0) {
         setSelectedHospitalId(filtered[0].id);
+      } else {
+        setSelectedHospitalId(undefined);
       }
     } catch (err) {
       console.error('Failed fetching hospitals:', err);
@@ -109,176 +163,15 @@ export const Search: React.FC = () => {
     }
   };
 
-  // Run initial searches
+  // Run initial and updated searches
   useEffect(() => {
-    fetchHospitals();
+    fetchHospitals(debouncedQuery);
     fetchSaved();
-  }, [specialty, radius, emergencyOnly, sortBy, lat, lng]);
-
-  const requestLocation = async () => {
-    setLocationStatus('checking');
-    if (!navigator.geolocation) {
-      setLocationStatus('denied');
-      toast.error("Geolocation is not supported by your browser.");
-      return;
-    }
-
-    if (navigator.permissions) {
-      try {
-        const perm = await navigator.permissions.query({ name: 'geolocation' });
-        if (perm.state === 'denied') {
-          setIsBlocked(true);
-          setLocationStatus('denied');
-          toast.error("Location permission blocked. Please click the lock icon in the browser address bar to allow location access.", {
-            duration: 8000
-          });
-          return;
-        }
-      } catch (e) {}
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
-        setLat(latitude);
-        setLng(longitude);
-        localStorage.setItem('pulse_latitude', latitude.toString());
-        localStorage.setItem('pulse_longitude', longitude.toString());
-        localStorage.removeItem('pulse_location_denied');
-        setIsBlocked(false);
-        
-        setLocationStatus('granted');
-        try {
-          const city = await getCityNameFromCoords(latitude, longitude);
-          setCityName(city);
-          localStorage.setItem('pulse_city_name', city);
-        } catch (err) {
-          setCityName("Detected Location");
-        }
-      },
-      (error) => {
-        console.error("Geolocation request failed:", error);
-        setLocationStatus('denied');
-        setLat(null);
-        setLng(null);
-        localStorage.setItem('pulse_location_denied', 'true');
-        localStorage.removeItem('pulse_latitude');
-        localStorage.removeItem('pulse_longitude');
-        localStorage.removeItem('pulse_city_name');
-
-        if (error.code === 1) {
-          setIsBlocked(true);
-          toast.error("Location permission blocked. Please click the lock icon in the browser address bar to allow location access.", {
-            duration: 8000
-          });
-        } else {
-          toast.error(`Unable to retrieve location: ${error.message}`);
-        }
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      }
-    );
-  };
-
-  useEffect(() => {
-    let permissionStatus: PermissionStatus | null = null;
-
-    const handlePermissionChange = () => {
-      if (permissionStatus) {
-        if (permissionStatus.state === 'granted') {
-          requestLocation();
-        } else if (permissionStatus.state === 'denied') {
-          setLocationStatus('denied');
-          setIsBlocked(true);
-          setLat(null);
-          setLng(null);
-          localStorage.setItem('pulse_location_denied', 'true');
-        } else {
-          setLocationStatus('checking');
-          setIsBlocked(false);
-        }
-      }
-    };
-
-    const initLocation = async () => {
-      const latStr = localStorage.getItem('pulse_latitude');
-      const lngStr = localStorage.getItem('pulse_longitude');
-      const storedCity = localStorage.getItem('pulse_city_name');
-      const deniedFlag = localStorage.getItem('pulse_location_denied');
-
-      if (latStr && lngStr && !deniedFlag) {
-        const currentLat = parseFloat(latStr);
-        const currentLng = parseFloat(lngStr);
-        setLat(currentLat);
-        setLng(currentLng);
-        setLocationStatus('granted');
-        if (storedCity) {
-          setCityName(storedCity);
-        } else {
-          try {
-            const city = await getCityNameFromCoords(currentLat, currentLng);
-            setCityName(city);
-            localStorage.setItem('pulse_city_name', city);
-          } catch (e) {}
-        }
-        
-        navigator.geolocation?.getCurrentPosition((pos) => {
-          const latitude = pos.coords.latitude;
-          const longitude = pos.coords.longitude;
-          setLat(latitude);
-          setLng(longitude);
-          localStorage.setItem('pulse_latitude', latitude.toString());
-          localStorage.setItem('pulse_longitude', longitude.toString());
-          getCityNameFromCoords(latitude, longitude).then(city => {
-            setCityName(city);
-            localStorage.setItem('pulse_city_name', city);
-          }).catch(console.error);
-        }, () => {}, { enableHighAccuracy: true });
-        
-        return;
-      }
-
-      if (navigator.permissions) {
-        try {
-          permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
-          permissionStatus.addEventListener('change', handlePermissionChange);
-
-          if (permissionStatus.state === 'granted') {
-            requestLocation();
-          } else if (permissionStatus.state === 'denied') {
-            setLocationStatus('denied');
-            setIsBlocked(true);
-            setLat(null);
-            setLng(null);
-          } else {
-            requestLocation();
-          }
-        } catch (e) {
-          requestLocation();
-        }
-      } else {
-        requestLocation();
-      }
-    };
-
-    initLocation();
-
-    return () => {
-      if (permissionStatus) {
-        try {
-          permissionStatus.removeEventListener('change', handlePermissionChange);
-        } catch (e) {}
-      }
-    };
-  }, []);
+  }, [specialty, radius, emergencyOnly, sortBy, lat, lng, debouncedQuery]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchHospitals();
+    fetchHospitals(debouncedQuery);
   };
 
   const handleToggleSave = async (id: string, e: React.MouseEvent) => {
@@ -338,18 +231,22 @@ export const Search: React.FC = () => {
       ) : locationStatus === 'granted' ? (
         <>
           {cityName && (
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-2.5 rounded-xl w-fit mr-auto">
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-2.5 rounded-xl w-fit mr-auto flex-wrap">
               <MapPin className="w-4 h-4 text-primary shrink-0 animate-bounce" />
               <span>Active Location: <strong className="text-slate-800 dark:text-white">{cityName}</strong></span>
-              <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold ml-2">
-                🏥 CITY-CLAMPED SEARCH ACTIVE
-              </span>
+              <button
+                type="button"
+                onClick={() => setIsLocationModalOpen(true)}
+                className="text-[10px] bg-primary/10 hover:bg-primary/20 text-primary px-2 py-0.5 rounded-lg ml-2 font-bold transition-all border border-primary/20"
+              >
+                Change Location
+              </button>
             </div>
           )}
 
           {/* Filters Segment */}
-          <form onSubmit={handleSearchSubmit} className="glass-panel rounded-2xl p-4 sm:p-6 border border-pulseBorder dark:border-slate-700 grid grid-cols-1 md:grid-cols-12 gap-4 items-end text-left bg-white/[0.01] dark:bg-slate-900/50">
-            <div className="md:col-span-4 space-y-1">
+          <form onSubmit={handleSearchSubmit} className="glass-panel rounded-2xl p-4 sm:p-6 border border-pulseBorder dark:border-slate-700 grid grid-cols-1 md:grid-cols-12 gap-4 items-end text-left bg-white/[0.01] dark:bg-slate-900/50 relative z-30">
+            <div className="md:col-span-4 space-y-1 search-container-main relative">
               <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Hospital Name / Keywords</label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 dark:text-slate-400">
@@ -359,10 +256,83 @@ export const Search: React.FC = () => {
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search e.g. Apollo, Metro, City..."
+                  onFocus={() => { if (query.trim().length >= 2) setShowDropdown(true); }}
+                  placeholder="Search Hospital or Specialty Name"
                   className="w-full pl-9 pr-4 py-2.5 rounded-xl glass-input text-xs text-slate-900"
                 />
               </div>
+
+              {/* Autocomplete Dropdown List */}
+              {showDropdown && query.trim().length >= 2 && (
+                <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl z-50 p-4 text-left max-h-60 overflow-y-auto">
+                  {searchingAutocomplete ? (
+                    <div className="py-2 text-center text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
+                      <Activity className="animate-spin text-primary w-4 h-4" />
+                      Searching...
+                    </div>
+                  ) : autocompleteResults.hospitals.length === 0 && autocompleteResults.specialties.length === 0 ? (
+                    <div className="py-4 text-center text-xs text-slate-500 dark:text-slate-400">
+                      ❌ No matching results found.
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {/* Specialties/Services Autocomplete results */}
+                      {autocompleteResults.specialties.length > 0 && (
+                        <div>
+                          <span className="text-[9px] font-extrabold text-primary uppercase tracking-wider block mb-1 px-1">
+                            🩺 Services
+                          </span>
+                          <div className="space-y-0.5">
+                            {autocompleteResults.specialties.map((spec) => (
+                              <div
+                                key={spec.name}
+                                onClick={() => {
+                                  setSpecialty(spec.name);
+                                  setQuery('');
+                                  setShowDropdown(false);
+                                }}
+                                className="px-2 py-1.5 rounded-lg text-xs hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer flex items-center justify-between group transition-colors"
+                              >
+                                <span className="font-semibold">{spec.name}</span>
+                                <span className="text-[8px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold group-hover:bg-primary group-hover:text-white transition-colors">
+                                  Filter
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Hospitals Autocomplete results */}
+                      {autocompleteResults.hospitals.length > 0 && (
+                        <div>
+                          <span className="text-[9px] font-extrabold text-red-500 uppercase tracking-wider block mb-1 px-1">
+                            🏥 Hospitals
+                          </span>
+                          <div className="space-y-0.5">
+                            {autocompleteResults.hospitals.map((hosp) => (
+                              <div
+                                key={hosp.id}
+                                onClick={() => {
+                                  setQuery(hosp.name);
+                                  setSelectedHospitalId(hosp.id);
+                                  setShowDropdown(false);
+                                }}
+                                className="px-2 py-1.5 rounded-lg text-xs hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer flex items-center justify-between group transition-colors"
+                              >
+                                <span className="font-semibold">{hosp.name}</span>
+                                <span className="text-[8px] bg-gray-100 dark:bg-gray-800 text-gray-500 px-1.5 py-0.5 rounded-full group-hover:bg-primary group-hover:text-white transition-colors">
+                                  Select
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="md:col-span-3 space-y-1">
@@ -401,8 +371,8 @@ export const Search: React.FC = () => {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="w-full px-3 py-2.5 rounded-xl glass-input text-xs text-slate-900"
               >
-                <option value="match">Best Match</option>
                 <option value="distance">Nearest First</option>
+                <option value="match">Best Match</option>
                 <option value="rating">Highest Rated</option>
               </select>
             </div>
@@ -468,10 +438,25 @@ export const Search: React.FC = () => {
                   ))}
                 </div>
               ) : hospitals.length === 0 ? (
-                <div className="glass-panel rounded-2xl p-10 border border-pulseBorder dark:border-slate-700 text-center text-slate-500 dark:text-slate-400">
-                  <AlertCircle className="w-8 h-8 mx-auto text-slate-500 dark:text-slate-400 mb-3 animate-bounce" />
-                  <p className="text-sm font-semibold">No clinics located in this range.</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Try broadening your radius slider or clearing the specialty dropdown.</p>
+                <div className="glass-panel rounded-2xl p-8 border border-amber-200/50 dark:border-amber-900/30 bg-amber-500/5 dark:bg-amber-950/10 text-center space-y-4">
+                  <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto text-amber-600 dark:text-amber-400">
+                    <AlertCircle className="w-6 h-6 animate-bounce" />
+                  </div>
+                  <div className="space-y-1.5 max-w-sm mx-auto">
+                    <p className="text-sm font-bold text-slate-900 dark:text-white leading-normal">
+                      Pulse is currently optimizing coverage for this region.
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal">
+                      Full specialty features are active in Delhi, Mumbai, and Bangalore.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsLocationModalOpen(true)}
+                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all mx-auto"
+                  >
+                    Change Search Location
+                  </button>
                 </div>
               ) : (
                 hospitals.map((hosp) => {
@@ -634,6 +619,7 @@ export const Search: React.FC = () => {
                 }))}
                 selectedHospitalId={selectedHospitalId}
                 onSelectHospital={handleSelectHospital}
+                onViewDetails={(id) => navigate(`/hospitals/${id}`)}
                 userLat={lat!}
                 userLng={lng!}
               />
@@ -681,25 +667,36 @@ export const Search: React.FC = () => {
           <div className="space-y-2 text-center">
             <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">Location Needed</h3>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Please turn on location to search for nearby hospitals and services.
+              Please enable location services or enter your address manually to discover nearby healthcare facilities.
             </p>
-            {isBlocked && (
-              <div className="text-[11px] text-red-500 font-semibold bg-red-500/5 dark:bg-red-500/10 p-3 rounded-2xl border border-red-500/20 max-w-sm mx-auto mt-4 leading-normal text-center space-y-1.5 animate-in fade-in duration-300">
-                <p>⚠️ Geolocation access is blocked by your browser settings.</p>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">To fix this, click the lock or info icon in the left side of your browser's address bar, set Location permission to "Allow", and reload the page.</p>
-              </div>
-            )}
           </div>
-          <div className="pt-2">
+          <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center items-center">
             <button
-              onClick={requestLocation}
-              className="px-6 py-3 bg-primary hover:bg-primary-hover text-white text-sm font-extrabold rounded-2xl shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all active:scale-95 flex items-center justify-center gap-2 mx-auto"
+              onClick={async () => {
+                const success = await requestGPSLocation();
+                if (!success) {
+                  toast.error("GPS access failed. Please select your location manually.");
+                  setIsLocationModalOpen(true);
+                }
+              }}
+              className="w-full sm:w-auto px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all"
             >
-              Enable Location Access
+              Use Live GPS
+            </button>
+            <button
+              onClick={() => setIsLocationModalOpen(true)}
+              className="w-full sm:w-auto px-6 py-3 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-primary/20"
+            >
+              Enter Location Manually
             </button>
           </div>
         </div>
       )}
+
+      <LocationModal 
+        isOpen={isLocationModalOpen} 
+        onClose={() => setIsLocationModalOpen(false)} 
+      />
     </div>
   );
 };

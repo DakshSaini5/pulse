@@ -3,7 +3,6 @@ import { prisma } from '../db';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { validate, updateProfileSchema, changePasswordSchema } from '../middleware/validate';
 import bcrypt from 'bcryptjs';
-import { verifyFirebaseIdToken } from '../config/firebase';
 
 const router = express.Router();
 
@@ -199,63 +198,41 @@ router.post('/change-password', authenticateToken, validate(changePasswordSchema
   }
 });
 
-// Verify and link verified mobile number
-router.post('/verify-mobile-update', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
-  const { firebaseToken } = req.body;
-
-  if (!firebaseToken) {
-    return res.status(400).json({ message: 'Firebase token is required.' });
-  }
-
-  try {
-    const { phoneNumber } = await verifyFirebaseIdToken(firebaseToken);
-    
-    // Check if another user has this mobileNumber
-    const existing = await prisma.user.findFirst({
-      where: {
-        mobileNumber: phoneNumber,
-        NOT: { id: req.user!.id }
-      }
-    });
-
-    if (existing) {
-      return res.status(400).json({ message: 'This mobile number is already linked to another account.' });
-    }
-
-    const updated = await prisma.user.update({
-      where: { id: req.user!.id },
-      data: { mobileNumber: phoneNumber },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        mobileNumber: true,
-        role: true,
-        avatar: true
-      }
-    });
-
-    return res.json({
-      success: true,
-      message: 'Mobile number linked successfully.',
-      user: updated
-    });
-  } catch (err: any) {
-    console.error('Verify mobile update error:', err);
-    return res.status(400).json({ message: err.message || 'Mobile verification failed.' });
-  }
-});
-
 // Delete account
 router.delete('/account', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    // Prisma will cascade delete all related data because of the schema relations
-    // (prescriptions, reports, etc.) if they have onDelete: Cascade
-    // Wait, let's verify if they have onDelete cascade in schema.prisma.
-    // If not, we have to delete manually or use prisma.
-    await prisma.user.delete({
-      where: { id: req.user!.id }
-    });
+    const userId = req.user!.id;
+
+    // Clean up all Cloudinary files before deleting the user from DB
+    const [prescriptions, reports] = await Promise.all([
+      prisma.prescription.findMany({ where: { userId }, select: { fileUrl: true } }),
+      prisma.medicalReport.findMany({ where: { userId }, select: { fileUrl: true } }),
+    ]);
+
+    const allFileUrls = [
+      ...prescriptions.map(p => p.fileUrl),
+      ...reports.map(r => r.fileUrl),
+    ].filter(Boolean);
+
+    if (allFileUrls.length > 0) {
+      try {
+        const cloudinary = (await import('../config/cloudinary')).default;
+        // Extract Cloudinary public IDs from URLs (format: .../folder/public_id.ext)
+        const publicIds = allFileUrls.map(url => {
+          const parts = url.split('/');
+          const fileWithExt = parts.slice(-2).join('/'); // folder/filename
+          return fileWithExt.replace(/\.[^.]+$/, ''); // remove extension
+        });
+        await cloudinary.api.delete_resources(publicIds);
+        console.log(`[Account Delete] Cleaned up ${publicIds.length} Cloudinary files for user ${userId}`);
+      } catch (cloudinaryErr) {
+        // Non-fatal: log but continue with account deletion
+        console.error('[Account Delete] Cloudinary cleanup failed (continuing with delete):', cloudinaryErr);
+      }
+    }
+
+    // Prisma will cascade delete all related DB records
+    await prisma.user.delete({ where: { id: userId } });
     
     res.json({ success: true, message: 'Account deleted successfully' });
   } catch (error) {

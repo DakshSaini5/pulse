@@ -10,15 +10,9 @@ const prisma = new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'warn', 'error'] : ['error'],
 });
 
-// Graceful shutdown — important for Render/cloud deployments
-const gracefulShutdown = async () => {
-  console.log('Disconnecting Prisma client...');
-  await prisma.$disconnect();
-  process.exit(0);
-};
-
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
+// Note: Graceful shutdown is handled by index.ts to ensure HTTP server
+// closes before the database connection is terminated.
+// Do NOT add SIGTERM/SIGINT handlers here.
 
 export default prisma;
 export { prisma };

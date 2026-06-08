@@ -460,7 +460,7 @@ export const PrescriptionCenter: React.FC = () => {
                                   type="text"
                                   value={field.name}
                                   onChange={(e) => handleFieldChange(idx, 'name', e.target.value)}
-                                  placeholder="e.g. Amoxicillin"
+                                  placeholder="Medicine Name"
                                   className="w-full p-2 rounded-lg glass-input text-xs text-slate-900 dark:text-white"
                                 />
                               </div>
@@ -471,7 +471,7 @@ export const PrescriptionCenter: React.FC = () => {
                                     type="text"
                                     value={field.dosage}
                                     onChange={(e) => handleFieldChange(idx, 'dosage', e.target.value)}
-                                    placeholder="e.g. 500 mg"
+                                    placeholder="Dosage"
                                     className="w-full p-2 rounded-lg glass-input text-xs text-slate-900 dark:text-white"
                                   />
                                 </div>
@@ -481,7 +481,7 @@ export const PrescriptionCenter: React.FC = () => {
                                     type="text"
                                     value={field.instructions}
                                     onChange={(e) => handleFieldChange(idx, 'instructions', e.target.value)}
-                                    placeholder="e.g. TID PC (Three times daily)"
+                                    placeholder="Instructions"
                                     className="w-full p-2 rounded-lg glass-input text-xs text-slate-900 dark:text-white"
                                   />
                                 </div>

@@ -14,6 +14,7 @@ interface MapProps {
   hospitals: HospitalPin[];
   selectedHospitalId?: string;
   onSelectHospital: (id: string) => void;
+  onViewDetails?: (id: string) => void;
   userLat?: number;
   userLng?: number;
 }
@@ -38,6 +39,7 @@ export const Map: React.FC<MapProps> = ({
   hospitals, 
   selectedHospitalId, 
   onSelectHospital,
+  onViewDetails,
   userLat = 28.6139,
   userLng = 77.2090
 }) => {
@@ -128,9 +130,9 @@ export const Map: React.FC<MapProps> = ({
 
       marker.bindPopup(`
         <div style="font-family:Inter,sans-serif; padding:2px;">
-          <h4 style="margin:0 0 4px 0; font-weight:700; color:#fff;">${hosp.name}</h4>
-          <p style="margin:0 0 6px 0; font-size:11px; color:#9ca3af;">Match Score: <strong style="color:#0d6efd">${hosp.recommendationScore}%</strong></p>
-          <button id="btn-${hosp.id}" style="background:#0d6efd; color:#fff; border:none; border-radius:4px; padding:4px 8px; font-size:10px; font-weight:600; cursor:pointer; width:100%;">View Clinic Details</button>
+          <h4 style="margin:0 0 4px 0; font-weight:700; color:#111827;">${hosp.name}</h4>
+          <p style="margin:0 0 6px 0; font-size:11px; color:#64748b;">Match Score: <strong style="color:#0d6efd">${hosp.recommendationScore}%</strong></p>
+          <button id="btn-${hosp.id}" style="background:#0d6efd; color:#fff; border:none; border-radius:4px; padding:6px 8px; font-size:11px; font-weight:600; cursor:pointer; width:100%; margin-top:4px;">View Clinic Details</button>
         </div>
       `);
 
@@ -138,7 +140,11 @@ export const Map: React.FC<MapProps> = ({
         const btn = document.getElementById(`btn-${hosp.id}`);
         if (btn) {
           btn.onclick = () => {
-            onSelectHospital(hosp.id);
+            if (onViewDetails) {
+              onViewDetails(hosp.id);
+            } else {
+              onSelectHospital(hosp.id);
+            }
           };
         }
       });

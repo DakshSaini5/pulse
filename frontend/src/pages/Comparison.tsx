@@ -40,6 +40,9 @@ export const Comparison: React.FC = () => {
         .then((res) => {
           setLat(res.latitude);
           setLng(res.longitude);
+        })
+        .catch(err => {
+          console.warn('Geolocation failed:', err);
         });
     };
 

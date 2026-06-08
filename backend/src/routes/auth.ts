@@ -5,10 +5,13 @@ import { prisma } from '../db';
 import { validate, registerSchema, loginSchema } from '../middleware/validate';
 import { authLimiter } from '../middleware/rateLimiter';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
-import { verifyFirebaseIdToken } from '../config/firebase';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET!;
+
+const ADMIN_EMAILS = [
+  'admin@pulse.com'
+];
 
 // Helper to generate 6-digit numeric code
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -85,11 +88,12 @@ router.post('/register/send-otp', authLimiter, async (req: Request, res: Respons
       }
     }
 
-    const devMode = process.env.NODE_ENV !== 'production' || !sentViaResend;
+    if (!sentViaResend) {
+      console.warn(`[WARNING] Resend API failed. Email was not delivered to ${emailLower}`);
+    }
 
     return res.json({ 
-      message: 'Verification OTP has been sent to your email.',
-      ...(devMode ? { devOtp: code } : {})
+      message: 'Verification OTP has been sent to your email.'
     });
   } catch (err) {
     console.error('Request registration email OTP error:', err);
@@ -133,13 +137,15 @@ router.post('/register', authLimiter, validate(registerSchema), async (req: Requ
 
     const hashed = await bcrypt.hash(password, 10);
 
+    const userRole = ADMIN_EMAILS.includes(emailLower) ? 'ADMIN' : 'USER';
+
     const user = await prisma.user.create({
       data: {
         name,
         email: emailLower,
         mobileNumber,
         passwordHash: hashed,
-        role: 'USER',
+        role: userRole,
         authProvider: 'EMAIL',
         notifications: {
           create: {
@@ -207,7 +213,16 @@ router.post('/login', authLimiter, validate(loginSchema), async (req: Request, r
       return res.status(400).json({ message: 'Invalid identifier or password.' });
     }
 
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
+    let userRole = user.role;
+    if (ADMIN_EMAILS.includes(user.email.toLowerCase()) && user.role !== 'ADMIN') {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { role: 'ADMIN' }
+      });
+      userRole = 'ADMIN';
+    }
+
+    const token = jwt.sign({ id: user.id, email: user.email, role: userRole }, JWT_SECRET, {
       expiresIn: '7d',
     });
 
@@ -218,57 +233,13 @@ router.post('/login', authLimiter, validate(loginSchema), async (req: Request, r
         name: user.name,
         email: user.email,
         mobileNumber: user.mobileNumber,
-        role: user.role,
+        role: userRole,
         avatar: user.avatar,
       },
     });
   } catch (err) {
     console.error('Login error:', err);
     return res.status(500).json({ message: 'Internal server error during login.' });
-  }
-});
-
-// POST /api/auth/login-mobile (Firebase SMS OTP sign-in)
-router.post('/login-mobile', authLimiter, async (req: Request, res: Response) => {
-  const { firebaseToken } = req.body;
-
-  if (!firebaseToken) {
-    return res.status(400).json({ message: 'Firebase ID token is required.' });
-  }
-
-  try {
-    const { phoneNumber } = await verifyFirebaseIdToken(firebaseToken);
-    
-    // Find user by registered mobileNumber
-    const user = await prisma.user.findUnique({
-      where: { mobileNumber: phoneNumber }
-    });
-
-    if (!user) {
-      return res.status(404).json({ 
-        message: 'User with this mobile number is not registered. Please sign up first.',
-        phoneNumber 
-      });
-    }
-
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
-      expiresIn: '7d',
-    });
-
-    return res.json({
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        mobileNumber: user.mobileNumber,
-        role: user.role,
-        avatar: user.avatar,
-      },
-    });
-  } catch (err: any) {
-    console.error('Mobile login error:', err);
-    return res.status(400).json({ message: err.message || 'Verification failed.' });
   }
 });
 
@@ -307,6 +278,10 @@ router.post('/forgot-password/request-email', authLimiter, async (req: Request, 
 
     if (!user) {
       return res.status(404).json({ message: 'No account registered with this email address.' });
+    }
+
+    if (email.toLowerCase() === 'admin@pulse.com') {
+      return res.status(403).json({ message: 'Password recovery is disabled for the administrator account.' });
     }
 
     const code = generateOTP();
@@ -365,11 +340,12 @@ router.post('/forgot-password/request-email', authLimiter, async (req: Request, 
       }
     }
 
-    const devMode = process.env.NODE_ENV !== 'production' || !sentViaResend;
+    if (!sentViaResend) {
+      console.warn(`[WARNING] Resend API failed. Email was not delivered to ${email}`);
+    }
 
     return res.json({ 
-      message: 'Verification OTP has been sent to your email.',
-      ...(devMode ? { devOtp: code } : {})
+      message: 'Verification OTP has been sent to your email.'
     });
   } catch (err) {
     console.error('Request email OTP error:', err);
@@ -425,10 +401,15 @@ router.post('/forgot-password/verify-email', authLimiter, async (req: Request, r
 
 // POST /api/auth/forgot-password/reset
 router.post('/forgot-password/reset', authLimiter, async (req: Request, res: Response) => {
-  const { newPassword, resetToken, firebaseToken } = req.body;
+  const { newPassword, resetToken } = req.body;
 
-  if (!newPassword || newPassword.length < 6) {
-    return res.status(400).json({ message: 'New password must be at least 6 characters long.' });
+  if (!newPassword) {
+    return res.status(400).json({ message: 'New password is required.' });
+  }
+  // Apply same strong password policy as registration
+  const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,128}$/;
+  if (!strongPasswordRegex.test(newPassword)) {
+    return res.status(400).json({ message: 'Password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&).' });
   }
 
   try {
@@ -445,16 +426,6 @@ router.post('/forgot-password/reset', authLimiter, async (req: Request, res: Res
       } catch {
         return res.status(400).json({ message: 'Password recovery session has expired. Please request a new code.' });
       }
-    } else if (firebaseToken) {
-      // Flow B: Verified via Mobile SMS OTP Firebase Token
-      const { phoneNumber } = await verifyFirebaseIdToken(firebaseToken);
-      const user = await prisma.user.findUnique({
-        where: { mobileNumber: phoneNumber }
-      });
-      if (!user) {
-        return res.status(404).json({ message: 'No registered user matches verified mobile number.' });
-      }
-      userId = user.id;
     } else {
       return res.status(400).json({ message: 'Missing verification token.' });
     }

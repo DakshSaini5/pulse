@@ -225,14 +225,6 @@ export const authAPI = {
     }
     return res.data;
   },
-  loginMobile: async (firebaseToken: string) => {
-    const res = await api.post('/api/auth/login-mobile', { firebaseToken });
-    if (res.data.token) {
-      localStorage.setItem('pulse_token', res.data.token);
-      localStorage.setItem('pulse_user', JSON.stringify(res.data.user));
-    }
-    return res.data;
-  },
   checkMobile: async (mobileNumber: string) => {
     const res = await api.post('/api/auth/check-mobile', { mobileNumber });
     return res.data as { exists: boolean };
@@ -318,6 +310,19 @@ export const hospitalAPI = {
   addHospital: async (data: any) => {
     const res = await api.post('/api/hospitals', data);
     return res.data as Hospital;
+  },
+};
+
+export const geocodingAPI = {
+  geocode: async (params: { street?: string; city?: string; state?: string; pincode?: string; q?: string }) => {
+    const res = await api.get('/api/geocoding/geocode', { params });
+    return res.data as {
+      latitude: number;
+      longitude: number;
+      label: string;
+      city: string;
+      state: string;
+    };
   },
 };
 
@@ -444,10 +449,6 @@ export const userAPI = {
   },
   changePassword: async (data: any) => {
     const res = await api.post('/api/user/change-password', data);
-    return res.data;
-  },
-  verifyMobileUpdate: async (firebaseToken: string) => {
-    const res = await api.post('/api/user/verify-mobile-update', { firebaseToken });
     return res.data;
   },
   deleteAccount: async () => {

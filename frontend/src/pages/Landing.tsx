@@ -5,7 +5,8 @@ import { emergencyAPI, hospitalAPI, EmergencyContact } from '../services/api';
 import EmergencyContactModal from '../components/EmergencyContactModal';
 import NeedHelpModal from '../components/NeedHelpModal';
 import BreathingCuesModal from '../components/BreathingCuesModal';
-import { getCityNameFromCoords } from '../utils/geolocation';
+import { useUserLocation } from '../context/LocationContext';
+import LocationModal from '../components/LocationModal';
 import { 
   Activity, Search, FileText, ArrowRight, 
   Map, Play, Sparkles, Heart, Activity as ActivityIcon,
@@ -25,156 +26,9 @@ export const Landing: React.FC = () => {
   const [panicLoading, setPanicLoading] = useState(false);
   const [contactsLoading, setContactsLoading] = useState(true);
 
-  const [locationStatus, setLocationStatus] = useState<'checking' | 'granted' | 'denied'>('checking');
-  const [cityName, setCityName] = useState('');
-  const [isBlocked, setIsBlocked] = useState(false);
-
-  const requestLocation = async () => {
-    setLocationStatus('checking');
-    if (!navigator.geolocation) {
-      setLocationStatus('denied');
-      toast.error("Geolocation is not supported by your browser.");
-      return;
-    }
-
-    if (navigator.permissions) {
-      try {
-        const perm = await navigator.permissions.query({ name: 'geolocation' });
-        if (perm.state === 'denied') {
-          setIsBlocked(true);
-          setLocationStatus('denied');
-          toast.error("Location permission blocked. Please click the lock icon in the browser address bar to allow location access.", {
-            duration: 8000
-          });
-          return;
-        }
-      } catch (e) {}
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        localStorage.setItem('pulse_latitude', lat.toString());
-        localStorage.setItem('pulse_longitude', lng.toString());
-        localStorage.removeItem('pulse_location_denied');
-        setIsBlocked(false);
-        
-        setLocationStatus('granted');
-        try {
-          const city = await getCityNameFromCoords(lat, lng);
-          setCityName(city);
-          localStorage.setItem('pulse_city_name', city);
-        } catch (err) {
-          setCityName("Detected Location");
-        }
-      },
-      (error) => {
-        console.error("Geolocation request failed:", error);
-        setLocationStatus('denied');
-        localStorage.setItem('pulse_location_denied', 'true');
-        localStorage.removeItem('pulse_latitude');
-        localStorage.removeItem('pulse_longitude');
-        localStorage.removeItem('pulse_city_name');
-
-        if (error.code === 1) {
-          setIsBlocked(true);
-          toast.error("Location permission blocked. Please click the lock icon in the browser address bar to allow location access.", {
-            duration: 8000
-          });
-        } else {
-          toast.error(`Unable to retrieve location: ${error.message}`);
-        }
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      }
-    );
-  };
-
-  useEffect(() => {
-    let permissionStatus: PermissionStatus | null = null;
-
-    const handlePermissionChange = () => {
-      if (permissionStatus) {
-        if (permissionStatus.state === 'granted') {
-          requestLocation();
-        } else if (permissionStatus.state === 'denied') {
-          setLocationStatus('denied');
-          setIsBlocked(true);
-          localStorage.setItem('pulse_location_denied', 'true');
-        } else {
-          setLocationStatus('checking');
-          setIsBlocked(false);
-        }
-      }
-    };
-
-    const initLocation = async () => {
-      const latStr = localStorage.getItem('pulse_latitude');
-      const lngStr = localStorage.getItem('pulse_longitude');
-      const storedCity = localStorage.getItem('pulse_city_name');
-      const deniedFlag = localStorage.getItem('pulse_location_denied');
-
-      if (latStr && lngStr && !deniedFlag) {
-        setLocationStatus('granted');
-        if (storedCity) {
-          setCityName(storedCity);
-        } else {
-          try {
-            const city = await getCityNameFromCoords(parseFloat(latStr), parseFloat(lngStr));
-            setCityName(city);
-            localStorage.setItem('pulse_city_name', city);
-          } catch (e) {}
-        }
-        
-        navigator.geolocation?.getCurrentPosition((pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          localStorage.setItem('pulse_latitude', lat.toString());
-          localStorage.setItem('pulse_longitude', lng.toString());
-          getCityNameFromCoords(lat, lng).then(city => {
-            setCityName(city);
-            localStorage.setItem('pulse_city_name', city);
-          }).catch(console.error);
-        }, () => {}, { enableHighAccuracy: true });
-        
-        return;
-      }
-
-      if (navigator.permissions) {
-        try {
-          permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
-          permissionStatus.addEventListener('change', handlePermissionChange);
-
-          if (permissionStatus.state === 'granted') {
-            requestLocation();
-          } else if (permissionStatus.state === 'denied') {
-            setLocationStatus('denied');
-            setIsBlocked(true);
-          } else {
-            requestLocation();
-          }
-        } catch (e) {
-          requestLocation();
-        }
-      } else {
-        requestLocation();
-      }
-    };
-
-    initLocation();
-
-    return () => {
-      if (permissionStatus) {
-        try {
-          permissionStatus.removeEventListener('change', handlePermissionChange);
-        } catch (e) {}
-      }
-    };
-  }, []);
+  // Global user location hook
+  const { latitude: lat, longitude: lng, label: cityName, locationStatus, requestGPSLocation } = useUserLocation();
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
   // Autocomplete Dropdown State
   const [autocompleteResults, setAutocompleteResults] = useState<{
@@ -224,15 +78,11 @@ export const Landing: React.FC = () => {
     const delayDebounceFn = setTimeout(async () => {
       setSearchingAutocomplete(true);
       try {
-        // BUG-05 FIX: Pass user's coordinates so autocomplete returns only city-local results
-        const lat = localStorage.getItem('pulse_latitude');
-        const lng = localStorage.getItem('pulse_longitude');
-        const city = localStorage.getItem('pulse_city_name') || undefined;
         const data = await hospitalAPI.autocomplete(
           searchQuery,
-          lat ? parseFloat(lat) : undefined,
-          lng ? parseFloat(lng) : undefined,
-          city
+          lat,
+          lng,
+          cityName
         );
         setAutocompleteResults(data);
         setShowDropdown(true);
@@ -244,7 +94,7 @@ export const Landing: React.FC = () => {
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery]);
+  }, [searchQuery, lat, lng, cityName]);
 
   const handleSkipEmergency = () => {
     sessionStorage.setItem('skipped_emergency', 'true');
@@ -364,10 +214,17 @@ export const Landing: React.FC = () => {
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
               {locationStatus === 'granted' && cityName ? (
-                <>
+                <span className="flex items-center flex-wrap gap-1">
                   <MapPin className="w-4 h-4 text-primary shrink-0 animate-bounce" />
                   <span>Showing care services in <strong className="text-slate-800 dark:text-white">{cityName}</strong></span>
-                </>
+                  <button
+                    type="button"
+                    onClick={() => setIsLocationModalOpen(true)}
+                    className="text-[10px] bg-primary/10 hover:bg-primary/20 text-primary px-2 py-0.5 rounded-lg ml-2 font-bold transition-all border border-primary/20"
+                  >
+                    Change
+                  </button>
+                </span>
               ) : locationStatus === 'checking' ? (
                 <>
                   <Activity className="w-4 h-4 text-primary animate-spin shrink-0" />
@@ -534,25 +391,36 @@ export const Landing: React.FC = () => {
             <div className="space-y-2">
               <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">Location Needed</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                Please turn on location to search for nearby hospitals and services.
+                Please enable location services or enter your address manually to discover nearby healthcare facilities.
               </p>
-              {isBlocked && (
-                <div className="text-[11px] text-red-500 font-semibold bg-red-500/5 dark:bg-red-500/10 p-3 rounded-2xl border border-red-500/20 max-w-sm mx-auto mt-4 leading-normal text-center space-y-1.5 animate-in fade-in duration-300">
-                  <p>⚠️ Geolocation access is blocked by your browser settings.</p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">To fix this, click the lock or info icon in the left side of your browser's address bar, set Location permission to "Allow", and reload the page.</p>
-                </div>
-              )}
             </div>
-            <div className="pt-2">
+            <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center items-center">
               <button
-                onClick={requestLocation}
-                className="px-6 py-3 bg-primary hover:bg-primary-hover text-white text-sm font-extrabold rounded-2xl shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all active:scale-95 flex items-center justify-center gap-2 mx-auto"
+                onClick={async () => {
+                  const success = await requestGPSLocation();
+                  if (!success) {
+                    toast.error("GPS access failed. Please select your location manually.");
+                    setIsLocationModalOpen(true);
+                  }
+                }}
+                className="w-full sm:w-auto px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all"
               >
-                Enable Location Access
+                Use Live GPS
+              </button>
+              <button
+                onClick={() => setIsLocationModalOpen(true)}
+                className="w-full sm:w-auto px-6 py-3 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-primary/20"
+              >
+                Enter Location Manually
               </button>
             </div>
           </div>
         )}
+
+        <LocationModal 
+          isOpen={isLocationModalOpen} 
+          onClose={() => setIsLocationModalOpen(false)} 
+        />
 
       </div>
     );

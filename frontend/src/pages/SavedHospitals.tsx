@@ -61,6 +61,10 @@ export const SavedHospitals: React.FC = () => {
           setLat(res.latitude);
           setLng(res.longitude);
           fetchSaved(res.latitude, res.longitude);
+        })
+        .catch(err => {
+          console.warn('Geolocation failed:', err);
+          fetchSaved();
         });
     };
 

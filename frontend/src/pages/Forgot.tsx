@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { PulseLogo } from '../components/PulseLogo';
 import { authAPI } from '../services/api';
-import { sendSMSVerification, isFirebaseMockMode } from '../utils/firebase';
 import toast from 'react-hot-toast';
 
 type RecoveryStep = 'METHOD' | 'OTP' | 'RESET' | 'SUCCESS';
