@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-pulseBg text-slate-900 min-h-screen selection:bg-primary selection:text-white transition-colors duration-300;
+  }
+  .dark body {
+    background-color: #181c1e;
+    @apply text-slate-100;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #F8FAFC;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Premium Light Panel Styles (Clean Corporate Aesthetic) */
+.glass-panel {
+  @apply bg-pulseCard border border-pulseBorder shadow-ambient rounded-2xl transition-all duration-300;
+}
+
+.dark .glass-panel {
+  @apply bg-slate-900 border-slate-700 shadow-ambient-dark;
+}
+
+.glass-panel-hover {
+  @apply transition-all duration-300 ease-out;
+}
+.glass-panel-hover:hover {
+  @apply border-primary-light shadow-ambient-lg -translate-y-[2px];
+}
+
+.dark .glass-panel-hover:hover {
+  @apply border-primary-dark shadow-ambient-lg;
+}
+
+.glass-input {
+  @apply bg-pulseCard border border-slate-300 transition-all duration-200 text-slate-900 rounded-lg;
+}
+.dark .glass-input {
+  @apply bg-slate-800 border-slate-600 text-slate-100;
+}
+
+.glass-input:focus {
+  @apply border-primary ring-2 ring-primary/20 outline-none;
+}
+.dark .glass-input:focus {
+  @apply border-primary-light ring-primary-dark/50;
+}
+
+/* Glowing animations */
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 15px 0px rgba(37, 99, 235, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 25px 4px rgba(37, 99, 235, 0.25);
+  }
+}
+
+.pulse-glow {
+  animation: glow 4s infinite ease-in-out;
+}
+
+/* Leaflet maps custom styles (Light mode) */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 0.75rem;
+  background: #F8FAFC !important;
+  z-index: 10;
+}
+
+.leaflet-bar {
+  border: 1px solid #E2E8F0 !important;
+  background: #FFFFFF !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+.leaflet-bar a {
+  background-color: #FFFFFF !important;
+  color: #334155 !important;
+  border-bottom: 1px solid #E2E8F0 !important;
+}
+
+.leaflet-bar a:hover {
+  background-color: #F1F5F9 !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: #FFFFFF !important;
+  color: #0F172A !important;
+  border: 1px solid #E2E8F0 !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.leaflet-popup-tip {
+  background: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+}

@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Production
+build/
+dist/
+
+# Env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Databases
+*.db
+*.db-journal
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Uploads
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# OS
+.DS_Store
+
+# Temp dev files
+frontend/fix-dark-mode.*
+frontend/refactor-theme.*
+backend/scratch_*
+backend/test-keys.*
+*.timestamp-*
+
+# Service Accounts
+firebase-service-account.json
+
+# Large map data files
+backend/data/
+*.pbf
+

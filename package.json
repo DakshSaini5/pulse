@@ -1,0 +1,13 @@
+{
+  "name": "pulse-railway-root",
+  "version": "1.0.0",
+  "description": "Root package.json for Railway deployment",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "install": "cd backend && npm install",
+    "build": "cd backend && npm run build",
+    "start": "cd backend && npm start"
+  }
+}

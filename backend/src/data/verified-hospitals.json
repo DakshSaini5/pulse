@@ -1,0 +1,55 @@
+[
+  {
+    "name": "Sparsh Hospital",
+    "specialties": [
+      "Orthopedics", "Cardiology", "Neurology", "Pediatrics", "Gynecology",
+      "General Medicine", "Emergency Medicine", "General Surgery"
+    ]
+  },
+  {
+    "name": "Prakriya Hospitals",
+    "specialties": [
+      "General Medicine", "Cardiology", "Orthopedics", "Pediatrics",
+      "Neurology", "Gynecology", "Emergency Medicine"
+    ]
+  },
+  {
+    "name": "Venkateshwar Hospital",
+    "specialties": [
+      "Cardiology", "Oncology", "Neurology", "Orthopedics", "Gastroenterology",
+      "Pulmonology", "Urology", "General Medicine", "Emergency Medicine"
+    ]
+  },
+  {
+    "name": "Apollo",
+    "specialties": [
+      "Cardiology", "Neurology", "Orthopedics", "Oncology", "Pediatrics",
+      "Gastroenterology", "Gynecology", "Pulmonology", "Urology", 
+      "General Medicine", "Emergency Medicine"
+    ]
+  },
+  {
+    "name": "Manipal",
+    "specialties": [
+      "Cardiology", "Neurology", "Orthopedics", "Oncology", "Pediatrics",
+      "Gastroenterology", "Gynecology", "Pulmonology", "Urology", 
+      "General Medicine", "Emergency Medicine"
+    ]
+  },
+  {
+    "name": "Fortis",
+    "specialties": [
+      "Cardiology", "Neurology", "Orthopedics", "Oncology", "Pediatrics",
+      "Gastroenterology", "Gynecology", "Pulmonology", "Urology", 
+      "General Medicine", "Emergency Medicine"
+    ]
+  },
+  {
+    "name": "Max Super Speciality",
+    "specialties": [
+      "Cardiology", "Neurology", "Orthopedics", "Oncology", "Pediatrics",
+      "Gastroenterology", "Gynecology", "Pulmonology", "Urology", 
+      "General Medicine", "Emergency Medicine"
+    ]
+  }
+]
