@@ -11,6 +11,8 @@ import { formatIndianPhoneNumber, getDialerHref } from '../utils/phoneFormatter'
 import toast from 'react-hot-toast';
 import { useUserLocation } from '../context/LocationContext';
 import LocationModal from '../components/LocationModal';
+import { Capacitor } from '@capacitor/core';
+import { DiscoverScreen } from '../components/pulse/DiscoverScreen';
 
 export const Search: React.FC = () => {
   const { user } = useAuth();
@@ -211,6 +213,44 @@ export const Search: React.FC = () => {
     });
   };
 
+  if (Capacitor.isNativePlatform()) {
+    return (
+      <>
+        <DiscoverScreen 
+          activeScreen="discover"
+          onNavigate={(screen) => {
+            if (screen === 'discover') navigate('/search');
+            else if (screen === 'records') navigate('/prescriptions');
+            else navigate(`/${screen === 'home' ? '' : screen}`);
+          }}
+          onHospitalClick={(id) => navigate(`/hospitals/${id}`)}
+          hospitals={hospitals}
+          savedIds={savedIds}
+          compareIds={compareIds}
+          onToggleSave={(id, e) => { e.preventDefault(); handleToggleSave(id, e); }}
+          onToggleCompare={(id, e) => { e.preventDefault(); handleToggleCompare(id, e); }}
+          query={query}
+          setQuery={setQuery}
+          onSearchSubmit={handleSearchSubmit}
+          specialty={specialty}
+          setSpecialty={setSpecialty}
+          radius={[radius]}
+          setRadius={(val) => setRadius(val[0])}
+          hasER={emergencyOnly}
+          setHasER={setEmergencyOnly}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          cityName={cityName}
+          onChangeLocation={() => setIsLocationModalOpen(true)}
+        />
+        <LocationModal 
+          isOpen={isLocationModalOpen} 
+          onClose={() => setIsLocationModalOpen(false)} 
+        />
+      </>
+    );
+  }
+
   return (
     <div className="space-y-8 pb-20 relative">
       <div className="text-left space-y-2">
@@ -234,13 +274,27 @@ export const Search: React.FC = () => {
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-2.5 rounded-xl w-fit mr-auto flex-wrap">
               <MapPin className="w-4 h-4 text-primary shrink-0 animate-bounce" />
               <span>Active Location: <strong className="text-slate-800 dark:text-white">{cityName}</strong></span>
-              <button
-                type="button"
-                onClick={() => setIsLocationModalOpen(true)}
-                className="text-[10px] bg-primary/10 hover:bg-primary/20 text-primary px-2 py-0.5 rounded-lg ml-2 font-bold transition-all border border-primary/20"
-              >
-                Change Location
-              </button>
+              <div className="ml-2 flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const success = await requestGPSLocation();
+                    if (success) toast.success("Location refreshed successfully!");
+                    else toast.error("Could not refresh GPS location.");
+                  }}
+                  className="text-[10px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-lg font-bold transition-all border border-emerald-500/20 flex items-center gap-1"
+                >
+                  <Activity className="w-3 h-3" />
+                  Refresh GPS
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsLocationModalOpen(true)}
+                  className="text-[10px] bg-primary/10 hover:bg-primary/20 text-primary px-2 py-0.5 rounded-lg font-bold transition-all border border-primary/20"
+                >
+                  Change Location
+                </button>
+              </div>
             </div>
           )}
 

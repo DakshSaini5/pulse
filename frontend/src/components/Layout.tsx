@@ -7,6 +7,7 @@ import {
   Phone, KeyRound, MessageSquare, CheckCircle2
 } from 'lucide-react';
 import ChatAssistant from './ChatAssistant';
+import AIChatbox from './AIChatbox';
 import { NotificationCenter } from './NotificationCenter';
 import { PulseLogo } from './PulseLogo';
 import { userAPI } from '../services/api';
@@ -46,8 +47,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       </div>
 
       {/* Top Header */}
-      <header className="sticky top-0 z-40 w-full bg-white/90 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      {!Capacitor.isNativePlatform() && (
+        <header className="sticky top-0 z-40 w-full bg-white/90 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 backdrop-blur-md">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center group">
               <PulseLogo size={42} showTagline={true} />
@@ -172,8 +174,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               </button>
             )}
           </div>
-        </div>
-      </header>
+          </div>
+        </header>
+      )}
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
@@ -265,7 +268,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       {Capacitor.isNativePlatform() && <MobileBottomNav />}
       
       {/* Floating AI Chat Assistant */}
-      {user && <ChatAssistant />}
+      {user && (Capacitor.isNativePlatform() ? <AIChatbox /> : <ChatAssistant />)}
     </div>
   );
 };

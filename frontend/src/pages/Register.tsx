@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../services/api';
@@ -92,6 +93,11 @@ export const Register: React.FC = () => {
       const res = await authAPI.sendRegisterOTP(email);
       setStep('OTP');
       setResendCooldown(30);
+      
+      // Handle dev mode bypass
+      if (res.devOtpFallback) {
+        toast.success(`DEV MODE OTP: ${res.devOtpFallback}`, { duration: 8000 });
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to send verification code. Please check your email.');
     } finally {

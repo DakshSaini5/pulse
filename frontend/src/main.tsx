@@ -7,6 +7,10 @@ import './index.css';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'placeholder-client-id';
 
+import { Capacitor } from '@capacitor/core';
+// TEMP: Mock native platform so you can test the new mobile UI on your physical phone's browser
+(Capacitor as any).isNativePlatform = () => true;
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>

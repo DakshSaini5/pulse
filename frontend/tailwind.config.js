@@ -13,12 +13,14 @@ export default {
           hover: '#0048af', // primary
           light: '#b1c5ff', // primary_fixed_dim
           dark: '#001946', // on_primary_fixed
+          foreground: "var(--primary-foreground)",
         },
         secondary: {
           DEFAULT: '#505f76',
           hover: '#38485d',
           light: '#d0e1fb',
           dark: '#0b1c30',
+          foreground: "var(--secondary-foreground)",
         },
         tertiary: {
           DEFAULT: '#005479',
@@ -39,6 +41,31 @@ export default {
         pulseBg: '#f7fafd', // Background
         pulseCard: '#ffffff',
         pulseBorder: '#e0e3e6', // outline_variant
+        background: "var(--background)",
+        foreground: "var(--foreground)",
+        card: {
+          DEFAULT: "var(--card)",
+          foreground: "var(--card-foreground)",
+        },
+        popover: {
+          DEFAULT: "var(--popover)",
+          foreground: "var(--popover-foreground)",
+        },
+        muted: {
+          DEFAULT: "var(--muted)",
+          foreground: "var(--muted-foreground)",
+        },
+        accent: {
+          DEFAULT: "var(--accent)",
+          foreground: "var(--accent-foreground)",
+        },
+        destructive: {
+          DEFAULT: "var(--destructive)",
+          foreground: "var(--destructive)",
+        },
+        border: "var(--border)",
+        input: "var(--input)",
+        ring: "var(--ring)",
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
@@ -53,8 +80,15 @@ export default {
       },
       borderRadius: {
         '4xl': '2rem',
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+      transitionDuration: {
+        '4000': '4000ms',
+        '6000': '6000ms',
       }
     },
   },
-  plugins: [],
+  plugins: [require("tailwindcss-animate")],
 }

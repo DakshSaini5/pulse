@@ -10,6 +10,8 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { MedicalDisclaimer, AIModalDisclaimer } from '../components/MedicalDisclaimer';
 import toast from 'react-hot-toast';
+import { Capacitor } from '@capacitor/core';
+import { RecordsScreen } from '../components/pulse/RecordsScreen';
 
 const parseMedicinesFromRawText = (text: string): Array<{ name: string; dosage: string; instructions: string }> => {
   if (!text) return [{ name: '', dosage: '', instructions: '' }];
@@ -171,7 +173,7 @@ export const PrescriptionCenter: React.FC = () => {
     setMedicineFields(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const handleFieldChange = (idx: number, key: 'name' | 'dosage' | 'instructions', val: string) => {
+  const handleFieldChange = (idx: number, key: "name" | "dosage" | "instructions", val: string) => {
     setMedicineFields(prev => {
       const copy = [...prev];
       copy[idx][key] = val;
@@ -240,6 +242,42 @@ export const PrescriptionCenter: React.FC = () => {
       setCheckingInteractions(false);
     }
   };
+
+  if (Capacitor.isNativePlatform()) {
+    return (
+      <>
+        {showAiModal && <AIModalDisclaimer onAcknowledge={handleAcknowledgeAi} />}
+        <RecordsScreen 
+          activeScreen="records"
+          onNavigate={(screen) => {
+            if (screen === 'discover') navigate('/search');
+            else if (screen === 'records') navigate('/prescriptions');
+            else navigate(`/${screen === 'home' ? '' : screen}`);
+          }}
+          prescriptions={prescriptions}
+          activePrescription={activePrescription}
+          selectPrescription={selectPrescription}
+          handleDeletePrescription={handleDeletePrescription}
+          handleFileChange={handleFileChange}
+          handleUploadSubmit={handleUploadSubmit}
+          selectedFiles={selectedFiles}
+          uploading={uploading}
+          rawText={rawText}
+          setRawText={setRawText}
+          medicineFields={medicineFields}
+          handleAddField={handleAddField}
+          handleRemoveField={handleRemoveField}
+          handleFieldChange={handleFieldChange}
+          initiateVerifySubmit={initiateVerifySubmit}
+          verifying={verifying}
+          checkingInteractions={checkingInteractions}
+          handleCheckInteractions={handleCheckInteractions}
+          interactionResult={interactionResult}
+          setInteractionResult={setInteractionResult}
+        />
+      </>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-16 text-left">

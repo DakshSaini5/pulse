@@ -6,9 +6,13 @@ import {
   ArrowLeft, Star, Clock, AlertCircle, ShieldCheck, 
   MapPin, HelpCircle, Phone, Globe, Layers 
 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { HospitalCompareScreen } from '../components/pulse/HospitalCompareScreen';
+import { useNavigate } from 'react-router-dom';
 
 export const Comparison: React.FC = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -65,6 +69,22 @@ export const Comparison: React.FC = () => {
   useEffect(() => {
     fetchHospitals();
   }, [searchParams, lat, lng]);
+
+  if (Capacitor.isNativePlatform()) {
+    return (
+      <HospitalCompareScreen 
+        activeScreen="compare"
+        onNavigate={(screen) => {
+          if (screen === 'discover') navigate('/search');
+          else if (screen === 'records') navigate('/prescriptions');
+          else if (screen.startsWith('hospitals/')) navigate(`/${screen}`);
+          else navigate(`/${screen === 'home' ? '' : screen}`);
+        }}
+        hospitals={hospitals}
+        loading={loading}
+      />
+    );
+  }
 
   if (loading) {
     return (

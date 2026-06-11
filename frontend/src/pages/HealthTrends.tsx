@@ -10,6 +10,8 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer, Legend 
 } from 'recharts';
+import { Capacitor } from '@capacitor/core';
+import { TrendsScreen } from '../components/pulse/TrendsScreen';
 
 export const HealthTrends: React.FC = () => {
   const { user } = useAuth();
@@ -78,6 +80,27 @@ export const HealthTrends: React.FC = () => {
       setAssessingRisk(false);
     }
   };
+
+  if (Capacitor.isNativePlatform()) {
+    return (
+      <TrendsScreen 
+        activeScreen="trends"
+        onNavigate={(screen) => {
+          if (screen === 'discover') navigate('/search');
+          else if (screen === 'records') navigate('/prescriptions');
+          else navigate(`/${screen === 'home' ? '' : screen}`);
+        }}
+        markers={markers}
+        activeMarker={activeMarker}
+        setActiveMarker={setActiveMarker}
+        filteredData={filteredData}
+        handleAssessRisk={handleAssessRisk}
+        assessingRisk={assessingRisk}
+        riskResult={riskResult}
+        trends={trends}
+      />
+    );
+  }
 
   return (
     <div className="space-y-8 pb-16 text-left">

@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Capacitor } from '@capacitor/core';
+import { LandingScreen } from '../components/pulse/LandingScreen';
+import { HomeScreen } from '../components/pulse/HomeScreen';
 
 export const Landing: React.FC = () => {
   const { user } = useAuth();
@@ -167,7 +169,7 @@ export const Landing: React.FC = () => {
     // LOGGED-IN DASHBOARD VIEW
     // ==========================================
     return (
-      <div className="w-full max-w-7xl mx-auto px-4 py-8 space-y-8 animate-in fade-in duration-500">
+      <>
         <EmergencyContactModal 
           isOpen={showEmergencyModal} 
           onClose={handleSkipEmergency}
@@ -188,6 +190,23 @@ export const Landing: React.FC = () => {
           isOpen={showHelpModal}
           onClose={() => setShowHelpModal(false)}
         />
+
+        {Capacitor.isNativePlatform() ? (
+          <HomeScreen 
+            activeScreen="home"
+            onNavigate={(screen) => {
+              if (screen === 'discover') navigate('/search');
+              else if (screen === 'records') navigate('/prescriptions');
+              else navigate(`/${screen === 'home' ? '' : screen}`);
+            }}
+            onServiceClick={(service) => navigate(`/search?specialty=${encodeURIComponent(service)}`)}
+            onPanic={() => {
+              setShowPanicModal(true);
+              triggerPanic();
+            }}
+          />
+        ) : (
+          <div className="w-full max-w-7xl mx-auto px-4 py-8 space-y-8 animate-in fade-in duration-500">
 
         {/* Action Required Banner */}
         {!contactsLoading && contacts.length === 0 && !showEmergencyModal && (
@@ -424,8 +443,9 @@ export const Landing: React.FC = () => {
           isOpen={isLocationModalOpen} 
           onClose={() => setIsLocationModalOpen(false)} 
         />
-
-      </div>
+          </div>
+        )}
+      </>
     );
   }
 
@@ -433,7 +453,14 @@ export const Landing: React.FC = () => {
   // PUBLIC HERO VIEW (Not Logged In)
   // ==========================================
   return (
-    <div className="w-full">
+    <>
+      {Capacitor.isNativePlatform() ? (
+        <LandingScreen 
+          onGetStarted={() => navigate('/register')}
+          onDiscoverMap={() => navigate('/search')}
+        />
+      ) : (
+        <div className="w-full">
       <section className="relative pt-16 pb-20 sm:pt-24 sm:pb-32 px-4 md:px-10 text-center">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent pointer-events-none" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-teal-500/5 via-transparent to-transparent pointer-events-none" />
@@ -468,9 +495,11 @@ export const Landing: React.FC = () => {
               <Play className="w-4 h-4 sm:w-5 sm:h-5 text-primary fill-primary" />
               Discover Hospitals Map
             </Link>
+            </div>
           </div>
-        </div>
-      </section>
-    </div>
+        </section>
+      </div>
+      )}
+    </>
   );
 };
