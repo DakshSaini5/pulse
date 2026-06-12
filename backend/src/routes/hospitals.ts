@@ -379,11 +379,13 @@ router.get('/:id', async (req: Request, res: Response) => {
     }
 
     const { score, explanation } = scoreHospital(hospital as any, 'General Medicine', userLat, userLng);
+    const distance = calculateDistance(userLat, userLng, hospital.latitude, hospital.longitude);
 
     return res.json({
       ...hospital,
       recommendationScore: score,
-      explanation
+      explanation,
+      distance
     });
   } catch (err) {
     console.error(err);
