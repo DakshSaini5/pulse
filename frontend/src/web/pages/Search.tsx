@@ -588,18 +588,20 @@ export const Search: React.FC = () => {
                           if (!matchedSpec) return null;
                           return (
                             <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 rounded-xl text-[10px] leading-normal font-semibold space-y-1">
-                              <div className="flex justify-between">
-                                <span>🕒 OPD Hours:</span>
-                                <span className="font-bold text-slate-900 dark:text-white">{matchedSpec.opdTimings || 'Contact Facility to Confirm'}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>💳 Consult Fee:</span>
-                                <span className="font-extrabold text-primary">
-                                  {matchedSpec.averageCost === 0 
+                              <div className="flex justify-between items-center text-[10px]">
+                                <span className="text-slate-500 dark:text-slate-400 font-semibold">Consulting Hours</span>
+                                <span className="font-bold text-slate-900 dark:text-white">
+                                  {(!matchedSpec.opdTimings || matchedSpec.opdTimings.includes('09:00 AM - 05:00 PM') || matchedSpec.opdTimings.includes('09:00 AM - 09:00 PM')) 
                                     ? 'Contact Facility' 
-                                    : matchedSpec.averageCost <= 50 
-                                      ? `₹${matchedSpec.averageCost} (Govt Rate)` 
-                                      : `₹${matchedSpec.averageCost}`}
+                                    : matchedSpec.opdTimings}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center text-[10px]">
+                                <span className="text-slate-500 dark:text-slate-400 font-semibold">Avg. Consultation Fee</span>
+                                <span className="font-extrabold text-slate-900 dark:text-white">
+                                  {matchedSpec.averageCost > 0 
+                                    ? `₹${matchedSpec.averageCost}` 
+                                    : 'Contact Hospital'}
                                 </span>
                               </div>
                             </div>

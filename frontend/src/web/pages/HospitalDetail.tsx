@@ -183,18 +183,20 @@ export const HospitalDetail: React.FC = () => {
                     <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal mt-1">{spec.specialty.description}</p>
                   </div>
                   <div className="space-y-1 text-[10px] font-semibold text-slate-500 dark:text-slate-400 pt-2 border-t border-pulseBorder dark:border-slate-700">
-                    <div className="flex justify-between items-center">
-                      <span className="uppercase tracking-wider">OPD Timings</span>
-                      <span className="text-slate-900 dark:text-white font-extrabold">{spec.opdTimings || 'Contact Facility to Confirm'}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="uppercase tracking-wider">Consult fee</span>
-                      <span className="text-primary font-black">
-                        {spec.averageCost === 0 
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-slate-500 dark:text-slate-400 font-semibold">Consulting Hours</span>
+                      <span className="text-slate-900 dark:text-white font-extrabold">
+                        {(!spec.opdTimings || spec.opdTimings.includes('09:00 AM - 05:00 PM') || spec.opdTimings.includes('09:00 AM - 09:00 PM')) 
                           ? 'Contact Facility' 
-                          : spec.averageCost <= 50 
-                            ? `₹${spec.averageCost} (Govt Rate)` 
-                            : `₹${spec.averageCost}`}
+                          : spec.opdTimings}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-slate-500 dark:text-slate-400 font-semibold">Avg. Consultation Fee</span>
+                      <span className="text-slate-900 dark:text-white font-extrabold">
+                        {spec.averageCost > 0 
+                          ? `₹${spec.averageCost}` 
+                          : 'Contact Hospital'}
                       </span>
                     </div>
                   </div>
