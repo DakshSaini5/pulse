@@ -193,13 +193,21 @@ export const Comparison: React.FC = () => {
               <td className="p-5 font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500">Consult Costs</td>
               {hospitals.map(h => {
                 const costs = h.specialties?.map(s => s.averageCost).filter(c => c > 0) || [];
-                // Use actual DB costs if available, otherwise generate a realistic placeholder based on hospital rating
-                const minCost = costs.length > 0 ? Math.min(...costs) : Math.floor(h.rating * 100);
-                const maxCost = costs.length > 0 ? Math.max(...costs) : minCost + 500;
+                
+                if (costs.length === 0) {
+                  return (
+                    <td key={h.id} className="p-5 text-slate-500 dark:text-slate-400 text-xs italic">
+                      Contact Hospital
+                    </td>
+                  );
+                }
+
+                const minCost = Math.min(...costs);
+                const maxCost = Math.max(...costs);
 
                 return (
                   <td key={h.id} className="p-5 font-bold text-slate-900 dark:text-white">
-                    ₹{minCost} - ₹{maxCost} {costs.length === 0 && <span className="text-[10px] text-slate-400 font-normal ml-1">(Est.)</span>}
+                    ₹{minCost} {minCost !== maxCost ? `- ₹${maxCost}` : ''}
                   </td>
                 );
               })}
