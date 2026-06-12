@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getCityNameFromCoords } from '../utils/geolocation';
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
 
 export interface LocationState {
   latitude: number;
@@ -31,8 +33,61 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     locationStatus: 'checking',
   });
 
-  const triggerGPSQuery = () => {
-    if (!navigator.geolocation) {
+  const triggerGPSQuery = async () => {
+    try {
+      let lat: number;
+      let lng: number;
+
+      if (Capacitor.isNativePlatform()) {
+        const position = await Geolocation.getCurrentPosition({ enableHighAccuracy: true });
+        lat = position.coords.latitude;
+        lng = position.coords.longitude;
+      } else {
+        if (!navigator.geolocation) {
+          throw new Error('Geolocation not supported');
+        }
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0,
+          });
+        });
+        lat = position.coords.latitude;
+        lng = position.coords.longitude;
+      }
+
+      let resolvedLabel = 'GPS Location';
+      try {
+        const city = await getCityNameFromCoords(lat, lng);
+        if (city && city !== 'Unknown Location') {
+          resolvedLabel = city;
+        }
+      } catch (err) {
+        console.warn('Reverse geocoding failed:', err);
+      }
+
+      localStorage.setItem('pulse_latitude', lat.toString());
+      localStorage.setItem('pulse_longitude', lng.toString());
+      localStorage.setItem('pulse_location_source', 'gps');
+      localStorage.setItem('pulse_location_label', resolvedLabel);
+      localStorage.setItem('pulse_city_name', resolvedLabel);
+
+      setState({
+        latitude: lat,
+        longitude: lng,
+        source: 'gps',
+        label: resolvedLabel,
+        locationStatus: 'granted',
+      });
+    } catch (error: any) {
+      console.warn('GPS query failed or denied:', error.message);
+      localStorage.setItem('pulse_latitude', DEFAULT_LAT.toString());
+      localStorage.setItem('pulse_longitude', DEFAULT_LNG.toString());
+      localStorage.setItem('pulse_location_source', 'default');
+      localStorage.setItem('pulse_location_label', DEFAULT_LABEL);
+      localStorage.setItem('pulse_city_name', DEFAULT_LABEL);
+
       setState({
         latitude: DEFAULT_LAT,
         longitude: DEFAULT_LNG,
@@ -40,56 +95,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         label: DEFAULT_LABEL,
         locationStatus: 'denied',
       });
-      return;
     }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-
-        let resolvedLabel = 'GPS Location';
-        try {
-          const city = await getCityNameFromCoords(lat, lng);
-          if (city && city !== 'Unknown Location') {
-            resolvedLabel = city;
-          }
-        } catch (err) {
-          console.warn('Reverse geocoding failed:', err);
-        }
-
-        localStorage.setItem('pulse_latitude', lat.toString());
-        localStorage.setItem('pulse_longitude', lng.toString());
-        localStorage.setItem('pulse_location_source', 'gps');
-        localStorage.setItem('pulse_location_label', resolvedLabel);
-        localStorage.setItem('pulse_city_name', resolvedLabel);
-
-        setState({
-          latitude: lat,
-          longitude: lng,
-          source: 'gps',
-          label: resolvedLabel,
-          locationStatus: 'granted',
-        });
-      },
-      (error) => {
-        console.warn('GPS query failed or denied:', error.message);
-        localStorage.setItem('pulse_latitude', DEFAULT_LAT.toString());
-        localStorage.setItem('pulse_longitude', DEFAULT_LNG.toString());
-        localStorage.setItem('pulse_location_source', 'default');
-        localStorage.setItem('pulse_location_label', DEFAULT_LABEL);
-        localStorage.setItem('pulse_city_name', DEFAULT_LABEL);
-
-        setState({
-          latitude: DEFAULT_LAT,
-          longitude: DEFAULT_LNG,
-          source: 'default',
-          label: DEFAULT_LABEL,
-          locationStatus: 'denied',
-        });
-      },
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-    );
   };
 
   // Load from localStorage or request GPS on mount
@@ -142,50 +148,59 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   };
 
-  const requestGPSLocation = (): Promise<boolean> => {
-    return new Promise((resolve) => {
-      if (!navigator.geolocation) {
-        resolve(false);
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
+  const requestGPSLocation = async (): Promise<boolean> => {
+    try {
+      let lat: number;
+      let lng: number;
 
-          let resolvedLabel = 'GPS Location';
-          try {
-            const city = await getCityNameFromCoords(lat, lng);
-            if (city && city !== 'Unknown Location') {
-              resolvedLabel = city;
-            }
-          } catch (err) {
-            console.warn('Reverse geocoding failed:', err);
-          }
-
-          localStorage.setItem('pulse_latitude', lat.toString());
-          localStorage.setItem('pulse_longitude', lng.toString());
-          localStorage.setItem('pulse_location_source', 'gps');
-          localStorage.setItem('pulse_location_label', resolvedLabel);
-          localStorage.setItem('pulse_city_name', resolvedLabel);
-
-          setState({
-            latitude: lat,
-            longitude: lng,
-            source: 'gps',
-            label: resolvedLabel,
-            locationStatus: 'granted',
+      if (Capacitor.isNativePlatform()) {
+        const position = await Geolocation.getCurrentPosition({ enableHighAccuracy: true });
+        lat = position.coords.latitude;
+        lng = position.coords.longitude;
+      } else {
+        if (!navigator.geolocation) {
+          return false;
+        }
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0,
           });
+        });
+        lat = position.coords.latitude;
+        lng = position.coords.longitude;
+      }
 
-          resolve(true);
-        },
-        (error) => {
-          console.warn('GPS query failed:', error.message);
-          resolve(false);
-        },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-      );
-    });
+      let resolvedLabel = 'GPS Location';
+      try {
+        const city = await getCityNameFromCoords(lat, lng);
+        if (city && city !== 'Unknown Location') {
+          resolvedLabel = city;
+        }
+      } catch (err) {
+        console.warn('Reverse geocoding failed:', err);
+      }
+
+      localStorage.setItem('pulse_latitude', lat.toString());
+      localStorage.setItem('pulse_longitude', lng.toString());
+      localStorage.setItem('pulse_location_source', 'gps');
+      localStorage.setItem('pulse_location_label', resolvedLabel);
+      localStorage.setItem('pulse_city_name', resolvedLabel);
+
+      setState({
+        latitude: lat,
+        longitude: lng,
+        source: 'gps',
+        label: resolvedLabel,
+        locationStatus: 'granted',
+      });
+
+      return true;
+    } catch (error: any) {
+      console.warn('GPS query failed:', error.message);
+      return false;
+    }
   };
 
   const clearManualLocation = () => {
