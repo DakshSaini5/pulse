@@ -7,6 +7,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@core': path.resolve(__dirname, './src/core'),
+      '@web': path.resolve(__dirname, './src/web'),
+      '@mobile': path.resolve(__dirname, './src/mobile')
     },
   },
   server: {

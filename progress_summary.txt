@@ -8,14 +8,18 @@ PROGRESS SUMMARY (2026-06-12)
    - Refactored `DiscoverScreen.tsx`, `RecordsScreen.tsx`, `TrendsScreen.tsx`, and `HospitalCompareScreen.tsx` to integrate perfectly inside the fixed 390px mobile layout.
    - Removed duplicate navigation wrappers and used the `MobileBottomNav` inside the Layout shell.
    - Fixed the "PANIC ATTACK" emergency modal logic to match the v0 design surgical changes.
-   - Added `oklch` theme color variables to `index.css`.
 
 3. Google Sign-In Fixes:
    - Fixed the "Network Error" on mobile by adding `capacitor://localhost` and `http://localhost` to the backend CORS allowed origins (`index.ts`).
    - Updated `api.ts` to dynamically use `import.meta.env.VITE_API_URL` for the backend URL, falling back to local IPs.
 
-PENDING TASKS FOR NEXT SESSION:
-1. "Hospital Near Me" feature rebuild.
-2. Fix any remaining "pathetic" CSS/Tailwind conflicts on the web app (ensure temp_vars.css isn't overriding anything).
-3. Finalizing web deployment (domain mapping) and Play Store submission.
-4. Testing Google Sign-in on a physical mobile device with the new CORS rules.
+4. Web CSS Parity & Fixes:
+   - Fixed the "pathetic" Web CSS by safely mapping the modern `oklch` v0 design variables to standard Tailwind `hsl` spacing format in `index.css` and `tailwind.config.js`. This guarantees full browser compatibility and alpha-modifier support (e.g. `bg-primary/50`).
+
+5. Hospital Near Me Geolocation:
+   - Installed `@capacitor/geolocation` and rebuilt the GPS permission request inside `LocationContext.tsx` to interface cleanly with native Android sensors.
+   - Ensured Android `AndroidManifest.xml` has `ACCESS_FINE_LOCATION` mapped properly.
+
+PENDING TASKS FOR NEXT SESSION (Phase 3: Launch):
+1. Web Application Deployment (Vercel/Railway) and domain mapping.
+2. Play Store Submission (Android Studio AAB export & assets).

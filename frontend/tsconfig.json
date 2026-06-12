@@ -12,11 +12,15 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx",
+    /* Path Aliases */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@core/*": ["./src/core/*"],
+      "@web/*": ["./src/web/*"],
+      "@mobile/*": ["./src/mobile/*"]
     },
+    "jsx": "react-jsx",
 
     /* Linting */
     "strict": true,
