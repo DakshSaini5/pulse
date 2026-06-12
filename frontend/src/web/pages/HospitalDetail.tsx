@@ -337,7 +337,11 @@ export const HospitalDetail: React.FC = () => {
               </div>
               <div className="flex justify-between items-center p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
                 <span>Distance radius (30%)</span>
-                <span className="text-primary font-bold">~12 mins away</span>
+                <span className="text-primary font-bold">
+                  {hospital.distance 
+                    ? `~${Math.max(1, Math.round(hospital.distance * 3))} mins away (${hospital.distance.toFixed(1)} km)` 
+                    : 'Location access required'}
+                </span>
               </div>
               <div className="flex justify-between items-center p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
                 <span>Patient reviews (20%)</span>
