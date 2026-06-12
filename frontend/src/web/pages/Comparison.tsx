@@ -165,9 +165,11 @@ export const Comparison: React.FC = () => {
             <tr>
               <td className="p-5 font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500">Working Hours</td>
               {hospitals.map(h => (
-                <td key={h.id} className="p-5 flex items-center gap-1.5 mt-1 font-medium">
-                  <Clock className="w-4 h-4 text-slate-500 dark:text-slate-400 dark:text-slate-500" />
-                  {h.workingHours}
+                <td key={h.id} className="p-5">
+                  <div className="flex items-center gap-1.5 mt-1 font-medium">
+                    <Clock className="w-4 h-4 text-slate-500 dark:text-slate-400 dark:text-slate-500" />
+                    {h.workingHours}
+                  </div>
                 </td>
               ))}
             </tr>
@@ -217,9 +219,11 @@ export const Comparison: React.FC = () => {
             <tr>
               <td className="p-5 font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500">Geographic Address</td>
               {hospitals.map(h => (
-                <td key={h.id} className="p-5 text-slate-500 dark:text-slate-400 dark:text-slate-500 font-light flex items-start gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 dark:text-slate-500 mt-0.5 shrink-0" />
-                  {h.address}
+                <td key={h.id} className="p-5 text-slate-500 dark:text-slate-400 dark:text-slate-500 font-light">
+                  <div className="flex items-start gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 dark:text-slate-500 mt-0.5 shrink-0" />
+                    {h.address}
+                  </div>
                 </td>
               ))}
             </tr>
