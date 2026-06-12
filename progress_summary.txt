@@ -1,16 +1,21 @@
-# Pulse Healthcare - Progress Summary
-**Date:** June 11th, 2026 (Night) / June 12th, 2026
+PROGRESS SUMMARY (2026-06-12)
 
-## What was accomplished today:
-1. **Network Connectivity Fix (APK)**: Hardcoded the backend IP (`192.168.1.3:5000`) in `api.ts` so the Android app can successfully connect to the local backend without network errors.
-2. **CSS Overhaul (Pathetic UI Fix)**: Found and removed invalid Markdown syntax (`> :root` and `> .dark`) in `frontend/src/index.css` that was completely breaking the Tailwind CSS colors and design variables. The UI should now look premium and correctly colored.
-3. **Tailwind Config Fix**: Added explicit transition durations (`4000ms`, `6000ms`) to `tailwind.config.js` to clear Vite compilation errors.
-4. **Sign-Up & OTP Resilience**: Updated `Register.tsx` and `backend/src/routes/auth.ts`. Now, in development mode, the OTP is returned in the API response and displayed via a Toast notification, so you can test email verification even if Resend emails are failing to arrive.
-5. **Hospital Near Me Redo**: Added a "Refresh GPS" button in `Search.tsx` next to the Change Location button to forcefully re-fetch the user's coordinates.
+1. Mobile vs Web UI Separation:
+   - Modified `Layout.tsx` to conditionally render the "v0 design" mobile shell ONLY when running natively on mobile devices (Android/iOS) via Capacitor.
+   - For regular web browsers, the app continues to serve the beautiful standard desktop web layout.
 
-## Next Steps for Tomorrow:
-1. **Testing**: Run the app locally and test the "Hospital Near Me" feature to verify the GPS refresh works. Test the Sign-Up flow using the DEV MODE OTP toast.
-2. **Web Deployment**: Deploy the frontend to Vercel and the backend to Render, linking them to your custom domain.
-3. **Play Store Launch**: Generate the signed `.aab` (Android App Bundle) instead of `.apk`, write the Play Store listing, and submit it to Google Play for review.
+2. v0 Design Integration (Mobile):
+   - Refactored `DiscoverScreen.tsx`, `RecordsScreen.tsx`, `TrendsScreen.tsx`, and `HospitalCompareScreen.tsx` to integrate perfectly inside the fixed 390px mobile layout.
+   - Removed duplicate navigation wrappers and used the `MobileBottomNav` inside the Layout shell.
+   - Fixed the "PANIC ATTACK" emergency modal logic to match the v0 design surgical changes.
+   - Added `oklch` theme color variables to `index.css`.
 
-*Note for AI: Read this file upon starting the next session to instantly gain context of the current state of the project.*
+3. Google Sign-In Fixes:
+   - Fixed the "Network Error" on mobile by adding `capacitor://localhost` and `http://localhost` to the backend CORS allowed origins (`index.ts`).
+   - Updated `api.ts` to dynamically use `import.meta.env.VITE_API_URL` for the backend URL, falling back to local IPs.
+
+PENDING TASKS FOR NEXT SESSION:
+1. "Hospital Near Me" feature rebuild.
+2. Fix any remaining "pathetic" CSS/Tailwind conflicts on the web app (ensure temp_vars.css isn't overriding anything).
+3. Finalizing web deployment (domain mapping) and Play Store submission.
+4. Testing Google Sign-in on a physical mobile device with the new CORS rules.
