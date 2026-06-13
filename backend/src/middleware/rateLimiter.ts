@@ -18,42 +18,14 @@ export const authLimiter = rateLimit({
   message: createRateLimitMessage('authentication attempts', 5, '15 minutes')
 });
 
-// 2. Document AI Analysis (Prescriptions & Reports): 200 requests per day per User
-export const documentAiLimiter = rateLimit({
-  windowMs: 24 * 60 * 60 * 1000, // 24 hours
-  max: 200,
-  keyGenerator: (req: any) => {
-    // Group by User ID if authenticated, fallback to standard string
-    return req.user?.id || 'anonymous';
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: createRateLimitMessage('document scans', 200, 'day')
-});
+// 2. Document AI Analysis (Prescriptions & Reports): Disabled for testing
+export const documentAiLimiter = (req: any, res: any, next: any) => next();
 
-// 3. Global Drug Interaction Scanner: 200 requests per day per User
-export const interactionsLimiter = rateLimit({
-  windowMs: 24 * 60 * 60 * 1000, // 24 hours
-  max: 200,
-  keyGenerator: (req: any) => {
-    return req.user?.id || 'anonymous';
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: createRateLimitMessage('drug interaction scans', 200, 'day')
-});
+// 3. Global Drug Interaction Scanner: Disabled for testing
+export const interactionsLimiter = (req: any, res: any, next: any) => next();
 
-// 4. Health Risk Score Calculator: 200 requests per day per User
-export const riskScoreLimiter = rateLimit({
-  windowMs: 24 * 60 * 60 * 1000, // 24 hours
-  max: 200,
-  keyGenerator: (req: any) => {
-    return req.user?.id || 'anonymous';
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: createRateLimitMessage('health risk assessments', 200, 'day')
-});
+// 4. Health Risk Score Calculator: Disabled for testing
+export const riskScoreLimiter = (req: any, res: any, next: any) => next();
 
 // 5. General API Limiter (Global fallback to prevent DDOS)
 export const generalLimiter = rateLimit({
