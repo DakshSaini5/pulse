@@ -1,5 +1,5 @@
 import { Server, Socket } from 'socket.io';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { getWorkingModelName } from './gemini';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../db'; // FIX: Use shared singleton instead of new PrismaClient()
@@ -90,7 +90,15 @@ export const setupChatSocket = (io: Server) => {
     if (genAI) {
       getWorkingModelName(genAI).then((modelName) => {
         console.log(`[Socket.io] Starting chat session with model: ${modelName} for user: ${userId || 'guest'}`);
-        const model = genAI!.getGenerativeModel({ model: modelName });
+        const model = genAI!.getGenerativeModel({ 
+          model: modelName,
+          safetySettings: [
+            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
+          ]
+        });
         
         chatSession = model.startChat({
           history: [
@@ -179,10 +187,43 @@ ${medicalHistoryContext}` }],
         
         socket.emit('chat:response:end', { text: fullText });
 
-      } catch (error) {
+      } catch (error: any) {
         console.error('[Socket.io] Chat Error:', error);
+        
+        // Re-initialize chat session to clear corrupted history (e.g. alternating roles rule)
+        getWorkingModelName(genAI!).then((modelName) => {
+          const model = genAI!.getGenerativeModel({ 
+            model: modelName,
+            safetySettings: [
+              { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+              { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+              { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+              { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
+            ]
+          });
+          chatSession = model.startChat({
+            history: [
+              { role: 'user', parts: [{ text: `You are PulseAI, a professional and empathetic healthcare assistant.
+ALWAYS structure your responses using this format:
+## [Topic/Question Summary]
+**Overview**: A brief 1-2 sentence summary.
+### Key Points
+- Point 1
+### Recommendations
+1. First recommendation
+### When to See a Doctor
+- List specific warning signs
+---
+⚕️ *Disclaimer: This is educational information only.*
+${medicalHistoryContext}` }] },
+              { role: 'model', parts: [{ text: "Understood." }] }
+            ],
+            generationConfig: { maxOutputTokens: 1000 },
+          });
+        });
+
         socket.emit('chat:response', {
-          text: "I'm sorry, I encountered an error processing your request. Please try again later.",
+          text: `I'm sorry, an error occurred: ${error.message || error}. Please try again.`,
           isError: true
         });
       }
