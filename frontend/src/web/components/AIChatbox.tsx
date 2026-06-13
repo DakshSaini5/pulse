@@ -124,7 +124,7 @@ export const AIChatbox: React.FC = () => {
                 <p className="text-sm font-bold text-white leading-none">Pulse AI</p>
                 <p className="text-[10px] text-white/70 mt-0.5 flex items-center gap-1">
                   <span className="size-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                  Powered by Gemini
+                  Powered by Pulse AI
                 </p>
               </div>
             </div>

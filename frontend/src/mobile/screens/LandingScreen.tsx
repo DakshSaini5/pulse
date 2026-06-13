@@ -13,7 +13,7 @@ interface LandingScreenProps {
 
 export function LandingScreen({ onGetStarted, onDiscoverMap }: LandingScreenProps) {
   const features = [
-    { icon: Brain, label: "AI Analysis", desc: "Gemini-powered insights" },
+    { icon: Brain, label: "AI Analysis", desc: "Pulse AI-powered insights" },
     { icon: MapPin, label: "Hospital Map", desc: "Find care near you" },
     { icon: ShieldCheck, label: "Secure Records", desc: "Your data, protected" },
   ]
@@ -108,7 +108,7 @@ export function LandingScreen({ onGetStarted, onDiscoverMap }: LandingScreenProp
           <div className="w-px h-4 bg-border" />
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <Sparkles className="size-4 text-primary" />
-            <span className="text-xs font-medium">Gemini AI</span>
+            <span className="text-xs font-medium">Pulse AI</span>
           </div>
           <div className="w-px h-4 bg-border" />
           <div className="flex items-center gap-1.5 text-muted-foreground">

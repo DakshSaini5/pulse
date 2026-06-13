@@ -94,7 +94,7 @@ export const AdminDashboard: React.FC = () => {
             <ShieldAlert className="text-warning w-8 h-8 animate-pulse" />
             Pulse Admin Control Desk
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500">Review real-time system performance indexings, Tesseract queues, and Gemini API cost charts.</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500">Review real-time system performance indexings, Tesseract queues, and Pulse AI API cost charts.</p>
         </div>
 
         <div className="flex gap-3">
@@ -191,7 +191,7 @@ export const AdminDashboard: React.FC = () => {
           { icon: Users, label: 'Platform Users', value: stats.usersCount, color: 'text-primary' },
           { icon: Database, label: 'Scanned Hospitals', value: stats.hospitalsCount, color: 'text-success' },
           { icon: FileText, label: 'OCR Scans Run', value: stats.ocrCount, color: 'text-warning' },
-          { icon: Coins, label: 'Gemini Cost Accum', value: `$${stats.aiCost.toFixed(3)}`, color: 'text-danger' }
+          { icon: Coins, label: 'Pulse AI Cost Accum', value: `$${stats.aiCost.toFixed(3)}`, color: 'text-danger' }
         ].map((card, idx) => (
           <div key={idx} className="glass-panel rounded-3xl p-5 border border-slate-200 dark:border-slate-700 flex items-center gap-4 relative overflow-hidden bg-white dark:bg-slate-900/[0.005]">
             <div className={`w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700 ${card.color}`}>
@@ -209,8 +209,8 @@ export const AdminDashboard: React.FC = () => {
       <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700 space-y-6 bg-gradient-to-b from-slate-50 to-slate-100/50 dark:from-slate-800 dark:to-slate-900/50">
         <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
           <div>
-            <h3 className="font-bold text-slate-900 dark:text-white text-base">Gemini model Usage Logs</h3>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500">Transactions processed via Gemini 2.5 Flash tokens.</p>
+            <h3 className="font-bold text-slate-900 dark:text-white text-base">Pulse AI model Usage Logs</h3>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500">Transactions processed via Pulse AI tokens.</p>
           </div>
           <span className="text-[10px] bg-warning/10 border border-warning/20 text-warning px-2.5 py-0.5 rounded-full font-bold uppercase">
             Model: Flash 2.5

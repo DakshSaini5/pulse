@@ -82,7 +82,7 @@ export function RecordsScreen({
           <h1 className="text-xl font-extrabold text-foreground">Prescription Scanner</h1>
         </div>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Scan handwritten or digital clinic prescriptions. Verify extracted keywords, and let Gemini clarify dosages in plain English.
+          Scan handwritten or digital clinic prescriptions. Verify extracted keywords, and let Pulse AI clarify dosages in plain English.
         </p>
       </div>
 

@@ -91,7 +91,7 @@ export function AIChatbox() {
               </div>
               <div>
                 <p className="text-sm font-bold text-white leading-none">Pulse AI</p>
-                <p className="text-[10px] text-white/70 mt-0.5">Powered by Gemini</p>
+                <p className="text-[10px] text-white/70 mt-0.5">Powered by Pulse AI</p>
               </div>
             </div>
             <button

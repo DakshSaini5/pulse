@@ -254,7 +254,7 @@ export const PrescriptionCenter: React.FC = () => {
           <ClipboardList className="text-primary w-8 h-8 animate-pulse" />
           Prescription scanner & Analyzer
         </h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500">Scan handwritten or digital clinic prescriptions. Verify extracted keywords, and let Gemini clarify dosages in plain English.</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500">Scan handwritten or digital clinic prescriptions. Verify extracted keywords, and let Pulse AI clarify dosages in plain English.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -509,7 +509,7 @@ export const PrescriptionCenter: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                /* Gemini Structured Results display */
+                /* Pulse AI Structured Results display */
                 <div className="space-y-6">
                   <MedicalDisclaimer />
                   {/* Results cards */}

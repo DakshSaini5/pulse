@@ -200,7 +200,7 @@ export function PulseNav({
         {/* Drawer footer */}
         <div className="px-5 py-4 border-t border-border">
           <p className="text-[10px] text-muted-foreground text-center">
-            Pulse v2.4.1 &middot; HIPAA Compliant &middot; Powered by Gemini AI
+            Pulse v2.4.1 &middot; HIPAA Compliant &middot; Powered by Pulse AI
           </p>
         </div>
       </aside>
