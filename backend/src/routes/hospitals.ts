@@ -54,7 +54,7 @@ const hospitalCreateSchema = z.object({
 });
 
 // GET /api/hospitals (Public - search hospitals with pagination)
-router.get('/', searchLimiter, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/', generalLimiter, async (req: AuthenticatedRequest, res: Response) => {
   const { query, specialty, maxDistance, lat, lng, city, page: pageStr, limit: limitStr } = req.query;
 
   // BUG-04 FIX: Require lat/lng — do not silently default to Delhi for any user
