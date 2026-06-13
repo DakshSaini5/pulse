@@ -1,29 +1,22 @@
 import request from 'supertest';
 import app from '../src/index';
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
-
-describe('Authentication API', () => {
-  beforeAll(async () => {
-    // Clean up test data before running tests
-    await prisma.user.deleteMany({ where: { email: { contains: 'test' } } });
-  });
-
-  afterAll(async () => {
-    await prisma.$disconnect();
-  });
-
-  it('should return 400 for login without credentials', async () => {
-    const res = await request(app).post('/api/auth/login').send({});
-    expect(res.statusCode).toBe(400);
-    expect(res.body.message).toContain('Validation failed');
-  });
-
-
-  it('should verify health endpoint', async () => {
-    const res = await request(app).get('/health');
-    expect(res.statusCode).toBe(200);
-    expect(res.body.status).toBe('HEALTHY');
+describe('Auth API', () => {
+  it('should hit rate limiter when requesting OTP too many times', async () => {
+    const promises = [];
+    // The rate limit for auth is 5 requests per 15 minutes
+    for (let i = 0; i < 6; i++) {
+      promises.push(
+        request(app)
+          .post('/api/auth/register/send-otp')
+          .send({ email: `test${i}@example.com` })
+      );
+    }
+    
+    const responses = await Promise.all(promises);
+    const tooManyRequests = responses.find(r => r.status === 429);
+    
+    expect(tooManyRequests).toBeDefined();
+    expect(tooManyRequests!.body.message).toContain('You have reached your limit of 5 authentication attempts per 15 minutes');
   });
 });

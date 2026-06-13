@@ -18,14 +18,32 @@ export const authLimiter = rateLimit({
   message: createRateLimitMessage('authentication attempts', 5, '15 minutes')
 });
 
-// 2. Document AI Analysis (Prescriptions & Reports): Disabled for testing
-export const documentAiLimiter = (req: any, res: any, next: any) => next();
+// 2. Document AI Analysis (Prescriptions & Reports): Max 10 requests per hour per IP
+export const documentAiLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: createRateLimitMessage('document analysis requests', 10, '1 hour')
+});
 
-// 3. Global Drug Interaction Scanner: Disabled for testing
-export const interactionsLimiter = (req: any, res: any, next: any) => next();
+// 3. Global Drug Interaction Scanner: Max 20 requests per hour per IP
+export const interactionsLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: createRateLimitMessage('drug interaction checks', 20, '1 hour')
+});
 
-// 4. Health Risk Score Calculator: Disabled for testing
-export const riskScoreLimiter = (req: any, res: any, next: any) => next();
+// 4. Health Risk Score Calculator: Max 20 requests per hour per IP
+export const riskScoreLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: createRateLimitMessage('health risk score calculations', 20, '1 hour')
+});
 
 // 5. General API Limiter (Global fallback to prevent DDOS)
 export const generalLimiter = rateLimit({

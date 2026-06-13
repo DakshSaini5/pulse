@@ -27,18 +27,7 @@ import reviewsRouter from './routes/reviews';
 import emergencyRouter from './routes/emergency';
 import geocodingRouter from './routes/geocoding';
 
-// Mobile isolated route imports
-import mobileAuthRouter from './routes/mobile/auth';
-import mobileGoogleAuthRouter from './routes/mobile/googleAuth';
-import mobileHospitalsRouter from './routes/mobile/hospitals';
-import mobilePrescriptionsRouter from './routes/mobile/prescriptions';
-import mobileReportsRouter from './routes/mobile/reports';
-import mobileTrendsRouter from './routes/mobile/trends';
-import mobileNotificationsRouter from './routes/mobile/notifications';
-import mobileUserRouter from './routes/mobile/user';
-import mobileReviewsRouter from './routes/mobile/reviews';
-import mobileEmergencyRouter from './routes/mobile/emergency';
-import mobileGeocodingRouter from './routes/mobile/geocoding';
+// Mobile isolated route imports removed to enforce DRY
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -120,18 +109,7 @@ app.use('/api/user', userRouter);
 app.use('/api/emergency', emergencyRouter);
 app.use('/api/geocoding', geocodingRouter);
 
-// Register New Isolated Mobile APK API endpoints
-app.use('/api/mobile/auth', mobileAuthRouter);
-app.use('/api/mobile/auth', mobileGoogleAuthRouter);
-app.use('/api/mobile/hospitals', mobileHospitalsRouter);
-app.use('/api/mobile/hospitals', mobileReviewsRouter);
-app.use('/api/mobile/prescriptions', mobilePrescriptionsRouter);
-app.use('/api/mobile/reports', mobileReportsRouter);
-app.use('/api/mobile/trends', mobileTrendsRouter);
-app.use('/api/mobile/notifications', mobileNotificationsRouter);
-app.use('/api/mobile/user', mobileUserRouter);
-app.use('/api/mobile/emergency', mobileEmergencyRouter);
-app.use('/api/mobile/geocoding', mobileGeocodingRouter);
+// Register New Isolated Mobile APK API endpoints removed. Mobile app now uses standard /api endpoints.
 
 // Base Status API
 app.get('/health', (req, res) => {

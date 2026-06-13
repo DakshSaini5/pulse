@@ -9,9 +9,9 @@ import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET!;
 
-const ADMIN_EMAILS = [
-  'admin@pulse.com'
-];
+const ADMIN_EMAILS = process.env.ADMIN_EMAILS 
+  ? process.env.ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase()) 
+  : [];
 
 // Helper to generate 6-digit numeric code
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();

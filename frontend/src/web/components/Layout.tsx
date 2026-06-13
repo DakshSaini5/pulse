@@ -12,7 +12,7 @@ import { NotificationCenter } from './NotificationCenter';
 import { PulseLogo } from './PulseLogo';
 import { userAPI } from '@core/services/api';
 import toast from 'react-hot-toast';
-import { Capacitor } from '@capacitor/core';
+import { isNativeApp } from '@core/utils/platform';
 import MobileBottomNav from './MobileBottomNav';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -21,8 +21,6 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-
-  const isNative = Capacitor.isNativePlatform();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -51,7 +49,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const [panicActive, setPanicActive] = useState(false);
 
   // If we are on mobile, use the exact v0 design wrapper
-  if (Capacitor.isNativePlatform()) {
+  if (isNativeApp) {
     const isAppScreen = location.pathname !== '/';
     
     return (
@@ -155,22 +153,27 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-1">
-            {navItems.filter(item => item.guest || user).map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                aria-label={`Navigate to ${item.name}`}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${isActive(item.path)
-                    ? 'bg-primary/10 text-primary border border-primary/20'
-                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent'
-                  }`}
-              >
-                <item.icon className="w-4 h-4" aria-hidden="true" />
-                {item.name}
-              </Link>
-            ))}
-          </nav>
+          {!isNativeApp && (
+            <nav className="hidden lg:flex items-center gap-1">
+              {navItems.filter(item => item.guest || user).map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  aria-label={`Navigate to ${item.name}`}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${isActive(item.path)
+                      ? 'bg-primary/10 text-primary border border-primary/20'
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent'
+                    }`}
+                >
+                  <item.icon className="w-4 h-4" aria-hidden="true" />
+                  {item.name}
+                </Link>
+              ))}
+            </nav>
+          )}
+
+          {/* Placeholder for future mobile UI overhaul */}
+          {/* {isNativeApp && <MobileNavPlaceholder />} */}
         </div>
 
         <div className="flex items-center gap-4">
