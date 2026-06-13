@@ -308,13 +308,14 @@ export function RecordsScreen({
                 </div>
               </div>
 
-              <Button 
+              <button
                 onClick={initiateVerifySubmit}
                 disabled={verifying}
-                className="w-full h-12 bg-primary text-white font-bold rounded-2xl"
+                className="w-full py-4 rounded-xl bg-primary text-slate-900 text-[13px] font-bold shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
               >
-                {verifying ? "Analyzing..." : "Submit & Analyze with Gemini"}
-              </Button>
+                <Sparkles className="w-4 h-4" />
+                {verifying ? "Analyzing..." : "Submit & Analyze with Pulse AI"}
+              </button>
             </div>
           ) : (
             <div className="bg-card rounded-3xl border border-border shadow-sm p-5 relative overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100/50 dark:from-slate-800 dark:to-slate-900/50">

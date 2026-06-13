@@ -558,7 +558,7 @@ export const ReportCenter: React.FC = () => {
                       className="px-6 py-3 bg-primary hover:bg-primary-hover text-slate-900 dark:text-white text-xs font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center gap-1.5"
                     >
                       <Sparkles className="w-4 h-4 animate-spin" />
-                      {verifying ? 'Generating report analysis...' : 'Submit & Analyze with Gemini'}
+                      {verifying ? 'Generating report analysis...' : 'Submit & Analyze with Pulse AI'}
                     </button>
                   </div>
                 </div>
