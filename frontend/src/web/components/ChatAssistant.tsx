@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send, User, Bot, Loader2 } from 'lucide-react';
+import { PulseLogo } from './PulseLogo';
 import io, { Socket } from 'socket.io-client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -94,9 +95,9 @@ const ChatAssistant: React.FC = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg shadow-blue-500/30 transition-transform hover:scale-110 active:scale-95 flex items-center justify-center pointer-events-auto"
+          className="bg-white hover:bg-slate-50 text-white p-3.5 rounded-full shadow-2xl shadow-red-500/20 transition-transform hover:scale-110 active:scale-95 flex items-center justify-center pointer-events-auto border border-slate-200"
         >
-          <MessageCircle size={28} />
+          <PulseLogo variant="icon" size={32} />
         </button>
       )}
 
@@ -111,7 +112,7 @@ const ChatAssistant: React.FC = () => {
                 <Bot size={18} />
               </div>
               <div>
-                <h3 className="text-white font-medium text-sm">PulseAI Assistant</h3>
+                <h3 className="text-white font-medium text-sm">Pulse AI</h3>
                 <p className="text-blue-400/60 text-xs flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
                   Online

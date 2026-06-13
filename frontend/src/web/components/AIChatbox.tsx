@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react"
 import { MessageCircle, X, Send, Sparkles, Bot, Loader2 } from "lucide-react"
+import { PulseLogo } from "./PulseLogo"
 import { cn } from "@core/utils/utils"
 import io, { Socket } from 'socket.io-client';
 import ReactMarkdown from 'react-markdown';
@@ -211,7 +212,7 @@ export const AIChatbox: React.FC = () => {
         )}
         aria-label={isOpen ? "Close AI chat" : "Open AI chat"}
       >
-        {isOpen ? <X className="size-6" /> : <MessageCircle className="size-6" />}
+        {isOpen ? <X className="size-6" /> : <PulseLogo variant="icon" size={32} />}
       </button>
     </div>
   )

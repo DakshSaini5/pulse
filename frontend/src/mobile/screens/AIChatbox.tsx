@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { MessageCircle, X, Send, Sparkles, Bot } from "lucide-react"
+import { PulseLogo } from "../../web/components/PulseLogo"
 import { cn } from "@core/utils/utils"
 
 interface Message {
@@ -187,12 +188,12 @@ export function AIChatbox() {
       <button
         onClick={() => setIsOpen((v) => !v)}
         className={cn(
-          "absolute bottom-20 right-3 size-12 rounded-full shadow-xl flex items-center justify-center transition-all active:scale-95 z-[200]",
-          isOpen ? "bg-muted-foreground text-white" : "bg-primary text-white shadow-primary/30"
+          "absolute bottom-20 right-3 size-12 rounded-full shadow-xl flex items-center justify-center transition-all active:scale-95 z-[200] border border-slate-200",
+          isOpen ? "bg-muted-foreground text-white" : "bg-white text-white shadow-red-500/20"
         )}
         aria-label={isOpen ? "Close AI chat" : "Open AI chat"}
       >
-        {isOpen ? <X className="size-5" /> : <MessageCircle className="size-5" />}
+        {isOpen ? <X className="size-5" /> : <PulseLogo variant="icon" size={28} />}
       </button>
     </>
   )
