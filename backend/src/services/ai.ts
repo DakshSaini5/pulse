@@ -250,14 +250,14 @@ export const parsePrescriptionWithGemini = async (rawText: string) => {
     if (!parsed || !parsed.medicines) {
       console.warn('[AI] Gemini returned unparseable response for prescription. Using simulator.');
       recordFailure();
-      return { result: simulatePrescription(rawText), tokensUsed: tokenUsage.totalTokens };
+      throw new Error('AI Engine failed to parse the prescription data. Please check your API limits or try again.');
     }
     
     return { result: parsed, tokensUsed: tokenUsage.totalTokens };
   } catch (err) {
     console.error('Gemini API call failed. Using simulator fallback.', err);
     recordFailure();
-    return { result: simulatePrescription(rawText), tokensUsed: 0 };
+    throw new Error('AI Engine is currently unavailable due to API rate limits. Please try again later.');
   }
 };
 
@@ -429,14 +429,14 @@ export const parseMedicalReportWithGemini = async (rawText: string, reportType: 
     if (!parsed || !parsed.values) {
       console.warn('[AI] Gemini returned unparseable response for report. Using simulator.');
       recordFailure();
-      return { result: simulateMedicalReport(rawText, reportType), tokensUsed: tokenUsage.totalTokens };
+      throw new Error('AI Engine failed to parse the report data. Please check your API limits or try again.');
     }
     
     return { result: parsed, tokensUsed: tokenUsage.totalTokens };
   } catch (err) {
     console.error('Gemini API call failed. Using simulator fallback.', err);
     recordFailure();
-    return { result: simulateMedicalReport(rawText, reportType), tokensUsed: 0 };
+    throw new Error('AI Engine is currently unavailable due to API rate limits. Please try again later.');
   }
 };
 

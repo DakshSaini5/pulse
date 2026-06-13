@@ -140,16 +140,7 @@ export const performOCR = async (filePath: string): Promise<OCRResult> => {
       throw new Error('Tesseract OCR extracted empty or insufficient text.');
     }
   } catch (tesseractErr) {
-    console.error('Local Tesseract OCR fallback failed. Serving mock simulator content:', tesseractErr);
-
-    // 3. Try Mock Simulator (Tertiary Fallback)
-    let mockText = "Prescription:\n- Amoxicillin 500mg TID for 7 days\n- Paracetamol 650mg BD for fever";
-    if (filePath.toLowerCase().includes('rep') || filePath.toLowerCase().includes('report')) {
-      mockText = "TSH (Thyroid Stimulating Hormone): 5.85 uIU/mL (Reference: 0.40 - 4.50)\nFree Thyroxine (FT4): 0.92 ng/dL (Reference: 0.80 - 1.80)";
-    }
-    return {
-      text: mockText,
-      confidence: 50.0
-    };
+    console.error('Local Tesseract OCR fallback failed:', tesseractErr);
+    throw new Error('Both AI and Local OCR failed to read this document. If this is a PDF, please take a screenshot and upload the Image (JPG/PNG) instead!');
   }
 };
