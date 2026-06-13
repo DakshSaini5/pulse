@@ -91,14 +91,18 @@ const ChatAssistant: React.FC = () => {
 
   return (
     <div className="fixed bottom-20 left-4 right-4 sm:bottom-6 sm:right-6 sm:left-auto z-50 flex flex-col items-end pointer-events-none">
-      {/* Floating Button */}
+      {/* Floating Button with Label */}
       {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="bg-white hover:bg-slate-50 text-white p-3.5 rounded-full shadow-2xl shadow-red-500/20 transition-transform hover:scale-110 active:scale-95 flex items-center justify-center pointer-events-auto border border-slate-200"
-        >
-          <PulseLogo variant="icon" size={32} />
-        </button>
+        <div className="flex items-center gap-3 pointer-events-auto cursor-pointer group animate-in slide-in-from-bottom-5 fade-in duration-500" onClick={() => setIsOpen(true)}>
+          <div className="bg-white px-4 py-2.5 rounded-2xl rounded-br-sm shadow-xl shadow-slate-200/50 border border-slate-200 text-sm font-bold text-slate-800 transition-transform group-hover:-translate-y-1 flex items-center gap-1.5">
+            Ask Pulse AI <span className="text-base leading-none">✨</span>
+          </div>
+          <button
+            className="bg-white hover:bg-slate-50 p-3.5 rounded-full shadow-2xl shadow-red-500/20 transition-transform group-hover:scale-110 active:scale-95 flex items-center justify-center border border-slate-200"
+          >
+            <PulseLogo variant="icon" size={32} />
+          </button>
+        </div>
       )}
 
       {/* Chat Window */}

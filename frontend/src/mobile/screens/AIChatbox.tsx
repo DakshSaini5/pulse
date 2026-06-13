@@ -184,11 +184,20 @@ export function AIChatbox() {
         </div>
       )}
 
-      {/* FAB Toggle Button */}
+      {/* Floating Label and FAB Toggle Button */}
+      {!isOpen && (
+        <div 
+          onClick={() => setIsOpen(true)}
+          className="absolute bottom-[84px] right-[70px] bg-white px-3 py-1.5 rounded-xl rounded-br-sm shadow-xl border border-slate-200 text-[11px] font-bold text-slate-800 z-[200] animate-in slide-in-from-right-2 fade-in duration-500 cursor-pointer flex items-center gap-1"
+        >
+          Pulse AI <span className="text-sm leading-none">✨</span>
+        </div>
+      )}
+      
       <button
         onClick={() => setIsOpen((v) => !v)}
         className={cn(
-          "absolute bottom-20 right-3 size-12 rounded-full shadow-xl flex items-center justify-center transition-all active:scale-95 z-[200] border border-slate-200",
+          "absolute bottom-20 right-3 size-12 rounded-full shadow-2xl flex items-center justify-center transition-all active:scale-95 z-[200] border border-slate-200",
           isOpen ? "bg-muted-foreground text-white" : "bg-white text-white shadow-red-500/20"
         )}
         aria-label={isOpen ? "Close AI chat" : "Open AI chat"}
