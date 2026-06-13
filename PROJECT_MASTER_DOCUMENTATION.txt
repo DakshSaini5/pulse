@@ -1,0 +1,439 @@
+==================================================
+1. EXECUTIVE SUMMARY
+==================================================
+Project Name: Pulse
+One-line Description: A secure, HIPAA-compliant, AI-powered medical platform for health record digitization, analysis, and healthcare navigation.
+
+Detailed Overview:
+Pulse is an end-to-end full-stack web and hybrid mobile application designed to modernize patient-doctor interactions and personal health record management. It leverages advanced OCR (Optical Character Recognition) via Tesseract.js and LLM analysis via Pulse AI (Google Generative AI) to parse complex, handwritten, or digital medical reports and prescriptions into structured, understandable data. The system features a dual-interface approach: a comprehensive web application for desktop users and a native-like mobile experience via Capacitor.
+
+Purpose of the Project:
+To democratize medical data comprehension by translating complex medical jargon, dosages, and test results into plain English, while providing a secure centralized vault for personal health records.
+
+Problem Being Solved:
+Patients often leave clinics confused about their prescriptions, dosages, and the implications of their lab reports. Medical documents are frequently lost, misread, or poorly understood, leading to medication non-adherence and health risks.
+
+Target Audience:
+- Patients managing chronic conditions or multiple medications.
+- Elderly users requiring simplified dosage instructions.
+- Caregivers managing health records for family members.
+- General users seeking an intuitive platform for medical document storage and AI health assistance.
+
+Industry/Niche:
+HealthTech / MedTech / Personal Health Information Management.
+
+Market Need:
+With the rapid digitization of healthcare, there is a critical need for patient-facing tools that bridge the knowledge gap between clinical terminology and patient health literacy.
+
+Expected Impact:
+Improved medication adherence, reduced adverse drug interactions, better patient health literacy, and a streamlined approach to managing personal and family health data.
+
+==================================================
+2. PROJECT VISION
+==================================================
+Why was this project created?
+Pulse was created to empower patients to take control of their healthcare journey. The founders recognized the anxiety and confusion associated with medical tests and illegible prescriptions.
+
+What problem does it solve?
+It solves the "information asymmetry" in healthcare. Doctors have limited time to explain every nuance of a lab report or prescription; Pulse acts as a 24/7 AI-powered medical assistant to fill this gap safely.
+
+What gap in the market does it fill?
+While Electronic Health Records (EHR) exist for hospitals, few patient-centric applications successfully combine secure document storage with real-time AI comprehension, OCR extraction, and local hospital discovery.
+
+Long-term vision:
+To evolve Pulse into a proactive health-monitoring ecosystem that integrates with wearable devices, telemedicine providers, and digital pharmacy fulfillment centers.
+
+Future scalability potential:
+The architecture is built on scalable cloud primitives (Supabase PostgreSQL, Vercel, Railway). The microservices-oriented backend allows scaling the intensive AI and OCR processing independently from the core CRUD operations.
+
+==================================================
+3. BUSINESS ANALYSIS
+==================================================
+Business Model:
+Freemium B2C model with potential B2B SaaS licensing for small clinics.
+
+Revenue Opportunities:
+- Premium Tier: Unlimited OCR scans, advanced AI interactions, and multi-profile family management.
+- B2B Integration: Clinics paying for white-labeled prescription generation and patient portals.
+- Telehealth referral fees or localized pharmacy partnerships.
+
+Monetization Possibilities:
+Subscription plans (Pulse+), pay-per-scan for high volume, and enterprise API access.
+
+Customer Segments:
+- B2C: Health-conscious individuals, chronic patients, caregivers.
+- B2B: Independent clinics, small pharmacies.
+
+Value Proposition:
+"Your pocket medical assistant. We decode your doctor's notes so you don't have to."
+
+Competitive Advantage:
+Integration of state-of-the-art Generative AI specifically prompted for medical safety, combined with robust local device storage capabilities (via Capacitor) and a seamless web-to-mobile transition.
+
+USP (Unique Selling Proposition):
+Real-time drug interaction checking across multiple independent prescriptions using AI, combined with clinical-grade OCR extraction.
+
+SWOT Analysis:
+Strengths: Advanced AI integration, robust Tech Stack, cross-platform UI.
+Weaknesses: Reliance on 3rd party AI APIs (Google Generative AI).
+Opportunities: Expansion into wearable tech integration.
+Threats: Strict global healthcare compliance (HIPAA, GDPR) and aggressive HealthTech competitors.
+
+==================================================
+4. COMPLETE FEATURE BREAKDOWN
+==================================================
+
+Feature: Authentication & User Management
+Purpose: Secure user onboarding and identity verification.
+Business Value: User retention, data privacy, and personalized experiences.
+Technical Implementation: JWT-based stateless authentication.
+Frontend: Login.tsx, Register.tsx, AuthContext.tsx.
+Backend: auth.ts routes, bcrypt password hashing.
+Database: User table.
+API Endpoints: POST /api/auth/register, POST /api/auth/login, GET /api/auth/me.
+Security: Password hashing, HttpOnly cookies/Bearer tokens, Rate Limiting.
+User Journey: Visitor -> Register Form -> Backend Validation -> JWT Issued -> Redirect to Dashboard.
+
+Feature: Prescription Center (OCR & AI Analysis)
+Purpose: Digitize and decode prescriptions.
+Business Value: Core USP. Solves patient confusion.
+Technical Implementation: Cloudinary upload -> Tesseract.js OCR -> Gemini AI structuring.
+Frontend: PrescriptionCenter.tsx.
+Backend: prescriptions.ts routes, OCR service, Gemini service.
+Database: Prescription table, PrescriptionAnalysis table.
+API Endpoints: POST /api/prescriptions/upload, POST /api/prescriptions/:id/verify.
+Security: Signed URL uploads, AI output sanitization.
+User Journey: Upload Image -> OCR Extracts Raw Text -> User Verifies -> AI Structuring -> Dashboard View.
+
+Feature: Report Center
+Purpose: Parse and simplify complex lab reports.
+Business Value: High engagement, empowers patient health literacy.
+Technical Implementation: PDF/Image parsing -> Gemini AI breakdown -> Storage.
+Frontend: ReportCenter.tsx.
+Backend: reports.ts.
+Database: MedicalReport table.
+API Endpoints: POST /api/reports/upload, POST /api/reports/:id/verify.
+Security: File type validation, strict AI safety bounds.
+User Journey: Upload Lab Report -> Extraction -> AI Translation -> Simplified UI Display.
+
+Feature: Pulse AI Chat Assistant
+Purpose: 24/7 conversational health assistant.
+Business Value: Drives daily active users (DAU).
+Technical Implementation: Socket.io real-time connection with streaming AI responses.
+Frontend: ChatAssistant.tsx, AIChatbox.tsx.
+Backend: chatSocket.ts, gemini.ts.
+Database: Chat histories (future scope).
+API Endpoints: WSS / (Socket.io).
+Security: Socket authentication via JWT, AI prompt injection protection.
+User Journey: Open Chat Widget -> Type Query -> Real-time Streaming Response.
+
+Feature: Hospital Discovery
+Purpose: Locate nearby healthcare facilities.
+Business Value: Utility feature for emergency and routine planning.
+Technical Implementation: Geocoding and map integration.
+Frontend: HospitalDetail.tsx, SavedHospitals.tsx.
+Backend: hospitals.ts.
+Database: Hospital, SavedHospital tables.
+API Endpoints: GET /api/hospitals.
+Security: Data scraping protection.
+User Journey: Open Map/List -> View Details -> Save to Profile.
+
+Feature: Admin Dashboard
+Purpose: System oversight and metric tracking.
+Business Value: Internal analytics and system health monitoring.
+Technical Implementation: RBAC (Role-Based Access Control) restricted views.
+Frontend: AdminDashboard.tsx.
+Backend: admin.ts.
+Database: All tables (aggregation queries).
+API Endpoints: GET /api/admin/stats.
+Security: Server-side admin email validation.
+User Journey: Login as Admin -> View Metrics -> Monitor AI Cost Accumulation.
+
+==================================================
+5. USER FLOW ANALYSIS
+==================================================
+Visitor Flow:
+Landing Page -> Feature Discovery -> Call to Action -> Registration Page.
+
+Registration Flow:
+Form (Name, Email, Password) -> Client Validation -> Server Validation -> User Created -> JWT Generated -> Redirect to PulseNav/Dashboard.
+
+Dashboard Flow:
+Dashboard -> View Stats -> Recent Scans -> Quick Action Floating Buttons (Upload Prescription / Ask AI).
+
+Feature Usage Flow (Prescription):
+Dashboard -> Prescription Center -> Drag & Drop File -> Loading (OCR) -> Dual-Pane Verification -> AI Submit -> Results Screen -> Save to Profile.
+
+Admin Flow:
+Login -> Admin Check Middleware -> Admin Dashboard -> View User Count, OCR Count, Pulse AI Costs.
+
+Logout Flow:
+Click Avatar -> Logout -> AuthContext Cleared -> LocalStorage Wiped -> Redirect to Login.
+
+==================================================
+6. FRONTEND ARCHITECTURE
+==================================================
+Framework: React 18 + Vite.
+UI Libraries: TailwindCSS, Lucide React, Framer Motion, React Markdown.
+Folder Structure:
+/src
+  /core (Contexts, Services, Utils)
+  /mobile (Capacitor mobile screens)
+  /web (Desktop pages and components)
+Routing Structure: React Router DOM (BrowserRouter).
+State Management: React Context API (AuthContext) and local component state.
+Forms: Controlled React components.
+Validation: Client-side regex and length validation before API submission.
+Error Handling: Axios interceptors, react-hot-toast for user feedback.
+Responsive Design Strategy: Mobile-first Tailwind utility classes. Strict segregation of Mobile UI (`isNativeApp`) and Web UI using conditional rendering.
+
+==================================================
+7. BACKEND ARCHITECTURE
+==================================================
+Framework: Node.js + Express.js + TypeScript.
+Server Structure: Monolithic API with separated domain routes.
+Controllers: Logic resides directly in route handlers (fat routes pattern).
+Services: Extracted business logic (ai.ts, gemini.ts, ocr.ts, chatSocket.ts).
+Middleware: authMiddleware (JWT verification), rateLimiter, error handlers.
+Authentication: JWT via headers (`Authorization: Bearer <token>`).
+Security: express-rate-limit, CORS policy restricted to specific Vercel domains, helmet (recommended).
+Logging: Console-based logging.
+Caching: In-memory caching for active AI models in `gemini.ts`.
+
+==================================================
+8. DATABASE DOCUMENTATION
+==================================================
+ORM: Prisma
+Database: PostgreSQL (Supabase)
+
+Table: User
+Purpose: Stores account data.
+Columns: id (UUID), email (String, Unique), password (String), name (String), createdAt, updatedAt.
+Relationships: 1-to-many with Prescriptions, Reports.
+
+Table: Prescription
+Purpose: Master record for a document scan.
+Columns: id, userId, fileUrl, status (ENUM), createdAt.
+Relationships: Belongs to User. Has One OCRResult. Has Many PrescriptionAnalysis.
+
+Table: PrescriptionAnalysis
+Purpose: Stores AI-structured medicine data.
+Columns: id, prescriptionId, medicineName, dosage, instructions, simplifiedExplanation, sideEffects.
+
+Table: MedicalReport
+Purpose: Master record for lab reports.
+Columns: id, userId, title, fileUrl, status, aiSummary.
+
+==================================================
+9. API DOCUMENTATION
+==================================================
+Method: POST | Route: /api/auth/login
+Purpose: Authenticate user.
+Auth Required: No
+Payload: { email, password }
+Response: { token, user: { id, email, name, role } }
+
+Method: POST | Route: /api/prescriptions/upload
+Purpose: Upload file and run initial OCR.
+Auth Required: Yes (JWT)
+Payload: FormData (file)
+Response: Prescription object with OCR raw text.
+
+Method: POST | Route: /api/prescriptions/:id/verify
+Purpose: Send OCR/User text to Pulse AI for structuring.
+Auth Required: Yes (JWT)
+Payload: { rawText, medicines[] }
+Response: Updated Prescription with detailed Analysis records.
+
+Method: GET | Route: /api/admin/stats
+Purpose: Fetch platform metrics.
+Auth Required: Yes (JWT + Admin Role)
+Response: { usersCount, ocrCount, aiCost, ... }
+
+==================================================
+10. AUTHENTICATION & SECURITY AUDIT
+==================================================
+Login System: Email/Password based.
+JWT Mechanism: Signed with 24h expiration.
+Password Security: bcryptjs hashing (salt rounds 10).
+Role Based Access: Middleware checks against `process.env.ADMIN_EMAILS`.
+API Security: Rate limiting applied to AI endpoints (10 req/hr).
+XSS Protection: Handled by React's built-in JSX escaping.
+SQL Injection Protection: Handled by Prisma ORM parameterized queries.
+
+Security Rating: 8.5/10. (Strong fundamentals, but needs refresh token rotation for 10/10).
+
+==================================================
+11. ROUTING AUDIT
+==================================================
+Frontend Routes:
+Public: /, /login, /register, /about, /contact, /privacy
+Protected: /dashboard, /prescriptions, /reports, /admin
+
+Backend Routes:
+/api/auth/*
+/api/prescriptions/*
+/api/reports/*
+/api/hospitals/*
+/api/admin/*
+
+Route Map Status: Clean. Redundant mobile routes were recently removed to unify the API layer.
+
+==================================================
+12. DATABASE TO FRONTEND CONNECTION ANALYSIS
+==================================================
+Example: Uploading a Prescription
+1. Frontend `PrescriptionCenter.tsx` creates FormData.
+2. Axios POSTs to `/api/prescriptions/upload`.
+3. Backend uploads image to Cloudinary -> gets URL.
+4. Backend runs Tesseract.js OCR -> gets Raw Text.
+5. Backend Prisma creates `Prescription` and `OCRResult` records in PostgreSQL.
+6. Backend responds with JSON.
+7. Frontend state updates, rendering the Dual-Pane editor.
+
+==================================================
+13. CODE QUALITY AUDIT
+==================================================
+Code Structure: Modular and domain-driven.
+Maintainability: High (Strict TypeScript typing via Prisma generation).
+Readability: Excellent (Functional React components, clean hooks).
+Scalability: Backend logic is stateless, making it horizontal scaling ready.
+Technical Debt: Some controllers in backend routes are quite thick and could be abstracted into a Service layer pattern.
+Code Quality Score: 8/10.
+
+==================================================
+14. PERFORMANCE ANALYSIS
+==================================================
+Bottlenecks Identified:
+- OCR Processing: Tesseract.js running on the Node thread can block the event loop under heavy load.
+- AI Latency: Google Generative AI streaming takes 2-4 seconds.
+Improvements:
+- Move OCR tasks to a dedicated microservice or a Redis/BullMQ worker queue.
+- Implement lazy loading (React.lazy) for heavy frontend components like the Admin Dashboard charts.
+
+==================================================
+15. DEVOPS & DEPLOYMENT ANALYSIS
+==================================================
+Hosting Platform:
+Frontend -> Vercel (CI/CD via GitHub integration).
+Backend -> Railway (Dockerized/Nixpacks auto-deploy).
+Database -> Supabase (Managed PostgreSQL).
+Storage -> Cloudinary.
+CI/CD: Automated builds on push to `main`.
+Environment Variables: Segregated between local `.env` and platform dashboards.
+Scaling Strategy: Railway auto-scaling for compute; Supabase connection pooling (PgBouncer).
+
+==================================================
+16. TECH STACK DOCUMENTATION
+==================================================
+Frontend: React, TypeScript, Vite, TailwindCSS, Capacitor.
+Chosen for: Rapid development, cross-platform mobile compatibility, and rich ecosystem.
+
+Backend: Node.js, Express, Socket.io, Tesseract.js.
+Chosen for: JavaScript ubiquity, excellent real-time capabilities via websockets.
+
+Database: PostgreSQL, Prisma ORM.
+Chosen for: Relational integrity, type safety, and robust migrations.
+
+Cloud Services: Supabase, Cloudinary.
+
+==================================================
+17. THIRD-PARTY SERVICES
+==================================================
+1. Google Generative AI (Gemini): Powers all Pulse AI features (Chat, Medical parsing).
+2. Cloudinary: Secure, optimized image/document storage.
+3. Supabase: Database hosting and connection pooling.
+4. Vercel/Railway: Infrastructure deployment.
+
+==================================================
+18. TESTING AUDIT
+==================================================
+Frameworks: Vitest (Frontend), Jest & Supertest (Backend).
+Coverage: Core critical paths (Auth, Prescriptions, AI Rate Limiting) are covered by integration tests.
+Missing Tests: E2E tests for the Capacitor mobile wrapper.
+Recommendations: Integrate Cypress or Playwright for full E2E user journey testing before major version releases.
+
+==================================================
+19. ADMIN PANEL ANALYSIS
+==================================================
+Capabilities: View aggregate system metrics.
+Permissions: Restricted via strict email parsing from ENV vars.
+Workflows: Real-time cost monitoring for AI token consumption.
+Security: Protected route middleware returning 403 Forbidden for non-admins.
+
+==================================================
+20. COMPLETE FILE STRUCTURE DOCUMENTATION
+==================================================
+/pulse
+├── backend/
+│   ├── prisma/           (Schema and migrations)
+│   ├── src/
+│   │   ├── middleware/   (Auth, Rate Limiting)
+│   │   ├── routes/       (API Endpoints)
+│   │   ├── services/     (AI, Chat, OCR Logic)
+│   │   └── index.ts      (Server Entry Point)
+│   └── tests/            (Jest Integration Tests)
+├── frontend/
+│   ├── src/
+│   │   ├── core/         (Contexts, API bindings, Utils)
+│   │   ├── mobile/       (Capacitor specific screens)
+│   │   └── web/          (React DOM pages and components)
+│   ├── vite.config.ts    (Bundler configuration)
+│   └── capacitor.config.ts (Mobile bridging)
+
+==================================================
+21. FUTURE ROADMAP
+==================================================
+Phase 1 Improvements (Short-Term):
+- BullMQ worker queues for OCR extraction to prevent API timeouts.
+- Implement Refresh Tokens for long-lived mobile sessions.
+
+Phase 2 Improvements (Medium-Term):
+- Pharmacy Integration APIs to route prescriptions directly to local stores.
+- Push Notifications via Firebase Cloud Messaging for pill reminders.
+
+Phase 3 Improvements (Long-Term):
+- Wearable integration (Apple HealthKit / Google Fit).
+- HIPAA-certified telemedicine video consultations within the app.
+
+==================================================
+22. INVESTOR PITCH SUMMARY
+==================================================
+Elevator Pitch: Pulse is an AI-powered personal health vault that translates complex medical documents into plain English and checks for dangerous drug interactions instantly.
+Problem Statement: 70% of patients do not fully understand their prescriptions, leading to 125,000 deaths annually from medication non-adherence.
+Solution: A pocket AI assistant that decodes jargon, tracks health history, and centralizes data.
+Market Opportunity: The global digital health market is projected to reach $500B+ by 2025.
+Competitive Edge: Proprietary AI prompts, clinical OCR, and a unified web-to-mobile architecture.
+
+==================================================
+23. FINAL PROJECT SCORECARD
+==================================================
+UI/UX: 9/10
+Frontend: 9/10
+Backend: 8/10
+Database: 9/10
+Security: 8.5/10
+Performance: 7.5/10
+Scalability: 8/10
+Maintainability: 9/10
+Code Quality: 8.5/10
+Business Potential: 10/10
+
+OVERALL PROJECT SCORE: 8.65 / 10
+
+==================================================
+24. CRITICAL ISSUES REPORT
+==================================================
+1. [Severity: Medium] OCR Processing: Tesseract.js is running synchronously on the Node backend. Needs extraction to a background job.
+2. [Severity: Low] Authentication: Needs refresh token implementation.
+3. [Severity: Low] AI API Keys: Hard dependency on a single Google AI key; consider implementing key rotation or fallback providers (e.g., OpenAI/Anthropic) if limits are hit.
+
+==================================================
+25. PROJECT KNOWLEDGE BASE
+==================================================
+What is Pulse? An AI-driven healthcare document parsing and management platform.
+Why was it built? To solve patient medical illiteracy and document fragmentation.
+How does it work? Users upload images -> OCR extracts text -> Google AI structures the data -> React frontend displays it beautifully.
+When is it used? Post-doctor visits, pharmacy trips, and daily medication tracking.
+Where is it hosted? Vercel (UI) and Railway (API).
+Who uses it? Patients, Caregivers, and eventually Clinics.
