@@ -18,41 +18,41 @@ export const authLimiter = rateLimit({
   message: createRateLimitMessage('authentication attempts', 5, '15 minutes')
 });
 
-// 2. Document AI Analysis (Prescriptions & Reports): 20 requests per day per User
+// 2. Document AI Analysis (Prescriptions & Reports): 200 requests per day per User
 export const documentAiLimiter = rateLimit({
   windowMs: 24 * 60 * 60 * 1000, // 24 hours
-  max: 20,
+  max: 200,
   keyGenerator: (req: any) => {
-    // Group by User ID if authenticated, fallback to IP
-    return req.user?.id || req.ip;
+    // Group by User ID if authenticated, fallback to standard string
+    return req.user?.id || 'anonymous';
   },
   standardHeaders: true,
   legacyHeaders: false,
-  message: createRateLimitMessage('document scans', 20, 'day')
+  message: createRateLimitMessage('document scans', 200, 'day')
 });
 
-// 3. Global Drug Interaction Scanner: 12 requests per day per User
+// 3. Global Drug Interaction Scanner: 200 requests per day per User
 export const interactionsLimiter = rateLimit({
   windowMs: 24 * 60 * 60 * 1000, // 24 hours
-  max: 12,
+  max: 200,
   keyGenerator: (req: any) => {
-    return req.user?.id || req.ip;
+    return req.user?.id || 'anonymous';
   },
   standardHeaders: true,
   legacyHeaders: false,
-  message: createRateLimitMessage('drug interaction scans', 12, 'day')
+  message: createRateLimitMessage('drug interaction scans', 200, 'day')
 });
 
-// 4. Health Risk Score Calculator: 15 requests per day per User
+// 4. Health Risk Score Calculator: 200 requests per day per User
 export const riskScoreLimiter = rateLimit({
   windowMs: 24 * 60 * 60 * 1000, // 24 hours
-  max: 15,
+  max: 200,
   keyGenerator: (req: any) => {
-    return req.user?.id || req.ip;
+    return req.user?.id || 'anonymous';
   },
   standardHeaders: true,
   legacyHeaders: false,
-  message: createRateLimitMessage('health risk assessments', 15, 'day')
+  message: createRateLimitMessage('health risk assessments', 200, 'day')
 });
 
 // 5. General API Limiter (Global fallback to prevent DDOS)
