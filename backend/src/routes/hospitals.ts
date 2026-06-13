@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../db';
 import { scoreHospital, calculateDistance } from '../services/recommendation';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
-import { searchLimiter } from '../middleware/rateLimiter';
+import { generalLimiter } from '../middleware/rateLimiter';
 import { hospitalService } from '../services/HospitalService';
 import { findMappedSpecialty } from '../utils/intentMapper';
 import { z } from 'zod';
