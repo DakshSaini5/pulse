@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { trendAPI, reportAPI } from "@core/services/api"
 import { TrendingUp, Activity, Plus, ChevronRight, Info, Award } from "lucide-react"
 import { Button } from "@web/components/ui/button"
 import { Badge } from "@web/components/ui/badge"
@@ -13,15 +14,6 @@ interface TrendsScreenProps {
   activeScreen?: string
   onNavigate?: (screen: string) => void
   onPanic?: () => void
-
-  markers: any[]
-  activeMarker: string
-  setActiveMarker: (val: string) => void
-  filteredData: any[]
-  handleAssessRisk: () => void
-  assessingRisk: boolean
-  riskResult: any
-  trends: any[]
 }
 
 function MiniChart({ data }: { data: { date: string; value: number }[] }) {
@@ -72,23 +64,87 @@ export function TrendsScreen({
   onTabChange, 
   activeScreen, 
   onNavigate, 
-  onPanic,
-  markers,
-  activeMarker,
-  setActiveMarker,
-  filteredData,
-  handleAssessRisk,
-  assessingRisk,
-  riskResult,
-  trends
+  onPanic
 }: TrendsScreenProps) {
+
+  const [trends, setTrends] = useState<any[]>([])
+  const [activeMarker, setActiveMarker] = useState<string>('')
+  const [loading, setLoading] = useState(true)
+  const [assessingRisk, setAssessingRisk] = useState(false)
+  const [riskResult, setRiskResult] = useState<any>(null)
+
+  useEffect(() => {
+    const fetchTrends = async () => {
+      try {
+        const data = await trendAPI.getTrends()
+        setTrends(data || [])
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchTrends()
+  }, [])
+
+  // Known descriptions for common markers
+  const knownMarkerInfo: Record<string, { desc: string, ref: string }> = {
+    'Hemoglobin': { desc: 'Carries oxygen throughout red blood cells.', ref: '12.0 - 15.0' },
+    'HbA1c': { desc: 'Averages your blood glucose level over 3 months.', ref: '4.0 - 5.6' },
+    'TSH': { desc: 'Indicates active metabolic and thyroid rates.', ref: '0.4 - 4.5' },
+    'Cholesterol': { desc: 'Monitors cardiovascular plaque and fat profiles.', ref: '120 - 200' }
+  }
+
+  // Dynamically generate marker list from uploaded data
+  const uniqueMarkersMap = new Map<string, { name: string, unit: string, desc: string, ref: string }>();
+  trends.forEach(t => {
+    if (!uniqueMarkersMap.has(t.markerName)) {
+      const known = knownMarkerInfo[t.markerName] || { desc: 'Biological marker extracted from your medical reports.', ref: 'See individual reports for reference ranges' };
+      uniqueMarkersMap.set(t.markerName, {
+        name: t.markerName,
+        unit: t.unit || 'units',
+        desc: known.desc,
+        ref: known.ref
+      });
+    }
+  });
+
+  const markers = Array.from(uniqueMarkersMap.values());
+
+  useEffect(() => {
+    if (markers.length > 0 && (!activeMarker || !markers.some(m => m.name === activeMarker))) {
+      setActiveMarker(markers[0].name)
+    }
+  }, [markers, activeMarker])
+
+  const handleAssessRisk = async () => {
+    setAssessingRisk(true)
+    try {
+      const res = await reportAPI.getRiskAssessment()
+      setRiskResult(res)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setAssessingRisk(false)
+    }
+  }
+
   const selected = markers.find(b => b.name === activeMarker) || markers[0]
+
+  const filteredData = trends
+    .filter(t => t.markerName === activeMarker)
+    .map(t => ({
+      date: new Date(t.recordedAt).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+      value: t.value,
+      marker: t.markerName
+    }))
+    .reverse()
   
   // Calculate current value based on last entry
   const currentValue = filteredData.length > 0 ? filteredData[filteredData.length - 1].value : 0;
   
   // Parse min and max from ref string like "12.0 - 15.0"
-  const refParts = selected.ref.split('-').map((s: string) => parseFloat(s.trim()));
+  const refParts = selected ? selected.ref.split('-').map((s: string) => parseFloat(s.trim())) : [0, 100];
   const normalMin = refParts[0] || 0;
   const normalMax = refParts[1] || 100;
   

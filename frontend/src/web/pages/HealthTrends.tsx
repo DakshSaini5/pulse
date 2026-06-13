@@ -48,12 +48,36 @@ export const HealthTrends: React.FC = () => {
     fetchTrends();
   }, []);
 
-  const markers = [
-    { name: 'Hemoglobin', unit: 'g/dL', desc: 'Carries oxygen throughout red blood cells.', ref: '12.0 - 15.0' },
-    { name: 'HbA1c', unit: '%', desc: 'Averages your blood glucose level over 3 months.', ref: '4.0 - 5.6' },
-    { name: 'TSH', unit: 'uIU/mL', desc: 'Indicates active metabolic and thyroid rates.', ref: '0.4 - 4.5' },
-    { name: 'Cholesterol', unit: 'mg/dL', desc: 'Monitors cardiovascular plaque and fat profiles.', ref: '120 - 200' }
-  ];
+  // Known descriptions for common markers
+  const knownMarkerInfo: Record<string, { desc: string, ref: string }> = {
+    'Hemoglobin': { desc: 'Carries oxygen throughout red blood cells.', ref: '12.0 - 15.0' },
+    'HbA1c': { desc: 'Averages your blood glucose level over 3 months.', ref: '4.0 - 5.6' },
+    'TSH': { desc: 'Indicates active metabolic and thyroid rates.', ref: '0.4 - 4.5' },
+    'Cholesterol': { desc: 'Monitors cardiovascular plaque and fat profiles.', ref: '120 - 200' }
+  };
+
+  // Dynamically generate marker list from uploaded data
+  const uniqueMarkersMap = new Map<string, { name: string, unit: string, desc: string, ref: string }>();
+  trends.forEach(t => {
+    if (!uniqueMarkersMap.has(t.markerName)) {
+      const known = knownMarkerInfo[t.markerName] || { desc: 'Biological marker extracted from your medical reports.', ref: 'See individual reports for reference ranges' };
+      uniqueMarkersMap.set(t.markerName, {
+        name: t.markerName,
+        unit: t.unit || 'units',
+        desc: known.desc,
+        ref: known.ref
+      });
+    }
+  });
+
+  const markers = Array.from(uniqueMarkersMap.values());
+  
+  // Set default active marker if the current one isn't valid or isn't in the list
+  useEffect(() => {
+    if (markers.length > 0 && !markers.some(m => m.name === activeMarker)) {
+      setActiveMarker(markers[0].name);
+    }
+  }, [markers, activeMarker]);
 
   // Filters trends database to the active selected pill
   const filteredData = trends

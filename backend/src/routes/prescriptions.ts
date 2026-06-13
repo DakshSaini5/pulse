@@ -7,7 +7,7 @@ import { prisma } from '../db';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { performOCR } from '../services/ocr';
 import { parsePrescriptionWithGemini, enrichMedicinesWithGemini, checkDrugInteractionsWithGemini } from '../services/ai';
-import { uploadLimiter, aiLimiter } from '../middleware/rateLimiter';
+import { documentAiLimiter, interactionsLimiter } from '../middleware/rateLimiter';
 import cloudinary from '../config/cloudinary';
 
 const router = Router();
@@ -69,7 +69,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
 });
 
 // GET /api/prescriptions/interactions (Guarded - check cross-prescription interactions)
-router.get('/interactions', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/interactions', authenticateToken, interactionsLimiter, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
   try {
     const analysisRecords = await prisma.prescriptionAnalysis.findMany({
@@ -135,7 +135,7 @@ router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Res
 });
 
 // POST /api/prescriptions/upload (Guarded - upload file & run OCR)
-router.post('/upload', authenticateToken, uploadLimiter, upload.single('file'), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/upload', authenticateToken, documentAiLimiter, upload.single('file'), async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
 
   if (!req.file) {
@@ -205,7 +205,7 @@ router.post('/upload', authenticateToken, uploadLimiter, upload.single('file'), 
 });
 
 // POST /api/prescriptions/:id/verify (Guarded - submit verification details to Gemini AI)
-router.post('/:id/verify', authenticateToken, aiLimiter, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/:id/verify', authenticateToken, documentAiLimiter, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
   const { id } = req.params;
   const { verifiedData } = req.body; // Can contain corrected manual fields or updated raw text

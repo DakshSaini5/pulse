@@ -52,7 +52,7 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   'https://pulsehealthcare.in',
   'https://www.pulsehealthcare.in',
-  'https://pulse-production.vercel.app', // Fallback Vercel domain
+  'https://pulse-bice-beta.vercel.app', // Actual Vercel domain
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost',

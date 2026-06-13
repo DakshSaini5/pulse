@@ -371,10 +371,11 @@ export const parseMedicalReportWithGemini = async (rawText: string, reportType: 
       ${sanitizedText}
       ---USER_PROVIDED_TEXT_END---
 
-      Extract the key biological markers or diagnostic findings matching the requested category: "${reportType}".
-      
+      Extract ALL key biological markers, lab values, and diagnostic findings found in the text. 
+      Do NOT filter them out. Extract every single test result you can find (e.g., Hemoglobin, TSH, Cholesterol, etc.).
+      The user labeled this report as: "${reportType}", but you must still extract everything on the page.
+
       CRITICAL INSTRUCTION: If this is an IMAGING report (like Ultrasound, X-Ray, MRI) or CLINICAL NOTES, there will be NO numeric lab values. In that case:
-      - Set "value" to null.
       - Set "unit" to "N/A".
       - Set "referenceRange" to "N/A".
       - Extract each organ or body part examined as the "key" (e.g., "Liver", "Kidney").

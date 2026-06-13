@@ -1,101 +1,56 @@
 import rateLimit from 'express-rate-limit';
-import { RedisStore } from 'rate-limit-redis';
-import { createClient } from 'redis';
 
-// -----------------------------------------------
-// Rate Limiters for Different Endpoint Tiers
-// Using Redis Store if REDIS_URL is provided, otherwise falling back to memory.
-// -----------------------------------------------
-
-// Initialize Redis client if REDIS_URL exists
-let redisClient: ReturnType<typeof createClient> | undefined;
-
-if (process.env.REDIS_URL) {
-  redisClient = createClient({ url: process.env.REDIS_URL });
-  
-  // Suppress connection errors from crashing the app if Redis goes down,
-  // rate-limit-redis will gracefully degrade or we can handle it
-  redisClient.on('error', (err) => console.warn('Redis Client Error:', err));
-  
-  redisClient.connect().catch((err) => console.warn('Redis connection failed:', err));
-}
-
-const getStore = (prefix: string) => {
-  if (redisClient) {
-    return new RedisStore({
-      sendCommand: (...args: string[]) => redisClient!.sendCommand(args),
-      prefix: `pulse_rl_${prefix}:`,
-    });
-  }
-  return undefined; // Falls back to default memory store if no Redis
+// Global error handler message wrapper
+const createRateLimitMessage = (feature: string, limit: number, timeframe: string) => {
+  return {
+    success: false,
+    message: `You have reached your limit of ${limit} ${feature} per ${timeframe}. Please try again later.`,
+    error: 'RATE_LIMIT_EXCEEDED'
+  };
 };
 
-const keyGenerator = (req: any) => {
-  // Use the real IP from Render's reverse proxy, fallback to socket IP
-  return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
-};
-
-// Auth endpoints: 5 requests per 15 minutes per IP (prevents brute force)
+// 1. Authentication Endpoints: 5 requests per 15 minutes per IP
 export const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5,
-  store: getStore('auth'),
-  keyGenerator,
-  message: {
-    message: 'Too many authentication attempts. Please try again after 15 minutes.',
-  },
   standardHeaders: true,
   legacyHeaders: false,
+  message: createRateLimitMessage('authentication attempts', 5, '15 minutes')
 });
 
-// AI/Analysis endpoints: 10 requests per minute per IP (prevents Gemini cost abuse)
-export const aiLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 10,
-  store: getStore('ai'),
-  keyGenerator,
-  message: {
-    message: 'AI analysis rate limit reached. Please wait a moment before trying again.',
+// 2. Document AI Analysis (Prescriptions & Reports): 20 requests per day per User
+export const documentAiLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours
+  max: 20,
+  keyGenerator: (req: any) => {
+    // Group by User ID if authenticated, fallback to IP
+    return req.user?.id || req.ip;
   },
   standardHeaders: true,
   legacyHeaders: false,
+  message: createRateLimitMessage('document scans', 20, 'day')
 });
 
-// Upload endpoints: 5 uploads per hour per IP
-export const uploadLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 5,
-  store: getStore('upload'),
-  keyGenerator,
-  message: {
-    message: 'Upload limit reached. You can upload up to 5 files per hour.',
+// 3. Global Drug Interaction Scanner: 12 requests per day per User
+export const interactionsLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours
+  max: 12,
+  keyGenerator: (req: any) => {
+    return req.user?.id || req.ip;
   },
   standardHeaders: true,
   legacyHeaders: false,
+  message: createRateLimitMessage('drug interaction scans', 12, 'day')
 });
 
-// General API: 100 requests per minute per IP
-export const generalLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 100,
-  store: getStore('general'),
-  keyGenerator,
-  message: {
-    message: 'Too many requests. Please slow down.',
+// 4. Health Risk Score Calculator: 15 requests per day per User
+export const riskScoreLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours
+  max: 15,
+  keyGenerator: (req: any) => {
+    return req.user?.id || req.ip;
   },
   standardHeaders: true,
   legacyHeaders: false,
-});
-
-// Search endpoints: 60 requests per minute per IP
-export const searchLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 60,
-  store: getStore('search'),
-  keyGenerator,
-  message: {
-    message: 'Search rate limit reached. Please wait a moment.',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
+  message: createRateLimitMessage('health risk assessments', 15, 'day')
 });

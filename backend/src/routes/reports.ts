@@ -7,7 +7,7 @@ import { prisma } from '../db';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { performOCR } from '../services/ocr';
 import { parseMedicalReportWithGemini, assessHealthRiskWithGemini } from '../services/ai';
-import { uploadLimiter, aiLimiter } from '../middleware/rateLimiter';
+import { documentAiLimiter, riskScoreLimiter } from '../middleware/rateLimiter';
 import cloudinary from '../config/cloudinary';
 
 const router = Router();
@@ -70,7 +70,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
 });
 
 // GET /api/reports/risk-assessment (Guarded - AI Health Risk Assessment)
-router.get('/risk-assessment', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/risk-assessment', authenticateToken, riskScoreLimiter, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
   try {
     const reportValues = await prisma.medicalReportValue.findMany({
@@ -135,7 +135,7 @@ router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Res
 });
 
 // POST /api/reports/upload (Guarded - upload file & run OCR)
-router.post('/upload', authenticateToken, uploadLimiter, upload.single('file'), async (req: AuthenticatedRequest, res: Response) => {
+router.post('/upload', authenticateToken, documentAiLimiter, upload.single('file'), async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
 
   if (!req.file) {
@@ -213,7 +213,7 @@ router.post('/upload', authenticateToken, uploadLimiter, upload.single('file'), 
 });
 
 // POST /api/reports/:id/verify (Guarded - submit verified values to Gemini AI)
-router.post('/:id/verify', authenticateToken, aiLimiter, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/:id/verify', authenticateToken, documentAiLimiter, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
   const { id } = req.params;
   const { verifiedData } = req.body;
