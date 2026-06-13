@@ -208,8 +208,9 @@ export const PrescriptionCenter: React.FC = () => {
       // Update local listing
       setPrescriptions(prev => prev.map(p => p.id === res.id ? res : p));
       setActivePrescription(res);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      toast.error(err.response?.data?.message || 'AI Engine failed to parse the prescription. Please try again.');
     } finally {
       setVerifying(false);
     }

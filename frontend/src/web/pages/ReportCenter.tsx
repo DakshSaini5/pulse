@@ -277,8 +277,9 @@ export const ReportCenter: React.FC = () => {
       if (res.specialists && res.specialists.length > 0) {
         fetchMatchedHospitals(res.specialists[0].specialtyName);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      toast.error(err.response?.data?.message || 'AI Engine failed to parse the report. Please try again.');
     } finally {
       setVerifying(false);
     }
