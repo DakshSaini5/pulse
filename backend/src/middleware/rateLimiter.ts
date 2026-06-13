@@ -54,3 +54,16 @@ export const riskScoreLimiter = rateLimit({
   legacyHeaders: false,
   message: createRateLimitMessage('health risk assessments', 15, 'day')
 });
+
+// 5. General API Limiter (Global fallback to prevent DDOS)
+export const generalLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 200, // Allow up to 200 general requests per minute per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many requests to the API. Please slow down.',
+    error: 'RATE_LIMIT_EXCEEDED'
+  }
+});
