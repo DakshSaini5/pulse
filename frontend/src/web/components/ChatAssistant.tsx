@@ -62,6 +62,30 @@ const ChatAssistant: React.FC = () => {
         }]);
       });
 
+      socket.on('chat:response:start', (data: { id: string }) => {
+        setIsTyping(false);
+        setMessages(prev => [...prev, {
+          id: data.id || Date.now().toString(),
+          role: 'model',
+          text: '',
+          isError: false
+        }]);
+      });
+
+      socket.on('chat:response:chunk', (data: { text: string }) => {
+        setMessages(prev => {
+          const newMessages = [...prev];
+          const lastMsgIndex = newMessages.length - 1;
+          if (lastMsgIndex >= 0 && newMessages[lastMsgIndex].role === 'model') {
+            newMessages[lastMsgIndex] = {
+              ...newMessages[lastMsgIndex],
+              text: newMessages[lastMsgIndex].text + data.text
+            };
+          }
+          return newMessages;
+        });
+      });
+
       socketRef.current = socket;
     }
 

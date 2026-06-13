@@ -165,13 +165,19 @@ ${medicalHistoryContext}` }],
           return;
         }
 
-        const result = await chatSession.sendMessage(message);
-        const responseText = result.response.text();
+        const result = await chatSession.sendMessageStream(message);
         
-        socket.emit('chat:response', {
-          text: responseText,
-          isError: false
-        });
+        const messageId = Date.now().toString();
+        socket.emit('chat:response:start', { id: messageId });
+
+        let fullText = "";
+        for await (const chunk of result.stream) {
+          const chunkText = chunk.text();
+          fullText += chunkText;
+          socket.emit('chat:response:chunk', { text: chunkText });
+        }
+        
+        socket.emit('chat:response:end', { text: fullText });
 
       } catch (error) {
         console.error('[Socket.io] Chat Error:', error);
