@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Capacitor } from '@capacitor/core';
+import { isNativeApp } from '@core/utils/platform';
 
 export const Landing: React.FC = () => {
   const { user } = useAuth();
@@ -191,7 +192,7 @@ export const Landing: React.FC = () => {
 
         <div className="w-full max-w-7xl mx-auto px-4 py-8 space-y-8 animate-in fade-in duration-500">
         {/* Action Required Banner */}
-        {!contactsLoading && contacts.length === 0 && !showEmergencyModal && (
+        {isNativeApp && !contactsLoading && contacts.length === 0 && !showEmergencyModal && (
           <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-4 flex items-center justify-between shadow-lg shadow-orange-500/5">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 bg-orange-500/20 rounded-full flex items-center justify-center flex-shrink-0">
