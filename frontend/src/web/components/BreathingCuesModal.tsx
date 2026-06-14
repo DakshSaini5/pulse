@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Heart, ShieldAlert, PhoneCall, Check } from 'lucide-react';
+import { isNativeApp } from '../../core/utils/platform';
 
 interface Props {
   isOpen: boolean;
@@ -222,7 +223,7 @@ export const BreathingCuesModal: React.FC<Props> = ({
             </div>
 
             {/* Response Options directly on main popup */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-sm mx-auto pt-2">
+            <div className={`grid grid-cols-1 ${isNativeApp ? 'sm:grid-cols-2' : ''} gap-3 max-w-sm mx-auto pt-2`}>
               <button
                 type="button"
                 onClick={() => setStep('YES_OKAY')}
@@ -231,14 +232,16 @@ export const BreathingCuesModal: React.FC<Props> = ({
                 <Check className="w-4 h-4" />
                 Yes, I am okay
               </button>
-              <button
-                type="button"
-                onClick={() => setStep('NO_HELP')}
-                className="py-3 px-4 bg-red-600 hover:bg-red-700 text-white text-xs font-black rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5 shadow-red-600/20 border border-red-500/20"
-              >
-                <ShieldAlert className="w-4 h-4" />
-                No, I need support
-              </button>
+              {isNativeApp && (
+                <button
+                  type="button"
+                  onClick={() => setStep('NO_HELP')}
+                  className="py-3 px-4 bg-red-600 hover:bg-red-700 text-white text-xs font-black rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5 shadow-red-600/20 border border-red-500/20"
+                >
+                  <ShieldAlert className="w-4 h-4" />
+                  No, I need support
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -256,7 +259,7 @@ export const BreathingCuesModal: React.FC<Props> = ({
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-sm mx-auto pt-4">
+            <div className={`grid grid-cols-1 ${isNativeApp ? 'sm:grid-cols-2' : ''} gap-3 max-w-sm mx-auto pt-4`}>
               <button
                 type="button"
                 onClick={() => setStep('YES_OKAY')}
@@ -265,14 +268,16 @@ export const BreathingCuesModal: React.FC<Props> = ({
                 <Check className="w-4 h-4" />
                 Yes, I am okay
               </button>
-              <button
-                type="button"
-                onClick={() => setStep('NO_HELP')}
-                className="py-3.5 px-4 bg-red-600 hover:bg-red-700 text-white text-xs font-black rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5 shadow-red-600/20 border border-red-500/20"
-              >
-                <ShieldAlert className="w-4 h-4" />
-                No, I need support
-              </button>
+              {isNativeApp && (
+                <button
+                  type="button"
+                  onClick={() => setStep('NO_HELP')}
+                  className="py-3.5 px-4 bg-red-600 hover:bg-red-700 text-white text-xs font-black rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5 shadow-red-600/20 border border-red-500/20"
+                >
+                  <ShieldAlert className="w-4 h-4" />
+                  No, I need support
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -301,7 +306,7 @@ export const BreathingCuesModal: React.FC<Props> = ({
           </div>
         )}
 
-        {step === 'NO_HELP' && (
+        {isNativeApp && step === 'NO_HELP' && (
           <div className="space-y-6 py-4 text-left animate-in fade-in zoom-in-95 duration-300">
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Let's Connect You</h2>

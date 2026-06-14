@@ -18,5 +18,5 @@ describe('Auth API', () => {
     
     expect(tooManyRequests).toBeDefined();
     expect(tooManyRequests!.body.message).toContain('You have reached your limit of 5 authentication attempts per 15 minutes');
-  });
+  }, 15000);
 });

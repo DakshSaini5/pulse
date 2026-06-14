@@ -2,6 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { X, MapPin, PhoneCall, ShieldAlert } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { isNativeApp } from '../../core/utils/platform';
 
 interface Props {
   isOpen: boolean;
@@ -67,7 +68,7 @@ export const NeedHelpModal: React.FC<Props> = ({ isOpen, onClose }) => {
             <div 
               onClick={() => {
                 onClose();
-                navigate('/saved-hospitals?emergency_call=true');
+                navigate('/saved?emergency_call=true');
               }}
               className="p-5 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/30 dark:bg-emerald-950/10 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 hover:border-emerald-300 dark:hover:border-emerald-900/60 transition-all duration-300 cursor-pointer flex flex-col justify-between h-40 group relative overflow-hidden"
             >
@@ -78,7 +79,9 @@ export const NeedHelpModal: React.FC<Props> = ({ isOpen, onClose }) => {
               <div>
                 <h3 className="font-bold text-gray-900 dark:text-white text-base">Emergency Call</h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-snug">
-                  Quick-dial your saved care lists or dial national medical emergency helplines immediately.
+                  {isNativeApp 
+                    ? "Dial the personal emergency contact number you filled in your profile immediately."
+                    : "Quick-dial nearby hospitals or national medical emergency helplines immediately."}
                 </p>
               </div>
             </div>

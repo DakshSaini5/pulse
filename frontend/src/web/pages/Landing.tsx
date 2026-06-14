@@ -247,7 +247,6 @@ export const Landing: React.FC = () => {
               <ActivityIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               Need Help?
             </button>
-            {Capacitor.isNativePlatform() && (
               <button 
                 onClick={() => setShowPanicModal(true)}
                 className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold rounded-xl shadow-md shadow-red-600/20 transition-all active:scale-95 flex items-center gap-2 border border-red-500/10"
@@ -255,7 +254,6 @@ export const Landing: React.FC = () => {
                 <ShieldAlert className="w-4 h-4" />
                 PANIC
               </button>
-            )}
           </div>
         </div>
 
