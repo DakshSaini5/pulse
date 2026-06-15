@@ -327,8 +327,7 @@ export function TrendsScreen({
         <div className="bg-secondary rounded-2xl border border-primary/20 p-4 flex items-start gap-3">
           <Info className="size-4 text-primary shrink-0 mt-0.5" />
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Reference parameters are based on standard clinical guidelines. Always consult your doctor
-            for a personalized interpretation of your results.
+            <strong className="text-foreground">Disclaimer:</strong> Pulse provides informational insights based on your records. It is not a substitute for professional medical advice, diagnosis, or treatment. Always consult a doctor before making health decisions.
           </p>
         </div>
       </div>

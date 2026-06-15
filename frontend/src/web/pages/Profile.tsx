@@ -4,7 +4,7 @@ import { useAuth } from '@core/context/AuthContext';
 import { User, Mail, Shield, Calendar, Activity, FileText, Lock, Save, Trash2, AlertTriangle, Key } from 'lucide-react';
 import EmergencyContactModal from '../components/EmergencyContactModal';
 import toast from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 export const Profile: React.FC = () => {
   const { user, logout } = useAuth();
@@ -356,6 +356,13 @@ export const Profile: React.FC = () => {
               <Trash2 className="w-4 h-4" />
               Delete Account
             </button>
+
+            <div className="mt-8 pt-4 border-t border-slate-200 dark:border-slate-700 flex justify-center">
+              <Link to="/privacy" className="text-xs text-slate-500 hover:text-primary transition-colors flex items-center gap-1 font-medium">
+                <Shield className="w-3.5 h-3.5" />
+                Privacy Policy
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -368,8 +375,8 @@ export const Profile: React.FC = () => {
               <AlertTriangle className="w-6 h-6" />
             </div>
             <h3 className="text-xl font-bold text-center text-danger mb-2 uppercase tracking-wider">Danger Zone</h3>
-            <p className="text-center text-slate-600 dark:text-slate-300 text-sm mb-6">
-              Once you delete your account, there is no going back. All your uploaded prescriptions, reports, and health trends will be permanently deleted.
+            <p className="text-center text-slate-600 dark:text-slate-300 text-sm mb-6 font-medium">
+              All health data, documents, and AI chat history will be permanently and irreversibly deleted.
             </p>
             <div className="flex gap-3">
               <button

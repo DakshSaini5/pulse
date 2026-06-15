@@ -100,20 +100,27 @@ export function LandingScreen({ onGetStarted, onDiscoverMap }: LandingScreenProp
         </div>
 
         {/* Trust Badges */}
-        <div className="px-5 pb-8 flex items-center justify-center gap-6">
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <ShieldCheck className="size-4 text-[var(--pulse-green)]" />
-            <span className="text-xs font-medium">HIPAA Safe</span>
+        <div className="px-5 pb-8 flex flex-col items-center justify-center gap-6">
+          <div className="flex items-center justify-center gap-6 w-full">
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <ShieldCheck className="size-4 text-[var(--pulse-green)]" />
+              <span className="text-xs font-medium">HIPAA Safe</span>
+            </div>
+            <div className="w-px h-4 bg-border" />
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Sparkles className="size-4 text-primary" />
+              <span className="text-xs font-medium">Pulse AI</span>
+            </div>
+            <div className="w-px h-4 bg-border" />
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <MapPin className="size-4 text-destructive" />
+              <span className="text-xs font-medium">Live Data</span>
+            </div>
           </div>
-          <div className="w-px h-4 bg-border" />
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <Sparkles className="size-4 text-primary" />
-            <span className="text-xs font-medium">Pulse AI</span>
-          </div>
-          <div className="w-px h-4 bg-border" />
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <MapPin className="size-4 text-destructive" />
-            <span className="text-xs font-medium">Live Data</span>
+          <div className="mt-2 pt-6 border-t border-border/50 w-full text-center">
+            <p className="text-[10px] text-muted-foreground font-medium px-4">
+              Disclaimer: This app is not a medical device and does not diagnose, treat, or prevent any condition.
+            </p>
           </div>
         </div>
       </main>

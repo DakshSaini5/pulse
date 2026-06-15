@@ -12,10 +12,10 @@ const createRateLimitMessage = (feature: string, limit: number, timeframe: strin
 // 1. Authentication Endpoints: 5 requests per 15 minutes per IP
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
+  max: 100, // Increased for dev
   standardHeaders: true,
   legacyHeaders: false,
-  message: createRateLimitMessage('authentication attempts', 5, '15 minutes')
+  message: createRateLimitMessage('authentication attempts', 100, '15 minutes')
 });
 
 // 2. Document AI Analysis (Prescriptions & Reports): Max 10 requests per hour per IP

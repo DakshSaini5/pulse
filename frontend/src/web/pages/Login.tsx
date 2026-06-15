@@ -181,6 +181,9 @@ export const Login: React.FC = () => {
         </div>
 
         <div className="text-center pt-2">
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-2">
+            By continuing, you agree to our <Link to="/privacy" className="underline hover:text-slate-500 dark:hover:text-slate-400">Privacy Policy</Link>.
+          </p>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Don't have a login?{' '}
             <Link to="/register" className="text-primary hover:underline font-bold">Create Free Account</Link>

@@ -232,11 +232,12 @@ export const HospitalDetail: React.FC = () => {
               <textarea
                 value={reviewText}
                 onChange={(e) => setReviewText(e.target.value)}
-                placeholder="Share your patient experience..."
+                placeholder="Share your experience (minimum 10 characters)..."
                 rows={3}
                 required
-                className="w-full p-3 glass-input text-xs"
+                className="w-full h-24 bg-white dark:bg-[#151D2C] border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#1E60D5] resize-none"
               />
+              <p className="text-[10px] text-slate-500 mt-1">Your review will be visible to the public to help others find better care.</p>
 
               <button
                 type="submit"

@@ -37,65 +37,71 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
+import { ErrorBoundary } from '../core/components/ErrorBoundary';
+
 export const MobileApp: React.FC = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <ScrollToTop />
-        <AuthProvider>
-          <ThemeProvider>
-            <LocationProvider>
-              <Suspense fallback={<div />}>
-                <Routes>
-                  <Route path="/" element={<LandingScreen />} />
-                  <Route 
-                    path="/home" 
-                    element={
-                      <ProtectedRoute>
-                        <HomeScreen />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/discover" 
-                    element={
-                      <ProtectedRoute>
-                        <DiscoverScreen activeScreen="discover" />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/compare" 
-                    element={
-                      <ProtectedRoute>
-                        <HospitalCompareScreen />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/records" 
-                    element={
-                      <ProtectedRoute>
-                        <RecordsScreen activeScreen="records" />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/trends" 
-                    element={
-                      <ProtectedRoute>
-                        <TrendsScreen activeScreen="trends" />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </Suspense>
-            </LocationProvider>
-          </ThemeProvider>
-        </AuthProvider>
-      </Router>
-    </QueryClientProvider>
+    <div className="w-full h-full min-h-screen pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] bg-[#F8FAFC] dark:bg-[#0B0F19]">
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <Router>
+            <ScrollToTop />
+            <AuthProvider>
+              <ThemeProvider>
+                <LocationProvider>
+                  <Suspense fallback={<div className="flex-1 w-full h-full bg-[#F8FAFC] dark:bg-[#0B0F19]" />}>
+                    <Routes>
+                      <Route path="/" element={<LandingScreen />} />
+                      <Route 
+                        path="/home" 
+                        element={
+                          <ProtectedRoute>
+                            <HomeScreen />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/discover" 
+                        element={
+                          <ProtectedRoute>
+                            <DiscoverScreen activeScreen="discover" />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/compare" 
+                        element={
+                          <ProtectedRoute>
+                            <HospitalCompareScreen />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/records" 
+                        element={
+                          <ProtectedRoute>
+                            <RecordsScreen activeScreen="records" />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/trends" 
+                        element={
+                          <ProtectedRoute>
+                            <TrendsScreen activeScreen="trends" />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                  </Suspense>
+                </LocationProvider>
+              </ThemeProvider>
+            </AuthProvider>
+          </Router>
+        </QueryClientProvider>
+      </ErrorBoundary>
+    </div>
   );
 };
 

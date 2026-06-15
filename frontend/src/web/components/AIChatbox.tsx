@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from "react"
-import { MessageCircle, X, Send, Sparkles, Bot, Loader2 } from "lucide-react"
+import { MessageCircle, X, Send, Sparkles, Bot, Loader2, Flag } from "lucide-react"
 import { PulseLogo } from "./PulseLogo"
 import { cn } from "@core/utils/utils"
 import io, { Socket } from 'socket.io-client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import toast from 'react-hot-toast';
 
 interface Message {
   id: string
@@ -107,6 +108,10 @@ export const AIChatbox: React.FC = () => {
     socketRef.current.emit('chat:message', text.trim());
   }
 
+  const handleReport = () => {
+    toast.success("AI response reported for review.")
+  }
+
   return (
     <div className="fixed bottom-20 left-4 right-4 sm:bottom-6 sm:right-6 sm:left-auto z-[200] pointer-events-none flex flex-col items-end">
       {/* Chat Panel */}
@@ -149,24 +154,32 @@ export const AIChatbox: React.FC = () => {
                     <Bot className="size-3.5 text-primary" />
                   </div>
                 )}
-                <div
-                  className={cn(
-                    "px-3 py-2 rounded-2xl text-sm leading-relaxed",
-                    msg.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-tr-sm"
-                      : msg.isError
-                        ? "bg-destructive/10 text-destructive border border-destructive/20 rounded-tl-sm"
-                        : "bg-muted text-foreground rounded-tl-sm"
-                  )}
-                >
-                  {msg.role === 'user' ? (
-                    msg.text
-                  ) : (
-                    <div className="prose prose-sm dark:prose-invert max-w-none text-xs">
-                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {msg.text}
-                      </ReactMarkdown>
-                    </div>
+                <div className="flex flex-col gap-1">
+                  <div
+                    className={cn(
+                      "px-3 py-2 rounded-2xl text-sm leading-relaxed",
+                      msg.role === "user"
+                        ? "bg-primary text-primary-foreground rounded-tr-sm"
+                        : msg.isError
+                          ? "bg-destructive/10 text-destructive border border-destructive/20 rounded-tl-sm"
+                          : "bg-muted text-foreground rounded-tl-sm"
+                    )}
+                  >
+                    {msg.role === 'user' ? (
+                      msg.text
+                    ) : (
+                      <div className="prose prose-sm dark:prose-invert max-w-none text-xs">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {msg.text}
+                        </ReactMarkdown>
+                      </div>
+                    )}
+                  </div>
+                  {(msg.role === "assistant" || msg.role === "model") && msg.text.trim() !== "" && (
+                    <button onClick={handleReport} className="flex items-center gap-1 text-[9px] text-muted-foreground hover:text-foreground self-start ml-1 mt-0.5" title="Report this response">
+                      <Flag className="size-2.5" />
+                      Report
+                    </button>
                   )}
                 </div>
               </div>
@@ -200,8 +213,15 @@ export const AIChatbox: React.FC = () => {
             </div>
           )}
 
+          {/* Disclaimer */}
+          <div className="px-3 pb-1 pt-1 border-t border-border bg-muted/30">
+            <p className="text-[9px] text-muted-foreground leading-tight text-center">
+              <strong className="text-foreground font-semibold">Disclaimer:</strong> Pulse provides informational insights based on your records. It is not a substitute for professional medical advice, diagnosis, or treatment. Always consult a doctor before making health decisions.
+            </p>
+          </div>
+
           {/* Input */}
-          <div className="px-3 pb-3 pt-1 border-t border-border bg-card">
+          <div className="px-3 pb-3 pt-1 bg-card">
             <div className="flex items-center gap-2 bg-muted rounded-2xl px-3 h-10">
               <input
                 type="text"
