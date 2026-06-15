@@ -95,6 +95,15 @@ async function main() {
             }
           }
         ]
+      },
+      healthTrends: {
+        create: [
+          { markerName: 'HbA1c', value: 6.8, unit: '%', recordedAt: new Date(new Date().setMonth(new Date().getMonth() - 2)) },
+          { markerName: 'HbA1c', value: 7.0, unit: '%', recordedAt: new Date(new Date().setMonth(new Date().getMonth() - 1)) },
+          { markerName: 'HbA1c', value: 7.2, unit: '%', recordedAt: new Date() },
+          { markerName: 'Fasting Blood Glucose', value: 92, unit: 'mg/dL', recordedAt: new Date(new Date().setMonth(new Date().getMonth() - 2)) },
+          { markerName: 'Fasting Blood Glucose', value: 95, unit: 'mg/dL', recordedAt: new Date() }
+        ]
       }
     }
   });
