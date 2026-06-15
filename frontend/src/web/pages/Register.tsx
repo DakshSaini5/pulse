@@ -6,7 +6,7 @@ import { authAPI } from '@core/services/api';
 import { GoogleLogin } from '@react-oauth/google';
 import { Capacitor } from '@capacitor/core';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
-import { UserPlus, Mail, Lock, User, Phone, ShieldAlert } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, Phone, ShieldAlert, Eye, EyeOff } from 'lucide-react';
 import { PulseLogo } from '@web/components/PulseLogo';
 
 export const Register: React.FC = () => {
@@ -16,6 +16,7 @@ export const Register: React.FC = () => {
   const [email, setEmail] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'INPUT' | 'OTP'>('INPUT');
@@ -226,13 +227,21 @@ export const Register: React.FC = () => {
                   </span>
                   <input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-xs placeholder-slate-500 font-medium"
+                    className="w-full pl-10 pr-10 py-3 rounded-xl glass-input text-xs placeholder-slate-500 font-medium"
                     placeholder="Create a strong password"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 focus:outline-none"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
 
                 {password && (
