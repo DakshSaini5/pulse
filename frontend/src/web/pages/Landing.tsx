@@ -45,8 +45,8 @@ export const Landing: React.FC = () => {
       emergencyAPI.getContacts().then((data) => {
         setContacts(data);
         setContactsLoading(false);
-        // Show modal if new user (0 contacts) and hasn't skipped this session
-        if (data.length === 0 && !sessionStorage.getItem('pulse_skipped_emergency')) {
+        // Show modal if new user (0 contacts) and hasn't skipped this session (only on native app)
+        if (isNativeApp && data.length === 0 && !sessionStorage.getItem('pulse_skipped_emergency')) {
           setTimeout(() => {
             setShowEmergencyModal(true);
           }, 1500); // 1.5s delay to prevent flash during login redirect
