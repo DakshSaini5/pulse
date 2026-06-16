@@ -22,27 +22,48 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
+    const originalRequest = error.config as any;
+
     // Handle 401 Unauthorized globally
-    if (error.response?.status === 401) {
-      localStorage.removeItem('pulse_token');
-      localStorage.removeItem('pulse_user');
-      
-      // Prevent redirect loop if already on login/register
-      if (!window.location.pathname.match(/\/login|\/register/)) {
-        window.location.href = '/login?expired=true';
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      const refreshToken = localStorage.getItem('pulse_refresh_token');
+
+      if (refreshToken) {
+        try {
+          const res = await axios.post(`${api.defaults.baseURL}/api/auth/refresh`, { refreshToken });
+          if (res.data.token) {
+            localStorage.setItem('pulse_token', res.data.token);
+            originalRequest.headers.Authorization = `Bearer ${res.data.token}`;
+            return api(originalRequest);
+          }
+        } catch (refreshError) {
+          localStorage.removeItem('pulse_token');
+          localStorage.removeItem('pulse_refresh_token');
+          localStorage.removeItem('pulse_user');
+          if (!window.location.pathname.match(/\/login|\/register/)) {
+            window.location.href = '/login?expired=true';
+          }
+          return Promise.reject(refreshError);
+        }
+      } else {
+        localStorage.removeItem('pulse_token');
+        localStorage.removeItem('pulse_user');
+        if (!window.location.pathname.match(/\/login|\/register/)) {
+          window.location.href = '/login?expired=true';
+        }
       }
     }
     
     // Add simple retry logic for network errors (not 4xx errors)
-    const config = error.config as any;
-    if (!config || !config.retry) {
-      config.retry = 0;
+    if (!originalRequest || !originalRequest.retry) {
+      originalRequest.retry = 0;
     }
     
-    if (config.retry < 1 && (!error.response || error.response.status >= 500)) {
-      config.retry += 1;
+    if (originalRequest.retry < 1 && (!error.response || error.response.status >= 500)) {
+      originalRequest.retry += 1;
       return new Promise((resolve) => {
-        setTimeout(() => resolve(api(config)), 1000);
+        setTimeout(() => resolve(api(originalRequest)), 1000);
       });
     }
 
@@ -211,6 +232,7 @@ export const authAPI = {
     const res = await api.post('/api/auth/login', { identifier, password });
     if (res.data.token) {
       localStorage.setItem('pulse_token', res.data.token);
+      if (res.data.refreshToken) localStorage.setItem('pulse_refresh_token', res.data.refreshToken);
       localStorage.setItem('pulse_user', JSON.stringify(res.data.user));
     }
     return res.data;
@@ -223,6 +245,7 @@ export const authAPI = {
     const res = await api.post('/api/auth/register', { name, email, mobileNumber, password, code });
     if (res.data.token) {
       localStorage.setItem('pulse_token', res.data.token);
+      if (res.data.refreshToken) localStorage.setItem('pulse_refresh_token', res.data.refreshToken);
       localStorage.setItem('pulse_user', JSON.stringify(res.data.user));
     }
     return res.data;
@@ -231,6 +254,7 @@ export const authAPI = {
     const res = await api.post('/api/auth/google', { credential });
     if (res.data.token) {
       localStorage.setItem('pulse_token', res.data.token);
+      if (res.data.refreshToken) localStorage.setItem('pulse_refresh_token', res.data.refreshToken);
       localStorage.setItem('pulse_user', JSON.stringify(res.data.user));
     }
     return res.data;
@@ -260,6 +284,7 @@ export const authAPI = {
   },
   logout: () => {
     localStorage.removeItem('pulse_token');
+    localStorage.removeItem('pulse_refresh_token');
     localStorage.removeItem('pulse_user');
   },
   getCurrentUser: () => {

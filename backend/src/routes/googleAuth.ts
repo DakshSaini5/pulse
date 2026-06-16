@@ -95,11 +95,21 @@ router.post('/google', authLimiter, validate(googleAuthSchema), async (req: Requ
     const token = jwt.sign(
       { id: user.id, email: user.email, role: userRole },
       JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '1h' }
     );
+
+    const refreshToken = jwt.sign({ id: user.id }, JWT_SECRET, {
+      expiresIn: '30d',
+    });
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken }
+    });
 
     return res.json({
       token,
+      refreshToken,
       user: {
         id: user.id,
         name: user.name,

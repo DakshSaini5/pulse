@@ -165,11 +165,21 @@ router.post('/register', authLimiter, validate(registerSchema), async (req: Requ
     });
 
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
-      expiresIn: '7d',
+      expiresIn: '1h',
+    });
+
+    const refreshToken = jwt.sign({ id: user.id }, JWT_SECRET, {
+      expiresIn: '30d',
+    });
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken }
     });
 
     return res.status(201).json({
       token,
+      refreshToken,
       user: {
         id: user.id,
         name: user.name,
@@ -225,11 +235,21 @@ router.post('/login', authLimiter, validate(loginSchema), async (req: Request, r
     }
 
     const token = jwt.sign({ id: user.id, email: user.email, role: userRole }, JWT_SECRET, {
-      expiresIn: '7d',
+      expiresIn: '1h',
+    });
+
+    const refreshToken = jwt.sign({ id: user.id }, JWT_SECRET, {
+      expiresIn: '30d',
+    });
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken }
     });
 
     return res.json({
       token,
+      refreshToken,
       user: {
         id: user.id,
         name: user.name,
@@ -487,3 +507,42 @@ router.get('/me', authenticateToken, async (req: AuthenticatedRequest, res: Resp
 
 export default router;
 
+// POST /api/auth/refresh — Refresh access token using refresh token
+router.post('/refresh', authLimiter, async (req: Request, res: Response) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(401).json({ message: 'Refresh token is required.' });
+  }
+
+  try {
+    const decoded = jwt.verify(refreshToken, JWT_SECRET) as { id: string };
+    
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id }
+    });
+
+    if (!user || user.refreshToken !== refreshToken) {
+      return res.status(401).json({ message: 'Invalid or expired refresh token.' });
+    }
+
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
+      expiresIn: '1h',
+    });
+
+    return res.json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        mobileNumber: user.mobileNumber,
+        role: user.role,
+        avatar: user.avatar,
+      },
+    });
+  } catch (err) {
+    console.error('Refresh token error:', err);
+    return res.status(401).json({ message: 'Refresh token is invalid or expired.' });
+  }
+});
