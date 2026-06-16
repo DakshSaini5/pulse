@@ -215,7 +215,7 @@ export function DiscoverScreen({ onTabChange, onHospitalClick, showMap = false, 
                 <div className="flex items-center gap-2 mt-2">
                   <div className="flex items-center gap-1">
                     <Star className="size-3.5 text-[var(--pulse-amber)] fill-[var(--pulse-amber)]" />
-                    <span className="text-sm font-bold text-foreground">{hospital.rating || 0}</span>
+                    <span className="text-sm font-bold text-foreground">{hospital.rating ? hospital.rating.toFixed(1) : "0.0"}</span>
                   </div>
                   <Badge variant="outline" className="text-[10px] font-bold border-[var(--pulse-amber)]/40 text-[var(--pulse-amber)] bg-[color:oklch(0.97_0.04_75)]">
                     Score: {hospital.recommendationScore ? Math.round(hospital.recommendationScore * 100) : 0}%
