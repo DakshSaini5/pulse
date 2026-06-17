@@ -266,7 +266,7 @@ router.post('/login', authLimiter, validate(loginSchema), async (req: Request, r
 });
 
 // POST /api/auth/check-mobile (Check if mobile is already registered)
-router.post('/check-mobile', async (req: Request, res: Response) => {
+router.post('/check-mobile', authLimiter, async (req: Request, res: Response) => {
   const { mobileNumber } = req.body;
 
   if (!mobileNumber) {
@@ -302,7 +302,7 @@ router.post('/forgot-password/request-email', authLimiter, async (req: Request, 
       return res.status(404).json({ message: 'No account registered with this email address.' });
     }
 
-    if (email.toLowerCase() === 'admin@pulse.com') {
+    if (email.toLowerCase() === process.env.PRIMARY_ADMIN_EMAIL) {
       return res.status(403).json({ message: 'Password recovery is disabled for the administrator account.' });
     }
 

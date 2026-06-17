@@ -213,10 +213,9 @@ export const AIChatbox: React.FC = () => {
             </div>
           )}
 
-          {/* Disclaimer */}
           <div className="px-3 pb-1 pt-1 border-t border-border bg-muted/30">
             <p className="text-[9px] text-muted-foreground leading-tight text-center">
-              <strong className="text-foreground font-semibold">Disclaimer:</strong> Pulse provides informational insights based on your records. It is not a substitute for professional medical advice, diagnosis, or treatment. Always consult a doctor before making health decisions.
+              <strong className="text-foreground font-semibold">AI Recommendations Disclaimer:</strong> AI-generated recommendations are diagnostic in nature and must be correlated with the user’s overall conditions. All outputs must be validated with a licensed physician and should not be used for direct diagnosis or treatment purposes.
             </p>
           </div>
 

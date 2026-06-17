@@ -7,7 +7,7 @@ import { prisma } from '../db';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { performOCR } from '../services/ocr';
 import { parsePrescriptionWithGemini, enrichMedicinesWithGemini, checkDrugInteractionsWithGemini } from '../services/ai';
-import { documentAiLimiter, interactionsLimiter } from '../middleware/rateLimiter';
+import { documentAiLimiter, generalLimiter } from '../middleware/rateLimiter';
 import cloudinary from '../config/cloudinary';
 
 const router = Router();
@@ -69,7 +69,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
 });
 
 // GET /api/prescriptions/interactions (Guarded - check cross-prescription interactions)
-router.get('/interactions', authenticateToken, interactionsLimiter, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/interactions', authenticateToken, generalLimiter, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
   try {
     const analysisRecords = await prisma.prescriptionAnalysis.findMany({
@@ -186,8 +186,8 @@ router.post('/upload', authenticateToken, documentAiLimiter, upload.single('file
         data: {
           userId,
           feature: 'PRESCRIPTION_OCR',
-          tokensUsed: 150,
-          modelName: 'Tesseract.js OCR'
+          tokensUsed: ocr.tokensUsed || 150,
+          modelName: ocr.modelName || 'Tesseract.js OCR'
         }
       });
 

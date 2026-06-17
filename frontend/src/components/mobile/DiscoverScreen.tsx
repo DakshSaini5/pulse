@@ -245,6 +245,23 @@ export function DiscoverScreen({ onTabChange, onHospitalClick, showMap = false, 
               </div>
             </div>
           ))}
+
+          {!isLoading && hospitals.length > 0 && (
+            <div className="mt-2 p-4 bg-card border border-border rounded-2xl shadow-sm flex flex-col gap-3">
+              <div>
+                <strong className="text-[10px] font-bold text-foreground block mb-1">Ratings Disclaimer</strong>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                  Ratings shown are sourced from Google Reviews (public data). Pulse is not responsible for the accuracy of this information.
+                </p>
+              </div>
+              <div className="border-t border-border pt-3">
+                <strong className="text-[10px] font-bold text-foreground block mb-1">Hospital/Clinic Comparison Disclaimer</strong>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                  Information is based on publicly available data. Users should contact the hospital/clinic directly for the latest and most accurate details.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>

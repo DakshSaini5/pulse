@@ -23,7 +23,7 @@ describe('Reports API', () => {
   it('should block rapid AI document verification via rate limiter', async () => {
     const promises = [];
     // Rate limit is 10 requests per hour
-    for (let i = 0; i < 11; i++) {
+    for (let i = 0; i < 16; i++) {
       promises.push(
         request(app)
           .post('/api/reports/test-id/verify')
@@ -35,6 +35,6 @@ describe('Reports API', () => {
     const tooManyRequests = responses.find(r => r.status === 429);
     
     expect(tooManyRequests).toBeDefined();
-    expect(tooManyRequests!.body.message).toContain('You have reached your limit of 10 document analysis requests per 1 hour');
+    expect(tooManyRequests!.body.error).toContain('You have 0 document scans left. Please try again next hour.');
   });
 });

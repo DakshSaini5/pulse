@@ -39,12 +39,10 @@ app.set('trust proxy', 1);
 // Setup security firewalls & middlewares
 const allowedOrigins = [
   process.env.FRONTEND_URL,
+  process.env.FRONTEND_DASHBOARD_URL,
   'https://pulsehealthcare.in',
   'https://www.pulsehealthcare.in',
   'https://pulse-bice-beta.vercel.app', // Actual Vercel domain
-  'http://localhost:3000',
-  'http://localhost:5173',
-  'http://localhost',
   'capacitor://localhost',
 ].filter(Boolean) as string[];
 

@@ -8,6 +8,8 @@ import { Worker } from 'worker_threads';
 export interface OCRResult {
   text: string;
   confidence: number;
+  modelName?: string;
+  tokensUsed?: number;
 }
 
 let cachedGenAI: GoogleGenerativeAI | null = null;
@@ -101,14 +103,19 @@ export const performOCR = async (filePath: string): Promise<OCRResult> => {
       console.log(`[OCR] Extracted using model: ${modelName}`);
       let finalText = result.response.text().trim();
 
+      const usage = result.response?.usageMetadata;
+      const tokensUsed = usage ? (usage.promptTokenCount || 0) + (usage.candidatesTokenCount || 0) : 0;
+
       // Strip markdown code fences if present
       finalText = finalText.replace(/^```(?:text)?\s*/i, '').replace(/\s*```$/i, '');
 
-      console.log(`Gemini OCR completed successfully (${finalText.length} chars extracted).`);
+      console.log(`Gemini OCR completed successfully (${finalText.length} chars extracted, ${tokensUsed} tokens).`);
 
       return {
         text: finalText,
-        confidence: 99.5
+        confidence: 99.5,
+        modelName,
+        tokensUsed
       };
     } catch (err) {
       console.warn('Gemini OCR failed or quota exceeded. Trying local Tesseract OCR fallback:', err);
@@ -134,7 +141,9 @@ export const performOCR = async (filePath: string): Promise<OCRResult> => {
       console.log(`[Tesseract OCR] Successfully extracted real text (${tesseractText.length} characters)`);
       return {
         text: tesseractText,
-        confidence: 75.0
+        confidence: 75.0,
+        modelName: 'Tesseract.js OCR',
+        tokensUsed: 0
       };
     } else {
       throw new Error('Tesseract OCR extracted empty or insufficient text.');

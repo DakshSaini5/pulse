@@ -4,9 +4,9 @@ import { getWorkingModelName } from './gemini';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../db'; // FIX: Use shared singleton instead of new PrismaClient()
 
-// Per-socket rate limiting: max 10 messages per 60 seconds
-const RATE_LIMIT_MAX = 10;
-const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+// Per-socket rate limiting: max 40 messages per 15 minutes
+const RATE_LIMIT_MAX = 40;
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 
 export const setupChatSocket = (io: Server) => {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -144,7 +144,7 @@ ${medicalHistoryContext}` }],
 
       if (messageTimestamps.length >= RATE_LIMIT_MAX) {
         socket.emit('chat:response', {
-          text: '⚠️ You are sending messages too quickly. Please wait a moment before sending another message (limit: 10 messages per minute).',
+          text: 'You have 0 chat attempts left for this window. Please wait 15 minutes before sending more messages.',
           isError: true
         });
         return;

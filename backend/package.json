@@ -17,7 +17,7 @@
     "pbf:download": "ts-node src/scripts/download-pbf.ts"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.21.0",
+    "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^5.10.0",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^1.41.3",
@@ -54,6 +54,7 @@
     "@types/supertest": "^7.2.0",
     "jest": "^30.4.2",
     "prisma": "^5.10.0",
+    "socket.io-client": "^4.8.3",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.11",
     "ts-node": "^10.9.2",

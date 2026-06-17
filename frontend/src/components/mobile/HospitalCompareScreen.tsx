@@ -170,6 +170,13 @@ export function HospitalCompareScreen({ onTabChange, activeScreen, onNavigate, o
                 </div>
               ))}
             </div>
+
+            <div className="mt-4 p-4 bg-card border border-border rounded-2xl shadow-sm">
+              <strong className="text-[10px] font-bold text-foreground block mb-1">Hospital/Clinic Comparison Disclaimer</strong>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                Information is based on publicly available data. Users should contact the hospital/clinic directly for the latest and most accurate details.
+              </p>
+            </div>
           </div>
         )}
 

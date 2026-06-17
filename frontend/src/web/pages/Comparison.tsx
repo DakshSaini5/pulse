@@ -245,6 +245,13 @@ export const Comparison: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl">
+        <strong className="text-[10px] font-bold text-slate-900 dark:text-white block mb-1">Hospital/Clinic Comparison Disclaimer</strong>
+        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+          Information is based on publicly available data. Users should contact the hospital/clinic directly for the latest and most accurate details.
+        </p>
+      </div>
     </div>
   );
 };

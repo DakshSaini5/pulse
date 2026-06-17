@@ -40,7 +40,7 @@ router.post('/google', authLimiter, validate(googleAuthSchema), async (req: Requ
 
     const { email, name, picture, sub: googleId } = payload;
 
-    if (email && email.toLowerCase() === 'admin@pulse.com') {
+    if (email && email.toLowerCase() === process.env.PRIMARY_ADMIN_EMAIL) {
       return res.status(403).json({
         message: 'Google Sign-In is disabled for the administrator account. Please log in with password.'
       });

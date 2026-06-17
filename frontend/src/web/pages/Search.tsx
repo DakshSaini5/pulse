@@ -623,6 +623,24 @@ export const Search: React.FC = () => {
                   );
                 })
               )}
+
+              {/* Disclaimers */}
+              {!loading && hospitals.length > 0 && (
+                <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl flex flex-col gap-3">
+                  <div>
+                    <strong className="text-[10px] font-bold text-slate-900 dark:text-white block mb-1">Ratings Disclaimer</strong>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                      Ratings shown are sourced from Google Reviews (public data). Pulse is not responsible for the accuracy of this information.
+                    </p>
+                  </div>
+                  <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
+                    <strong className="text-[10px] font-bold text-slate-900 dark:text-white block mb-1">Hospital/Clinic Comparison Disclaimer</strong>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                      Information is based on publicly available data. Users should contact the hospital/clinic directly for the latest and most accurate details.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Right Side: Leaflet Map */}
