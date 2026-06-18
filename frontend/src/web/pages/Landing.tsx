@@ -446,8 +446,8 @@ export const Landing: React.FC = () => {
           </div>
           
           <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
-            Find the Right Care, <br/>
-            <span className="text-primary">Faster and Smarter.</span>
+            No Queue, <br/>
+            <span className="text-primary">For Your Cure.</span>
           </h1>
           
           <p className="text-base sm:text-lg md:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto font-light leading-relaxed">

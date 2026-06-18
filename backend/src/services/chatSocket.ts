@@ -54,7 +54,7 @@ export const setupChatSocket = (io: Server) => {
 
         if (user) {
           medicalHistoryContext += `\n\n--- PATIENT MEDICAL HISTORY (FOR YOUR INTERNAL CONTEXT) ---\n`;
-          medicalHistoryContext += `Patient Name: ${user.name}\n\n`;
+          medicalHistoryContext += `Patient Name: [ANONYMIZED]\n\n`;
 
           const reports = user.medicalReports.filter(r => r.summary || r.values.length > 0);
           if (reports.length > 0) {
@@ -178,7 +178,7 @@ ${medicalHistoryContext}` }],
         socket.emit('chat:response:end', { text: fullText });
 
       } catch (error: any) {
-        console.error('[Socket.io] Chat Error:', error);
+        console.error('[Socket.io] Chat Error:', error instanceof Error ? error.message : 'Unknown error');
         
         // Re-initialize chat session to clear corrupted history (e.g. alternating roles rule)
         getWorkingModelName(genAI!).then((modelName) => {

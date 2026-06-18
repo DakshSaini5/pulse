@@ -118,7 +118,7 @@ export const performOCR = async (filePath: string): Promise<OCRResult> => {
         tokensUsed
       };
     } catch (err) {
-      console.warn('Gemini OCR failed or quota exceeded. Trying local Tesseract OCR fallback:', err);
+      console.warn('Gemini OCR failed or quota exceeded. Trying local Tesseract OCR fallback:', err instanceof Error ? err.message : 'Unknown error');
     }
   } else {
     console.warn("Gemini API Key missing. Trying local Tesseract OCR fallback.");
@@ -149,7 +149,7 @@ export const performOCR = async (filePath: string): Promise<OCRResult> => {
       throw new Error('Tesseract OCR extracted empty or insufficient text.');
     }
   } catch (tesseractErr) {
-    console.error('Local Tesseract OCR fallback failed:', tesseractErr);
+    console.error('Local Tesseract OCR fallback failed:', tesseractErr instanceof Error ? tesseractErr.message : 'Unknown error');
     throw new Error('Both AI and Local OCR failed to read this document. If this is a PDF, please take a screenshot and upload the Image (JPG/PNG) instead!');
   }
 };

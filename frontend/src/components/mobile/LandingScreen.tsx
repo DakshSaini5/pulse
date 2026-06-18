@@ -38,8 +38,8 @@ export function LandingScreen({ onGetStarted, onDiscoverMap }: LandingScreenProp
           </div>
 
           <h1 className="text-[2.4rem] font-extrabold leading-[1.1] text-foreground mb-4 text-balance">
-            Find the Right Care,{" "}
-            <span className="text-primary">Faster and Smarter.</span>
+            No Queue,{" "}
+            <span className="text-primary">For Your Cure.</span>
           </h1>
 
           <p className="text-base text-muted-foreground leading-relaxed mb-8 text-pretty">

@@ -64,7 +64,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
       },
     });
   } catch (err) {
-    console.error(err);
+    console.error('Error:', err instanceof Error ? err.message : 'Unknown error');
     return res.status(500).json({ message: 'Error loading medical reports.' });
   }
 });
@@ -102,7 +102,7 @@ router.get('/risk-assessment', authenticateToken, riskScoreLimiter, async (req: 
       biomarkersAnalyzed: reportValues.length
     });
   } catch (err) {
-    console.error('Health risk assessment failed:', err);
+    console.error('Health risk assessment failed:', err instanceof Error ? err.message : 'Unknown error');
     return res.status(500).json({ message: 'Error assessing health risk.' });
   }
 });
@@ -113,8 +113,8 @@ router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Res
   const { id } = req.params;
 
   try {
-    const report = await prisma.medicalReport.findUnique({
-      where: { id },
+    const report = await prisma.medicalReport.findFirst({
+      where: { id, userId },
       include: {
         ocrResult: true,
         values: true,
@@ -123,13 +123,13 @@ router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Res
       },
     });
 
-    if (!report || report.userId !== userId) {
+    if (!report) {
       return res.status(404).json({ message: 'Medical report file not found.' });
     }
 
     return res.json(report);
   } catch (err) {
-    console.error(err);
+    console.error('Error:', err instanceof Error ? err.message : 'Unknown error');
     return res.status(500).json({ message: 'Error loading report metrics.' });
   }
 });
@@ -207,7 +207,7 @@ router.post('/upload', authenticateToken, documentAiLimiter, upload.single('file
 
     return res.status(201).json(report);
   } catch (err) {
-    console.error('Report upload failed:', err);
+    console.error('Report upload failed:', err instanceof Error ? err.message : 'Unknown error');
     return res.status(500).json({ message: 'Error parsing document character sets.' });
   }
 });
@@ -219,12 +219,12 @@ router.post('/:id/verify', authenticateToken, documentAiLimiter, async (req: Aut
   const { verifiedData } = req.body;
 
   try {
-    const report = await prisma.medicalReport.findUnique({
-      where: { id },
+    const report = await prisma.medicalReport.findFirst({
+      where: { id, userId },
       include: { ocrResult: true }
     });
 
-    if (!report || report.userId !== userId) {
+    if (!report) {
       return res.status(404).json({ message: 'Report record not found.' });
     }
 
@@ -362,7 +362,7 @@ router.post('/:id/verify', authenticateToken, documentAiLimiter, async (req: Aut
 
     return res.json(updated);
   } catch (err) {
-    console.error('Verification failed:', err);
+    console.error('Verification failed:', err instanceof Error ? err.message : 'Unknown error');
     return res.status(500).json({ message: 'Error processing Gemini structured report.' });
   }
 });
@@ -373,8 +373,8 @@ router.delete('/:id', authenticateToken, async (req: AuthenticatedRequest, res: 
   const { id } = req.params;
 
   try {
-    const report = await prisma.medicalReport.findUnique({ where: { id } });
-    if (!report || report.userId !== userId) {
+    const report = await prisma.medicalReport.findFirst({ where: { id, userId } });
+    if (!report) {
       return res.status(404).json({ message: 'Report not found.' });
     }
 
@@ -387,7 +387,7 @@ router.delete('/:id', authenticateToken, async (req: AuthenticatedRequest, res: 
 
     return res.json({ message: 'Medical report deleted successfully.' });
   } catch (err) {
-    console.error('Delete report failed:', err);
+    console.error('Delete report failed:', err instanceof Error ? err.message : 'Unknown error');
     return res.status(500).json({ message: 'Failed to delete report.' });
   }
 });

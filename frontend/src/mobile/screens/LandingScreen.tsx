@@ -37,8 +37,8 @@ export function LandingScreen({ onGetStarted, onDiscoverMap }: LandingScreenProp
 
           {/* Headline */}
           <h1 className="text-[2.6rem] font-extrabold leading-[1.1] text-foreground mb-5 text-balance relative z-10">
-            Find the Right Care,{" "}
-            <span className="text-primary block mt-1">Faster and Smarter.</span>
+            No Queue,{" "}
+            <span className="text-primary block mt-1">For Your Cure.</span>
           </h1>
 
           {/* Subtext */}

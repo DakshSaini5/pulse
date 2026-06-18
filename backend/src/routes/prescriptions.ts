@@ -63,7 +63,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
       },
     });
   } catch (err) {
-    console.error(err);
+    console.error('Error:', err instanceof Error ? err.message : 'Unknown error');
     return res.status(500).json({ message: 'Error retrieving prescriptions.' });
   }
 });
@@ -104,7 +104,7 @@ router.get('/interactions', authenticateToken, generalLimiter, async (req: Authe
       medicinesChecked: uniqueMedicines.length
     });
   } catch (err) {
-    console.error('Interaction check failed:', err);
+    console.error('Interaction check failed:', err instanceof Error ? err.message : 'Unknown error');
     return res.status(500).json({ message: 'Error analyzing drug interactions.' });
   }
 });
@@ -115,21 +115,21 @@ router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Res
   const { id } = req.params;
 
   try {
-    const item = await prisma.prescription.findUnique({
-      where: { id },
+    const item = await prisma.prescription.findFirst({
+      where: { id, userId },
       include: {
         ocrResult: true,
         prescriptionAnalysis: true,
       },
     });
 
-    if (!item || item.userId !== userId) {
+    if (!item) {
       return res.status(404).json({ message: 'Prescription file not found.' });
     }
 
     return res.json(item);
   } catch (err) {
-    console.error(err);
+    console.error('Error:', err instanceof Error ? err.message : 'Unknown error');
     return res.status(500).json({ message: 'Error loading prescription data.' });
   }
 });
@@ -199,7 +199,7 @@ router.post('/upload', authenticateToken, documentAiLimiter, upload.single('file
       }
     }
   } catch (err) {
-    console.error('Upload & OCR failed:', err);
+    console.error('Upload & OCR failed:', err instanceof Error ? err.message : 'Unknown error');
     return res.status(500).json({ message: 'Error processing Tesseract OCR extraction.' });
   }
 });
@@ -211,12 +211,12 @@ router.post('/:id/verify', authenticateToken, documentAiLimiter, async (req: Aut
   const { verifiedData } = req.body; // Can contain corrected manual fields or updated raw text
 
   try {
-    const pres = await prisma.prescription.findUnique({
-      where: { id },
+    const pres = await prisma.prescription.findFirst({
+      where: { id, userId },
       include: { ocrResult: true }
     });
 
-    if (!pres || pres.userId !== userId) {
+    if (!pres) {
       return res.status(404).json({ message: 'Prescription record not found.' });
     }
 
@@ -301,7 +301,7 @@ router.post('/:id/verify', authenticateToken, documentAiLimiter, async (req: Aut
 
     return res.json(updated);
   } catch (err) {
-    console.error('Verification failed:', err);
+    console.error('Verification failed:', err instanceof Error ? err.message : 'Unknown error');
     return res.status(500).json({ message: 'Error processing Gemini structured parameters.' });
   }
 });
@@ -312,8 +312,8 @@ router.delete('/:id', authenticateToken, async (req: AuthenticatedRequest, res: 
   const { id } = req.params;
 
   try {
-    const item = await prisma.prescription.findUnique({ where: { id } });
-    if (!item || item.userId !== userId) {
+    const item = await prisma.prescription.findFirst({ where: { id, userId } });
+    if (!item) {
       return res.status(404).json({ message: 'Prescription not found.' });
     }
 
@@ -324,7 +324,7 @@ router.delete('/:id', authenticateToken, async (req: AuthenticatedRequest, res: 
 
     return res.json({ message: 'Prescription deleted successfully.' });
   } catch (err) {
-    console.error('Delete prescription failed:', err);
+    console.error('Delete prescription failed:', err instanceof Error ? err.message : 'Unknown error');
     return res.status(500).json({ message: 'Failed to delete prescription.' });
   }
 });

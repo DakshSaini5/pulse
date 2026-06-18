@@ -44,7 +44,7 @@ const safeParseJSON = (text: string): any => {
   try {
     return JSON.parse(cleanJson);
   } catch (err) {
-    console.error('[AI] Failed to parse Gemini JSON response:', cleanJson.substring(0, 200));
+    console.error('[AI] Failed to parse Gemini JSON response. Length:', cleanJson.length);
     return null;
   }
 };
@@ -255,7 +255,7 @@ export const parsePrescriptionWithGemini = async (rawText: string) => {
     
     return { result: parsed, tokensUsed: tokenUsage.totalTokens };
   } catch (err) {
-    console.error('Gemini API call failed. Using simulator fallback.', err);
+    console.error('Gemini API call failed. Using simulator fallback.', err instanceof Error ? err.message : 'Unknown error');
     recordFailure();
     throw new Error('AI Engine is currently unavailable due to API rate limits. Please try again later.');
   }
@@ -340,7 +340,7 @@ export const enrichMedicinesWithGemini = async (medicines: Array<{ name: string;
     
     return { medicines: parsed.medicines, tokensUsed: tokenUsage.totalTokens };
   } catch (err) {
-    console.error('Gemini drug enrichment failed. Falling back to default descriptions.', err);
+    console.error('Gemini drug enrichment failed. Falling back to default descriptions.', err instanceof Error ? err.message : 'Unknown error');
     recordFailure();
     return {
       medicines: medicines.map(m => ({
@@ -434,7 +434,7 @@ export const parseMedicalReportWithGemini = async (rawText: string, reportType: 
     
     return { result: parsed, tokensUsed: tokenUsage.totalTokens };
   } catch (err) {
-    console.error('Gemini API call failed. Using simulator fallback.', err);
+    console.error('Gemini API call failed. Using simulator fallback.', err instanceof Error ? err.message : 'Unknown error');
     recordFailure();
     throw new Error('AI Engine is currently unavailable due to API rate limits. Please try again later.');
   }
@@ -479,7 +479,7 @@ export const checkDrugInteractionsWithGemini = async (medicinesList: string[]) =
       tokensUsed: extractTokenUsage(result).totalTokens
     };
   } catch (err) {
-    console.error('Drug interaction check failed.', err);
+    console.error('Drug interaction check failed.', err instanceof Error ? err.message : 'Unknown error');
     return { interactions: "Could not analyze interactions at this time.", severity: "UNKNOWN", tokensUsed: 0 };
   }
 };
@@ -524,7 +524,7 @@ export const assessHealthRiskWithGemini = async (biomarkers: any[]) => {
       tokensUsed: extractTokenUsage(result).totalTokens
     };
   } catch (err) {
-    console.error('Health risk assessment failed.', err);
+    console.error('Health risk assessment failed.', err instanceof Error ? err.message : 'Unknown error');
     return { score: 80, summary: "Could not calculate risk score.", tokensUsed: 0 };
   }
 };
