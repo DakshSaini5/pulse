@@ -9,6 +9,7 @@ import { Button } from "@web/components/ui/button"
 import { Badge } from "@web/components/ui/badge"
 import { PulseNav } from "./PulseNav"
 import { cn } from "@core/utils/utils"
+import { useUserLocation } from "@core/context/LocationContext"
 
 interface HomeScreenProps {
   onTabChange?: (tab: "discover" | "records" | "panic" | "trends" | "compare" | "more") => void
@@ -31,6 +32,7 @@ const services = [
 
 export function HomeScreen({ onTabChange, onServiceClick, activeScreen, onNavigate, onPanic }: HomeScreenProps) {
   const [searchQuery, setSearchQuery] = useState("")
+  const { label: locationLabel } = useUserLocation()
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -50,13 +52,13 @@ export function HomeScreen({ onTabChange, onServiceClick, activeScreen, onNaviga
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-2xl font-bold text-foreground">
-                Hi, Daksh Saini
+                Hi, there 👋
               </h2>
               <div className="flex items-center gap-1.5 mt-1.5">
                 <MapPin className="size-3.5 text-primary" />
                 <span className="text-xs text-muted-foreground">
                   Showing care services in{" "}
-                  <strong className="text-foreground">Delhi, India</strong>
+                  <strong className="text-foreground">{locationLabel || 'Your Location'}</strong>
                 </span>
                 <button className="text-xs font-medium text-primary border border-primary/30 rounded-full px-2 py-0.5 ml-1">
                   Change

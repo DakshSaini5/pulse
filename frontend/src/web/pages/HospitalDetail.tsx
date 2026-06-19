@@ -187,7 +187,16 @@ export const HospitalDetail: React.FC = () => {
                       <span className="text-slate-500 dark:text-slate-400 font-semibold">Consulting Hours</span>
                       <span className="text-slate-900 dark:text-white font-extrabold">
                         {(!spec.opdTimings || spec.opdTimings.includes('09:00 AM - 05:00 PM') || spec.opdTimings.includes('09:00 AM - 09:00 PM')) 
-                          ? 'Contact Facility' 
+                          ? (
+                              <a 
+                                href={`https://www.google.com/search?q=${encodeURIComponent(`${hospital.name} opd timings`)}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="hover:text-primary hover:underline transition-colors cursor-pointer"
+                              >
+                                Contact Facility
+                              </a>
+                            )
                           : spec.opdTimings}
                       </span>
                     </div>
@@ -196,7 +205,16 @@ export const HospitalDetail: React.FC = () => {
                       <span className="text-slate-900 dark:text-white font-extrabold">
                         {spec.averageCost > 0 
                           ? `₹${spec.averageCost}` 
-                          : 'Contact Hospital'}
+                          : (
+                              <a 
+                                href={`https://www.google.com/search?q=${encodeURIComponent(`${hospital.name} consultation fees`)}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="hover:text-primary hover:underline transition-colors cursor-pointer"
+                              >
+                                Contact Hospital
+                              </a>
+                            )}
                       </span>
                     </div>
                   </div>

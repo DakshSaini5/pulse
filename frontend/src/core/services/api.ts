@@ -1,13 +1,19 @@
 import axios, { AxiosError } from 'axios';
 import toast from 'react-hot-toast';
 
+const VITE_API_URL = import.meta.env.VITE_API_URL;
+if (!VITE_API_URL) {
+  throw new Error('[Pulse] VITE_API_URL is not set. All API calls will fail. Please add it to your .env file.');
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://pulse-production-f638.up.railway.app',
+  baseURL: VITE_API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
   timeout: 60000, // Increased to 60 seconds for large mobile uploads and OCR processing
 });
+
 
 // Automatic JWT Token Injection Middleware
 api.interceptors.request.use((config) => {

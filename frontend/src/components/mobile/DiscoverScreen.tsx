@@ -12,6 +12,7 @@ import { PulseNav } from "./PulseNav"
 import { cn } from "@/utils/utils"
 import { useQuery } from "@tanstack/react-query"
 import { hospitalAPI, Hospital } from "@/core/services/api"
+import { useUserLocation } from "@/core/context/LocationContext"
 
 interface DiscoverScreenProps {
   onTabChange?: (tab: "discover" | "records" | "panic" | "trends" | "compare" | "more") => void
@@ -32,6 +33,7 @@ export function DiscoverScreen({ onTabChange, onHospitalClick, showMap = false, 
   const [likedHospitals, setLikedHospitals] = useState<string[]>([])
   const [activeFilter, setActiveFilter] = useState("General")
   const [searchQuery, setSearchQuery] = useState("")
+  const { label: locationLabel } = useUserLocation()
 
   const { data: hospitals = [], isLoading } = useQuery({
     queryKey: ['hospitals', searchQuery, activeFilter, radius[0], hasER],
@@ -64,7 +66,7 @@ export function DiscoverScreen({ onTabChange, onHospitalClick, showMap = false, 
           <div className="flex items-center gap-3 bg-card border border-border rounded-2xl px-4 py-3 shadow-sm">
             <MapPin className="size-4 text-primary shrink-0" />
             <span className="text-sm text-muted-foreground flex-1">
-              Active Location: <strong className="text-foreground">Delhi, India</strong>
+              Active Location: <strong className="text-foreground">{locationLabel || 'Your Location'}</strong>
             </span>
             <button className="text-xs font-semibold text-primary border border-primary/30 rounded-full px-3 py-1">
               Change
@@ -236,7 +238,17 @@ export function DiscoverScreen({ onTabChange, onHospitalClick, showMap = false, 
                 <div className="flex items-center gap-1.5">
                   <div className={cn("size-2 rounded-full", hospital.workingHours ? "bg-[var(--pulse-green)]" : "bg-destructive")} />
                   <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                    {hospital.workingHours || "Contact Facility"}
+                    {hospital.workingHours || (
+                      <a 
+                        href={`https://www.google.com/search?q=${encodeURIComponent(`${hospital.name} opd timings`)}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="hover:text-primary hover:underline transition-colors cursor-pointer"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Contact Facility
+                      </a>
+                    )}
                   </span>
                 </div>
                 <button onClick={() => onHospitalClick?.(hospital.id)} className="flex items-center gap-1 text-xs font-bold text-primary">

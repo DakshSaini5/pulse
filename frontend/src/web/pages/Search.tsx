@@ -592,7 +592,17 @@ export const Search: React.FC = () => {
                                 <span className="text-slate-500 dark:text-slate-400 font-semibold">Consulting Hours</span>
                                 <span className="font-bold text-slate-900 dark:text-white">
                                   {(!matchedSpec.opdTimings || matchedSpec.opdTimings.includes('09:00 AM - 05:00 PM') || matchedSpec.opdTimings.includes('09:00 AM - 09:00 PM')) 
-                                    ? 'Contact Facility' 
+                                    ? (
+                                        <a 
+                                          href={`https://www.google.com/search?q=${encodeURIComponent(`${hosp.name} opd timings`)}`} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className="hover:text-primary hover:underline transition-colors cursor-pointer"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          Contact Facility
+                                        </a>
+                                      )
                                     : matchedSpec.opdTimings}
                                 </span>
                               </div>
@@ -601,7 +611,17 @@ export const Search: React.FC = () => {
                                 <span className="font-extrabold text-slate-900 dark:text-white">
                                   {matchedSpec.averageCost > 0 
                                     ? `₹${matchedSpec.averageCost}` 
-                                    : 'Contact Hospital'}
+                                    : (
+                                        <a 
+                                          href={`https://www.google.com/search?q=${encodeURIComponent(`${hosp.name} consultation fees`)}`} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className="hover:text-primary hover:underline transition-colors cursor-pointer"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          Contact Hospital
+                                        </a>
+                                      )}
                                 </span>
                               </div>
                             </div>

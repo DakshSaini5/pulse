@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { PulseNav } from "./PulseNav"
 import { cn } from "@/utils/utils"
 import { useAuth } from "@/core/context/AuthContext"
+import { useUserLocation } from "@/core/context/LocationContext"
 import { useQuery } from "@tanstack/react-query"
 import { emergencyAPI } from "@/core/services/api"
 
@@ -33,6 +34,7 @@ const services = [
 
 export function HomeScreen({ onTabChange, onServiceClick, activeScreen, onNavigate, onPanic }: HomeScreenProps) {
   const { user } = useAuth()
+  const { label: locationLabel } = useUserLocation()
   const [searchQuery, setSearchQuery] = useState("")
 
   const { data: contacts = [], isLoading: isLoadingContacts } = useQuery({
@@ -56,11 +58,11 @@ export function HomeScreen({ onTabChange, onServiceClick, activeScreen, onNaviga
 
         {/* Greeting */}
         <div className="px-5 pt-5 pb-2">
-          <h2 className="text-2xl font-bold text-foreground">Hi, Daksh Saini</h2>
+          <h2 className="text-2xl font-bold text-foreground">Hi, {user?.name?.split(' ')[0] || 'there'} 👋</h2>
           <div className="flex items-center gap-1.5 mt-1.5">
             <MapPin className="size-3.5 text-primary" />
             <span className="text-xs text-muted-foreground">
-              Showing care services in <strong className="text-foreground">Delhi, India</strong>
+              Showing care services in <strong className="text-foreground">{locationLabel || 'Your Location'}</strong>
             </span>
             <button className="text-xs font-medium text-primary border border-primary/30 rounded-full px-2 py-0.5 ml-1">
               Change

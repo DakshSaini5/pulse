@@ -10,12 +10,18 @@ coverage/
 build/
 dist/
 
-# Env files
+# Env files — root and all subdirectories
 .env
+.env.*
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+frontend/.env
+frontend/.env.*
+backend/.env
+backend/.env.*
+
 
 # Databases
 *.db

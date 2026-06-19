@@ -36,13 +36,22 @@ const PORT = process.env.PORT || 5000;
 // Required for rate limiting (x-forwarded-for) and HTTPS redirect (x-forwarded-proto) to work correctly
 app.set('trust proxy', 1);
 
+// Validate all required environment variables at startup — fail fast and loudly in production
+const REQUIRED_ENV_VARS = ['JWT_SECRET', 'DATABASE_URL', 'GEMINI_API_KEY', 'SENDER_EMAIL', 'RESEND_API_KEY'];
+if (process.env.NODE_ENV === 'production') {
+  const missing = REQUIRED_ENV_VARS.filter((key) => !process.env[key]);
+  if (missing.length > 0) {
+    console.error(`[FATAL] Missing required environment variables: ${missing.join(', ')}`);
+    process.exit(1);
+  }
+}
+
 // Setup security firewalls & middlewares
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   process.env.FRONTEND_DASHBOARD_URL,
   'https://pulsehealthcare.in',
   'https://www.pulsehealthcare.in',
-  'https://pulse-bice-beta.vercel.app', // Actual Vercel domain
   'capacitor://localhost',
 ].filter(Boolean) as string[];
 
@@ -53,8 +62,8 @@ app.use(cors({
       return callback(null, true);
     }
 
-    // In production, strictly enforce allowedOrigins
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+    // In production, strictly enforce allowedOrigins only — no wildcard subdomains
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -156,7 +165,8 @@ const io = new SocketIOServer(httpServer, {
       if (process.env.NODE_ENV === 'development') {
         return callback(null, true);
       }
-      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      // Strictly enforce allowedOrigins for Socket.IO in production — no wildcard subdomains
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error('Socket.IO CORS rejected'));

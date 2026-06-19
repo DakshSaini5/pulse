@@ -39,8 +39,12 @@ export function AIChatbox() {
     }
 
     const token = localStorage.getItem('pulse_token')
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
-    
+    const apiUrl = import.meta.env.VITE_API_URL
+    if (!apiUrl) {
+      console.error('[AIChatbox] VITE_API_URL is not set. Socket connection will not be established.')
+      return
+    }
+
     const newSocket = io(apiUrl, {
       auth: { token },
       transports: ['websocket', 'polling'] // Support fallback
