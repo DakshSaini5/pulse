@@ -28,6 +28,11 @@ export const AIChatbox: React.FC = () => {
   const bottomRef = useRef<HTMLDivElement>(null)
   const socketRef = useRef<Socket | null>(null);
 
+  // Drag state for mobile web
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const isDragging = useRef(false);
+  const dragStartPos = useRef({ x: 0, y: 0 });
+
   useEffect(() => {
     if (isOpen) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -112,12 +117,44 @@ export const AIChatbox: React.FC = () => {
     toast.success("AI response reported for review.")
   }
 
+  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    isDragging.current = false;
+    dragStartPos.current = { x: e.clientX - dragOffset.x, y: e.clientY - dragOffset.y };
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
+    
+    const deltaX = Math.abs(e.clientX - dragStartPos.current.x - dragOffset.x);
+    const deltaY = Math.abs(e.clientY - dragStartPos.current.y - dragOffset.y);
+    
+    if (!isDragging.current && (deltaX > 5 || deltaY > 5)) {
+      isDragging.current = true;
+    }
+    
+    if (isDragging.current) {
+      setDragOffset({
+        x: e.clientX - dragStartPos.current.x,
+        y: e.clientY - dragStartPos.current.y
+      });
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    if (!isDragging.current) {
+      setIsOpen((v) => !v);
+    }
+    setTimeout(() => { isDragging.current = false; }, 50);
+  };
+
   return (
     <div className="fixed bottom-20 left-4 right-4 sm:bottom-6 sm:right-6 sm:left-auto z-[200] pointer-events-none flex flex-col items-end">
       {/* Chat Panel */}
       {isOpen && (
-        <div className="absolute bottom-16 right-0 w-full sm:w-[350px] bg-card border border-border rounded-3xl shadow-2xl flex flex-col overflow-hidden z-[200] pointer-events-auto"
-          style={{ height: "480px", maxHeight: "80vh" }}
+        <div className="absolute bottom-16 right-0 w-full sm:w-[350px] bg-card border border-border rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden z-[200] pointer-events-auto transition-all"
+          style={{ height: "min(400px, 75vh)" }}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3.5 bg-primary">
@@ -248,14 +285,17 @@ export const AIChatbox: React.FC = () => {
 
       {/* FAB Toggle Button */}
       <button
-        onClick={() => setIsOpen((v) => !v)}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        style={{ transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`, touchAction: 'none' }}
         className={cn(
-          "size-14 rounded-full shadow-xl flex items-center justify-center transition-all active:scale-95 z-[200] pointer-events-auto",
-          isOpen ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground shadow-primary/30"
+          "size-12 sm:size-14 rounded-full shadow-xl flex items-center justify-center transition-all z-[200] pointer-events-auto",
+          isOpen ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground shadow-primary/30 cursor-grab active:cursor-grabbing"
         )}
         aria-label={isOpen ? "Close AI chat" : "Open AI chat"}
       >
-        {isOpen ? <X className="size-6" /> : <PulseLogo variant="icon" size={32} />}
+        {isOpen ? <X className="size-5 sm:size-6" /> : <PulseLogo variant="icon" size={28} className="sm:w-8 sm:h-8" />}
       </button>
     </div>
   )
