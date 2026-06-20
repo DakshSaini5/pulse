@@ -21,6 +21,11 @@ const ChatAssistant: React.FC = () => {
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Drag state for mobile web
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const isDragging = useRef(false);
+  const dragStartPos = useRef({ x: 0, y: 0 });
+
   // Auto-scroll to bottom
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -113,12 +118,50 @@ const ChatAssistant: React.FC = () => {
     setInput('');
   };
 
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    isDragging.current = false;
+    dragStartPos.current = { x: e.clientX - dragOffset.x, y: e.clientY - dragOffset.y };
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
+    
+    const deltaX = Math.abs(e.clientX - dragStartPos.current.x - dragOffset.x);
+    const deltaY = Math.abs(e.clientY - dragStartPos.current.y - dragOffset.y);
+    
+    if (!isDragging.current && (deltaX > 5 || deltaY > 5)) {
+      isDragging.current = true;
+    }
+    
+    if (isDragging.current) {
+      setDragOffset({
+        x: e.clientX - dragStartPos.current.x,
+        y: e.clientY - dragStartPos.current.y
+      });
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    if (!isDragging.current) {
+      setIsOpen(true);
+    }
+    setTimeout(() => { isDragging.current = false; }, 50);
+  };
+
   return (
     <div className="fixed bottom-20 left-4 right-4 sm:bottom-6 sm:right-6 sm:left-auto z-50 flex flex-col items-end pointer-events-none">
       {/* Floating Button with Label */}
       {!isOpen && (
-        <div className="flex items-center gap-3 pointer-events-auto cursor-pointer group animate-in slide-in-from-bottom-5 fade-in duration-500" onClick={() => setIsOpen(true)}>
-          <div className="bg-white px-4 py-2.5 rounded-2xl rounded-br-sm shadow-xl shadow-slate-200/50 border border-slate-200 text-sm font-bold text-slate-800 transition-transform group-hover:-translate-y-1 flex items-center gap-1.5">
+        <div 
+          className="flex items-center gap-3 pointer-events-auto cursor-grab active:cursor-grabbing group animate-in slide-in-from-bottom-5 fade-in duration-500" 
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          style={{ transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`, touchAction: 'none' }}
+        >
+          <div className="hidden sm:flex bg-white px-4 py-2.5 rounded-2xl rounded-br-sm shadow-xl shadow-slate-200/50 border border-slate-200 text-sm font-bold text-slate-800 transition-transform group-hover:-translate-y-1 items-center gap-1.5">
             Ask Pulse AI <span className="text-base leading-none">✨</span>
           </div>
           <button
@@ -131,7 +174,7 @@ const ChatAssistant: React.FC = () => {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="w-full sm:w-[400px] h-[450px] sm:h-[500px] max-h-[80vh] flex flex-col bg-[#0B0F19]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-blue-900/20 overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300 pointer-events-auto">
+        <div className="w-full sm:w-[400px] h-[380px] sm:h-[500px] max-h-[75vh] sm:max-h-[80vh] flex flex-col bg-[#0B0F19]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-blue-900/20 overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300 pointer-events-auto transition-all">
           
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/5">
