@@ -184,8 +184,8 @@ export const Privacy: React.FC = () => {
         {/* Contact */}
         <div className="text-center py-4 space-y-1">
           <p className="text-xs text-slate-400 dark:text-slate-500">Questions about this policy?</p>
-          <a href="mailto:support@pulse-health.app" className="text-sm font-bold text-primary hover:underline">
-            support@pulse-health.app
+          <a href="mailto:pulsehealthcare22@gmail.com" className="text-sm font-bold text-primary hover:underline">
+            pulsehealthcare22@gmail.com
           </a>
         </div>
 
