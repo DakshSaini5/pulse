@@ -41,7 +41,8 @@ export const setupChatSocket = (io: Server) => {
     }
 
     // Build context-aware medical history string
-    let medicalHistoryContext = "";
+    let systemInstructionContext = `You are 'Pulse', an AI triage assistant.\n\n`;
+    
     if (userId) {
       try {
         const user = await prisma.user.findUnique({
@@ -53,45 +54,69 @@ export const setupChatSocket = (io: Server) => {
         });
 
         if (user) {
-          medicalHistoryContext += `\n\n--- PATIENT MEDICAL HISTORY (FOR YOUR INTERNAL CONTEXT) ---\n`;
-          medicalHistoryContext += `Patient Name: [ANONYMIZED]\n\n`;
+          const age = (user as any).age;
+          const gender = (user as any).gender;
+          const weight = (user as any).weight;
+
+          if (age || gender || weight) {
+            systemInstructionContext += `Patient Profile:\n`;
+            if (age) systemInstructionContext += `- Age: ${age}\n`;
+            if (gender) systemInstructionContext += `- Gender: ${gender}\n`;
+            if (weight) systemInstructionContext += `- Weight: ${weight}\n`;
+            systemInstructionContext += `\n`;
+          }
 
           const reports = user.medicalReports.filter(r => r.summary || r.values.length > 0);
           if (reports.length > 0) {
-            medicalHistoryContext += `[Uploaded Medical Reports]:\n`;
+            systemInstructionContext += `[Uploaded Medical Reports]:\n`;
             reports.forEach(r => {
-              medicalHistoryContext += `- Report Type: ${r.reportType} (Date: ${r.reportDate.toISOString().split('T')[0]})\n`;
-              if (r.summary) medicalHistoryContext += `  Summary: ${r.summary.healthSummary}\n`;
+              systemInstructionContext += `- Report Type: ${r.reportType} (Date: ${r.reportDate.toISOString().split('T')[0]})\n`;
+              if (r.summary) systemInstructionContext += `  Summary: ${r.summary.healthSummary}\n`;
               const abnormals = r.values.filter(v => v.isAbnormal);
               if (abnormals.length > 0) {
-                medicalHistoryContext += `  Abnormalities detected: ${abnormals.map(a => `${a.key} (${a.value} ${a.unit})`).join(', ')}\n`;
+                systemInstructionContext += `  Abnormalities detected: ${abnormals.map(a => `${a.key} (${a.value} ${a.unit})`).join(', ')}\n`;
               }
             });
           }
 
           const prescriptions = user.prescriptions.filter(p => p.prescriptionAnalysis.length > 0);
           if (prescriptions.length > 0) {
-            medicalHistoryContext += `\n[Uploaded Prescriptions/Medications]:\n`;
+            systemInstructionContext += `\n[Uploaded Prescriptions/Medications]:\n`;
             prescriptions.forEach(p => {
-              medicalHistoryContext += `- Medication List (from ${p.createdAt.toISOString().split('T')[0]}):\n`;
+              systemInstructionContext += `- Medication List (from ${p.createdAt.toISOString().split('T')[0]}):\n`;
               p.prescriptionAnalysis.forEach(med => {
-                medicalHistoryContext += `  * ${med.medicineName}: ${med.dosage} (${med.simplifiedExplanation})\n`;
+                systemInstructionContext += `  * ${med.medicineName}: ${med.dosage} (${med.simplifiedExplanation})\n`;
               });
             });
           }
-          
-          medicalHistoryContext += `\nINSTRUCTIONS TO AI: Use the above patient history to provide highly contextualized answers. If they mention symptoms that correlate with their past history (e.g., headache correlating with sinus issues in a report), mention the connection. Treat them personally.\n`;
         }
       } catch (err) {
         console.error('[Socket.io] Failed to fetch medical history:', err);
       }
     }
 
-    if (genAI) {
-      getWorkingModelName(genAI).then((modelName) => {
-        console.log(`[Socket.io] Starting chat session with model: ${modelName} for user: ${userId || 'guest'}`);
-        const model = genAI!.getGenerativeModel({ 
+    systemInstructionContext += `
+YOUR STRICT RULES:
+
+You have NO prior knowledge of this patient unless they explicitly tell you or upload a document. DO NOT invent past medical history (e.g., do not assume they have had sinus infections).
+
+NEVER make a definitive diagnosis.
+
+If a user gives a vague symptom (like 'fever'), you MUST ask clarifying questions (e.g., 'How long have you had it?', 'What is your temperature?', 'Any other symptoms?').
+
+Always remind them gently that you are an AI, not a doctor.
+`;
+
+    // History array managed locally to persist across error resets
+    let chatHistory: any[] = [];
+
+    const initializeChatSession = async () => {
+      if (!genAI) return null;
+      try {
+        const modelName = await getWorkingModelName(genAI);
+        const model = genAI.getGenerativeModel({ 
           model: modelName,
+          systemInstruction: systemInstructionContext,
           safetySettings: [
             { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
             { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -100,35 +125,22 @@ export const setupChatSocket = (io: Server) => {
           ]
         });
         
-        chatSession = model.startChat({
-          history: [
-            {
-              role: 'user',
-              parts: [{ text: `You are PulseAI, a friendly, concise, and empathetic healthcare assistant.
-  
-CRITICAL RULES FOR YOUR RESPONSES:
-1. BE CONCISE AND CONVERSATIONAL: Do NOT write huge walls of text or long essays. Keep your answers short, friendly, and directly to the point.
-2. NO RIGID FORMATS: Do not use rigid templates like "Overview", "Key Points", unless the user explicitly asks for a detailed breakdown.
-3. USE FORMATTING SPARINGLY: Use bold text or short bullet points only when it genuinely helps readability.
-4. MEDICAL CONTEXT: You have access to the patient's medical history below. Use it to provide highly personalized answers, but do not sound like a robot reading a chart. Be human.
-5. NO DIAGNOSIS OR PRESCRIBING: You MUST NOT diagnose medical conditions or prescribe treatments. If a user asks for a diagnosis, gently remind them to consult a qualified doctor and only summarize the data present in their uploaded files.
-
----
-⚕️ *Always remember to add a tiny disclaimer at the end if you give medical advice, stating it is for educational purposes only.*
-
-${medicalHistoryContext}` }],
-            },
-            {
-              role: 'model',
-              parts: [{ text: "Understood! I will keep my answers short, friendly, and highly conversational. I will avoid dumping long paragraphs and will adapt my tone to be a helpful, personal medical assistant." }],
-            },
-          ],
+        return model.startChat({
+          history: chatHistory,
           generationConfig: {
             maxOutputTokens: 1000,
           },
         });
-      }).catch(err => {
-        console.error('[Socket.io] Failed to load working model name:', err);
+      } catch (err) {
+        console.error('[Socket.io] Failed to initialize model:', err);
+        return null;
+      }
+    };
+
+    if (genAI) {
+      console.log(`[Socket.io] Starting chat session for user: ${userId || 'guest'}`);
+      initializeChatSession().then(session => {
+        chatSession = session;
       });
     }
 
@@ -137,7 +149,6 @@ ${medicalHistoryContext}` }],
 
       // Rate limiting: sliding window of RATE_LIMIT_MAX messages per RATE_LIMIT_WINDOW_MS
       const now = Date.now();
-      // Remove timestamps outside the current window
       while (messageTimestamps.length > 0 && messageTimestamps[0] < now - RATE_LIMIT_WINDOW_MS) {
         messageTimestamps.shift();
       }
@@ -163,6 +174,7 @@ ${medicalHistoryContext}` }],
           return;
         }
 
+        chatHistory.push({ role: 'user', parts: [{ text: message }] });
         const result = await chatSession.sendMessageStream(message);
         
         const messageId = Date.now().toString();
@@ -175,38 +187,20 @@ ${medicalHistoryContext}` }],
           socket.emit('chat:response:chunk', { text: chunkText });
         }
         
+        chatHistory.push({ role: 'model', parts: [{ text: fullText }] });
         socket.emit('chat:response:end', { text: fullText });
 
       } catch (error: any) {
         console.error('[Socket.io] Chat Error:', error instanceof Error ? error.message : 'Unknown error');
         
-        // Re-initialize chat session to clear corrupted history (e.g. alternating roles rule)
-        getWorkingModelName(genAI!).then((modelName) => {
-          const model = genAI!.getGenerativeModel({ 
-            model: modelName,
-            safetySettings: [
-              { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-              { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-              { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-              { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
-            ]
-          });
-          chatSession = model.startChat({
-            history: [
-              { role: 'user', parts: [{ text: `You are PulseAI, a friendly, concise, and empathetic healthcare assistant.
-CRITICAL RULES FOR YOUR RESPONSES:
-1. BE CONCISE AND CONVERSATIONAL: Do NOT write huge walls of text or long essays. Keep your answers short, friendly, and directly to the point.
-2. NO RIGID FORMATS: Do not use rigid templates like "Overview", "Key Points", unless the user explicitly asks for a detailed breakdown.
-3. USE FORMATTING SPARINGLY: Use bold text or short bullet points only when it genuinely helps readability.
-4. MEDICAL CONTEXT: You have access to the patient's medical history below. Use it to provide highly personalized answers, but do not sound like a robot reading a chart. Be human.
-5. NO DIAGNOSIS OR PRESCRIBING: You MUST NOT diagnose medical conditions or prescribe treatments. If a user asks for a diagnosis, gently remind them to consult a qualified doctor and only summarize the data present in their uploaded files.
----
-⚕️ *Always remember to add a tiny disclaimer at the end if you give medical advice, stating it is for educational purposes only.*
-${medicalHistoryContext}` }] },
-              { role: 'model', parts: [{ text: "Understood! I will keep my answers short, friendly, and highly conversational." }] }
-            ],
-            generationConfig: { maxOutputTokens: 1000 },
-          });
+        // Re-initialize chat session to clear corrupted session state but keep history
+        // Remove the failed user message from history so it doesn't cause errors on next attempt
+        if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
+          chatHistory.pop(); 
+        }
+
+        initializeChatSession().then(session => {
+          chatSession = session;
         });
 
         socket.emit('chat:response', {

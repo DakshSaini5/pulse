@@ -24,6 +24,20 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 // Response interceptor for 401 and retry logic
 api.interceptors.response.use(
   (response) => response,
@@ -32,7 +46,20 @@ api.interceptors.response.use(
 
     // Handle 401 Unauthorized globally
     if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise(function(resolve, reject) {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
+
       const refreshToken = localStorage.getItem('pulse_refresh_token');
 
       if (refreshToken) {
@@ -40,17 +67,30 @@ api.interceptors.response.use(
           const res = await axios.post(`${api.defaults.baseURL}/api/auth/refresh`, { refreshToken });
           if (res.data.token) {
             localStorage.setItem('pulse_token', res.data.token);
+            if (res.data.user) {
+              localStorage.setItem('pulse_user', JSON.stringify(res.data.user));
+            }
+            api.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
             originalRequest.headers.Authorization = `Bearer ${res.data.token}`;
+            
+            processQueue(null, res.data.token);
             return api(originalRequest);
           }
-        } catch (refreshError) {
-          localStorage.removeItem('pulse_token');
-          localStorage.removeItem('pulse_refresh_token');
-          localStorage.removeItem('pulse_user');
-          if (!window.location.pathname.match(/\/login|\/register/)) {
-            window.location.href = '/login?expired=true';
+        } catch (refreshError: any) {
+          processQueue(refreshError, null);
+          
+          // Only hard-logout if the refresh token is truly rejected (401 or 403)
+          if (refreshError.response?.status === 401 || refreshError.response?.status === 403) {
+            localStorage.removeItem('pulse_token');
+            localStorage.removeItem('pulse_refresh_token');
+            localStorage.removeItem('pulse_user');
+            if (!window.location.pathname.match(/\/login|\/register/)) {
+              window.location.href = '/login?expired=true';
+            }
           }
           return Promise.reject(refreshError);
+        } finally {
+          isRefreshing = false;
         }
       } else {
         localStorage.removeItem('pulse_token');
@@ -58,6 +98,7 @@ api.interceptors.response.use(
         if (!window.location.pathname.match(/\/login|\/register/)) {
           window.location.href = '/login?expired=true';
         }
+        return Promise.reject(error);
       }
     }
     

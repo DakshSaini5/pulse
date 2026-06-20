@@ -105,9 +105,9 @@ export const Profile: React.FC = () => {
   const handleDeleteAccount = async () => {
     try {
       await userAPI.deleteAccount();
-      toast.success('Account deleted successfully');
       logout();
-      navigate('/');
+      toast.success('Account permanently deleted.');
+      navigate('/login');
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to delete account');
       setShowDeleteModal(false);
@@ -374,10 +374,16 @@ export const Profile: React.FC = () => {
             <div className="w-12 h-12 bg-danger/10 text-danger rounded-full flex items-center justify-center mb-4 mx-auto">
               <AlertTriangle className="w-6 h-6" />
             </div>
-            <h3 className="text-xl font-bold text-center text-danger mb-2 uppercase tracking-wider">Danger Zone</h3>
-            <p className="text-center text-slate-600 dark:text-slate-300 text-sm mb-6 font-medium">
-              All health data, documents, and AI chat history will be permanently and irreversibly deleted.
+            <h3 className="text-xl font-bold text-center text-danger mb-2 uppercase tracking-wider">Delete Your Account?</h3>
+            <p className="text-center text-slate-600 dark:text-slate-300 text-sm mb-3 font-medium">
+              Are you sure? <strong>This action is permanent and cannot be undone.</strong>
             </p>
+            <ul className="text-left text-xs text-slate-500 dark:text-slate-400 space-y-1.5 mb-5 bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+              <li className="flex items-center gap-2"><span className="text-red-500">✕</span> All personal data and contact information</li>
+              <li className="flex items-center gap-2"><span className="text-red-500">✕</span> All uploaded prescription images and medical reports</li>
+              <li className="flex items-center gap-2"><span className="text-red-500">✕</span> All AI chat history and health trend records</li>
+              <li className="flex items-center gap-2"><span className="text-red-500">✕</span> All emergency contacts and notifications</li>
+            </ul>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteModal(false)}
