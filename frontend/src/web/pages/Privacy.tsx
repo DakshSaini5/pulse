@@ -154,7 +154,7 @@ export const Privacy: React.FC = () => {
               <li>Click <strong className="text-red-600">"Delete Account"</strong> and confirm the permanent deletion.</li>
             </ol>
             <p className="text-xs text-slate-400 dark:text-slate-500 pt-1">
-              Alternatively, email us at <strong>support@pulse-health.app</strong> with the subject "Account Deletion Request" from your registered email address, and we will process your request within 30 days in accordance with GDPR and CCPA regulations.
+              Alternatively, email us at <strong>pulsehealthcare22@gmail.com</strong> with the subject "Account Deletion Request" from your registered email address, and we will process your request within 30 days in accordance with GDPR and CCPA regulations.
             </p>
           </div>
           <div className="flex justify-center pt-2">
