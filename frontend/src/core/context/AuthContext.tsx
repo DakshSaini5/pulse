@@ -29,19 +29,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const initAuth = async () => {
       const storedToken = localStorage.getItem('pulse_token');
-      if (storedToken) {
+      if (!storedToken) {
+        // No token at all — nothing to hydrate
+        setLoading(false);
+        return;
+      }
+
+      // --- Optimistic Hydration ---
+      // Instantly paint the UI with the cached user from localStorage (0ms).
+      // This eliminates the blank flash while we wait for a network round trip.
+      const cachedUser = localStorage.getItem('pulse_user');
+      if (cachedUser) {
         try {
-          // Actually verify the token with the backend
-          const userData = await authAPI.verifyToken();
-          setUser(userData);
-        } catch (err) {
-          // Token is invalid/expired
-          authAPI.logout();
+          setUser(JSON.parse(cachedUser));
+        } catch {
+          // Corrupt cache — clear and proceed to server verify
+          localStorage.removeItem('pulse_user');
         }
       }
+      // Unblock the UI immediately — dashboard renders now
       setLoading(false);
+
+      // --- Silent Background Verification ---
+      // Validate the token with the server in the background.
+      // If invalid/expired, silently log the user out.
+      try {
+        const freshUser = await authAPI.verifyToken();
+        setUser(freshUser); // Refresh with latest server data (e.g. updated name/role)
+      } catch {
+        // Token rejected by server — clear session and redirect to login
+        authAPI.logout();
+        setUser(null);
+      }
     };
-    
+
     initAuth();
   }, []);
 
