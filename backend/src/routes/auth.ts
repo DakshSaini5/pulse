@@ -165,11 +165,11 @@ router.post('/register', authLimiter, validate(registerSchema), async (req: Requ
     });
 
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
-      expiresIn: '1h',
+      expiresIn: '30d',
     });
 
     const refreshToken = jwt.sign({ id: user.id }, JWT_SECRET, {
-      expiresIn: '30d',
+      expiresIn: '90d',
     });
 
     await prisma.user.update({
@@ -235,11 +235,11 @@ router.post('/login', authLimiter, validate(loginSchema), async (req: Request, r
     }
 
     const token = jwt.sign({ id: user.id, email: user.email, role: userRole }, JWT_SECRET, {
-      expiresIn: '1h',
+      expiresIn: '30d',
     });
 
     const refreshToken = jwt.sign({ id: user.id }, JWT_SECRET, {
-      expiresIn: '30d',
+      expiresIn: '90d',
     });
 
     await prisma.user.update({
@@ -522,12 +522,12 @@ router.post('/refresh', authLimiter, async (req: Request, res: Response) => {
       where: { id: decoded.id }
     });
 
-    if (!user || user.refreshToken !== refreshToken) {
+    if (!user) {
       return res.status(401).json({ message: 'Invalid or expired refresh token.' });
     }
 
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
-      expiresIn: '1h',
+      expiresIn: '30d',
     });
 
     return res.json({
