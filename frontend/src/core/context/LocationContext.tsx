@@ -46,13 +46,18 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (!navigator.geolocation) {
           throw new Error('Geolocation not supported');
         }
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 5000,
-            maximumAge: 0,
-          });
-        });
+        const position = await Promise.race([
+          new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 5000,
+              maximumAge: 0,
+            });
+          }),
+          new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error('Location request timed out')), 5000)
+          )
+        ]);
         lat = position.coords.latitude;
         lng = position.coords.longitude;
       }
@@ -173,13 +178,18 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (!navigator.geolocation) {
           return false;
         }
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 5000,
-            maximumAge: 0,
-          });
-        });
+        const position = await Promise.race([
+          new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 5000,
+              maximumAge: 0,
+            });
+          }),
+          new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error('Location request timed out')), 5000)
+          )
+        ]);
         lat = position.coords.latitude;
         lng = position.coords.longitude;
       }
