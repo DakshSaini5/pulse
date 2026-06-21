@@ -82,6 +82,13 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       });
     } catch (error: any) {
       console.warn('GPS query failed or denied:', error.message);
+      
+      // BUG-FIX: If the user already has a valid cached location, do not wipe it out if the background refresh fails!
+      const existingSource = localStorage.getItem('pulse_location_source');
+      if (existingSource === 'gps' || existingSource === 'manual') {
+        return;
+      }
+
       localStorage.setItem('pulse_latitude', DEFAULT_LAT.toString());
       localStorage.setItem('pulse_longitude', DEFAULT_LNG.toString());
       localStorage.setItem('pulse_location_source', 'default');
