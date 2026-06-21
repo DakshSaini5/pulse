@@ -135,9 +135,18 @@ const ChatAssistant: React.FC = () => {
     }
     
     if (isDragging.current) {
+      let nextX = e.clientX - dragStartPos.current.x;
+      let nextY = e.clientY - dragStartPos.current.y;
+      
+      // Keep it strictly within the screen
+      const maxLeft = -(typeof window !== 'undefined' ? window.innerWidth - 80 : 300);
+      const maxRight = 10;
+      const maxUp = -(typeof window !== 'undefined' ? window.innerHeight - 120 : 600);
+      const maxDown = 80;
+
       setDragOffset({
-        x: e.clientX - dragStartPos.current.x,
-        y: e.clientY - dragStartPos.current.y
+        x: Math.min(Math.max(nextX, maxLeft), maxRight),
+        y: Math.min(Math.max(nextY, maxUp), maxDown)
       });
     }
   };
@@ -155,7 +164,7 @@ const ChatAssistant: React.FC = () => {
       {/* Floating Button with Label */}
       {!isOpen && (
         <div 
-          className="flex items-center gap-3 pointer-events-auto cursor-grab active:cursor-grabbing group animate-in slide-in-from-bottom-5 fade-in duration-500" 
+          className="flex items-center gap-2 sm:gap-3 pointer-events-auto cursor-grab active:cursor-grabbing group animate-in slide-in-from-bottom-5 fade-in duration-500" 
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
@@ -165,16 +174,16 @@ const ChatAssistant: React.FC = () => {
             Ask Pulse AI <span className="text-base leading-none">✨</span>
           </div>
           <button
-            className="bg-white hover:bg-slate-50 p-3.5 rounded-full shadow-2xl shadow-red-500/20 transition-transform group-hover:scale-110 active:scale-95 flex items-center justify-center border border-slate-200"
+            className="bg-white hover:bg-slate-50 p-2.5 sm:p-3.5 rounded-full shadow-2xl shadow-red-500/20 transition-transform group-hover:scale-110 active:scale-95 flex items-center justify-center border border-slate-200"
           >
-            <PulseLogo variant="icon" size={32} />
+            <PulseLogo variant="icon" size={24} className="sm:w-8 sm:h-8" />
           </button>
         </div>
       )}
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="w-full sm:w-[400px] h-[380px] sm:h-[500px] max-h-[75vh] sm:max-h-[80vh] flex flex-col bg-[#0B0F19]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-blue-900/20 overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300 pointer-events-auto transition-all">
+        <div className="w-full sm:w-[400px] h-[450px] sm:h-[500px] max-h-[80vh] flex flex-col bg-[#0B0F19]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-blue-900/20 overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300 pointer-events-auto transition-all">
           
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/5">
