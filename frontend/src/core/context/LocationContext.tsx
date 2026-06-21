@@ -111,7 +111,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         longitude: parseFloat(savedLng),
         source: savedSource as any,
         label: savedLabel,
-        locationStatus: savedSource === 'gps' ? 'granted' : 'denied',
+        locationStatus: (savedSource === 'gps' || savedSource === 'manual') ? 'granted' : 'denied',
       });
 
       if (savedLabel === 'GPS Location' || savedLabel === 'Unknown Location') {
