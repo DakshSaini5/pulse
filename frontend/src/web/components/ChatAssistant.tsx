@@ -124,6 +124,11 @@ const ChatAssistant: React.FC = () => {
     e.currentTarget.setPointerCapture(e.pointerId);
     isDragging.current = false;
     dragStartPos.current = { x: e.clientX - currentOffset.current.x, y: e.clientY - currentOffset.current.y };
+    
+    // Remove transition during drag for 1:1 smooth movement
+    if (fabRef.current) {
+      fabRef.current.style.transition = 'none';
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -162,7 +167,32 @@ const ChatAssistant: React.FC = () => {
     if (!isDragging.current) {
       setIsOpen(true);
     } else {
+      // Smooth Snap-to-Edge Logic
+      const maxLeft = -(typeof window !== 'undefined' ? window.innerWidth - 80 : 300);
+      const maxRight = 10;
+      const threshold = maxLeft / 2;
+      
+      const targetX = currentOffset.current.x < threshold ? maxLeft : maxRight;
+      
+      currentOffset.current = {
+        x: targetX,
+        y: currentOffset.current.y
+      };
+      
       setDragOffset(currentOffset.current);
+      
+      if (fabRef.current) {
+        // Add a smooth easing transition only for the snap effect
+        fabRef.current.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
+        fabRef.current.style.transform = `translate(${currentOffset.current.x}px, ${currentOffset.current.y}px)`;
+        
+        // Remove the transition after it finishes so next drag is smooth again
+        setTimeout(() => {
+          if (fabRef.current) {
+            fabRef.current.style.transition = 'none';
+          }
+        }, 400);
+      }
     }
     setTimeout(() => { isDragging.current = false; }, 50);
   };
