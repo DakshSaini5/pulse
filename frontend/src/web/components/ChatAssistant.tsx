@@ -25,6 +25,8 @@ const ChatAssistant: React.FC = () => {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const isDragging = useRef(false);
   const dragStartPos = useRef({ x: 0, y: 0 });
+  const currentOffset = useRef({ x: 0, y: 0 });
+  const fabRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom
   const scrollToBottom = () => {
@@ -121,14 +123,14 @@ const ChatAssistant: React.FC = () => {
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId);
     isDragging.current = false;
-    dragStartPos.current = { x: e.clientX - dragOffset.x, y: e.clientY - dragOffset.y };
+    dragStartPos.current = { x: e.clientX - currentOffset.current.x, y: e.clientY - currentOffset.current.y };
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
     
-    const deltaX = Math.abs(e.clientX - dragStartPos.current.x - dragOffset.x);
-    const deltaY = Math.abs(e.clientY - dragStartPos.current.y - dragOffset.y);
+    const deltaX = Math.abs(e.clientX - dragStartPos.current.x - currentOffset.current.x);
+    const deltaY = Math.abs(e.clientY - dragStartPos.current.y - currentOffset.current.y);
     
     if (!isDragging.current && (deltaX > 5 || deltaY > 5)) {
       isDragging.current = true;
@@ -144,10 +146,14 @@ const ChatAssistant: React.FC = () => {
       const maxUp = -(typeof window !== 'undefined' ? window.innerHeight - 120 : 600);
       const maxDown = 80;
 
-      setDragOffset({
+      currentOffset.current = {
         x: Math.min(Math.max(nextX, maxLeft), maxRight),
         y: Math.min(Math.max(nextY, maxUp), maxDown)
-      });
+      };
+
+      if (fabRef.current) {
+        fabRef.current.style.transform = `translate(${currentOffset.current.x}px, ${currentOffset.current.y}px)`;
+      }
     }
   };
 
@@ -155,6 +161,8 @@ const ChatAssistant: React.FC = () => {
     e.currentTarget.releasePointerCapture(e.pointerId);
     if (!isDragging.current) {
       setIsOpen(true);
+    } else {
+      setDragOffset(currentOffset.current);
     }
     setTimeout(() => { isDragging.current = false; }, 50);
   };
@@ -164,6 +172,7 @@ const ChatAssistant: React.FC = () => {
       {/* Floating Button with Label */}
       {!isOpen && (
         <div 
+          ref={fabRef}
           className="flex items-center gap-2 sm:gap-3 pointer-events-auto cursor-grab active:cursor-grabbing group animate-in slide-in-from-bottom-5 fade-in duration-500" 
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
