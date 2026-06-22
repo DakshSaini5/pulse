@@ -31,7 +31,7 @@ describe('Chat WebSocket API', () => {
   it('should hit rate limiter when sending more than 40 messages in 15 minutes', (done) => {
     let responsesReceived = 0;
     
-    clientSocket.on('chat:response', (data) => {
+    clientSocket.on('chat:response', (data: any) => {
       if (data.isError && data.text === 'You have 0 chat attempts left for this window. Please wait 15 minutes before sending more messages.') {
         clientSocket.off('chat:response');
         done();

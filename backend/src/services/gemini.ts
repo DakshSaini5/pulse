@@ -7,7 +7,7 @@ export const CANDIDATE_MODELS = [
   'gemini-flash-latest'
 ];
 
-let cachedActiveModel: string | null = null;
+export let cachedActiveModel: string | null = null;
 
 export async function getWorkingModelName(genAI: GoogleGenerativeAI): Promise<string> {
   if (cachedActiveModel) return cachedActiveModel;
