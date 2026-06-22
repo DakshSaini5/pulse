@@ -10,6 +10,9 @@ import { Badge } from "@web/components/ui/badge"
 import { PulseNav } from "./PulseNav"
 import { cn } from "@core/utils/utils"
 import { useUserLocation } from "@core/context/LocationContext"
+import { useAuth } from "@core/context/AuthContext"
+import { useQuery } from "@tanstack/react-query"
+import axios from "axios"
 
 interface HomeScreenProps {
   onTabChange?: (tab: "discover" | "records" | "panic" | "trends" | "compare" | "more") => void
@@ -33,26 +36,37 @@ const services = [
 export function HomeScreen({ onTabChange, onServiceClick, activeScreen, onNavigate, onPanic }: HomeScreenProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const { label: locationLabel } = useUserLocation()
+  const { user } = useAuth()
+
+  // Fetch real stats from the backend
+  const { data: stats } = useQuery({
+    queryKey: ['home-stats'],
+    queryFn: async () => {
+      const token = localStorage.getItem('pulse_token')
+      const [prescriptions] = await Promise.all([
+        axios.get(`${import.meta.env.VITE_API_URL}/api/prescriptions`, { headers: { Authorization: `Bearer ${token}` } })
+      ])
+      return {
+        scans: prescriptions.data?.length ?? 0,
+        hospitals: 0,
+        trends: 0,
+      }
+    },
+    staleTime: 60000,
+  })
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <PulseNav variant="app" notificationCount={2} activeScreen={activeScreen} onNavigate={onNavigate} onPanic={onPanic} />
+      <PulseNav variant="app" notificationCount={0} activeScreen={activeScreen} onNavigate={onNavigate} onPanic={onPanic} />
 
       <main className="flex-1 overflow-y-auto pb-24">
-        {/* Alert Banner */}
-        <div className="mx-4 mt-3 mb-1 bg-[var(--pulse-red-light)] rounded-2xl p-3 flex items-start gap-2.5 border border-destructive/20">
-          <AlertTriangle className="size-4 text-destructive shrink-0 mt-0.5" />
-          <p className="text-xs text-destructive leading-relaxed">
-            Location access is required for the Panic Button feature to work accurately.
-          </p>
-        </div>
 
         {/* Greeting */}
         <div className="px-5 pt-5 pb-2">
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-2xl font-bold text-foreground">
-                Hi, there 👋
+                Hi, {user?.name?.split(' ')[0] || 'there'} 👋
               </h2>
               <div className="flex items-center gap-1.5 mt-1.5">
                 <MapPin className="size-3.5 text-primary" />
@@ -145,9 +159,9 @@ export function HomeScreen({ onTabChange, onServiceClick, activeScreen, onNaviga
             </p>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { label: "Scans", value: "4", sub: "prescriptions" },
-                { label: "Hospitals", value: "12", sub: "saved" },
-                { label: "Trends", value: "3", sub: "tracked" },
+                { label: "Scans", value: String(stats?.scans ?? '—'), sub: "prescriptions" },
+                { label: "Hospitals", value: String(stats?.hospitals ?? '—'), sub: "saved" },
+                { label: "Trends", value: String(stats?.trends ?? '—'), sub: "tracked" },
               ].map((stat) => (
                 <div key={stat.label} className="flex flex-col items-center bg-muted rounded-xl p-3">
                   <span className="text-2xl font-extrabold text-primary">{stat.value}</span>

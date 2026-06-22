@@ -5,17 +5,28 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# ── Capacitor / WebView Bridge ──────────────────────────────────────────────
+# Keep all Capacitor plugin classes and their public members so the WebView
+# bridge does not lose its native hooks after minification.
+-keep class com.getcapacitor.** { *; }
+-keep class com.getcapacitor.plugin.** { *; }
+-keepnames class com.getcapacitor.** { *; }
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Keep JavaScript interface methods called from the WebView
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# ── Google Sign-In ────────────────────────────────────────────────────────
+-keep class com.google.android.gms.** { *; }
+-keep class com.google.api.client.** { *; }
+-dontwarn com.google.android.gms.**
+
+# ── OkHttp (used by Capacitor for networking) ─────────────────────────────
+-dontwarn okhttp3.**
+-keep class okhttp3.** { *; }
+-keep interface okhttp3.** { *; }
+
+# ── Preserve stack traces in crash reports ────────────────────────────────
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile

@@ -10,6 +10,7 @@ import { Button } from "@web/components/ui/button"
 import { Badge } from "@web/components/ui/badge"
 import { cn } from "@core/utils/utils"
 import { PulseLogo } from "@web/components/PulseLogo"
+import { useAuth } from "@core/context/AuthContext"
 
 interface PulseNavProps {
   variant?: "landing" | "app"
@@ -45,6 +46,7 @@ export function PulseNav({
   onPanic,
 }: PulseNavProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const { user, logout } = useAuth()
 
   const handleNavigate = (id: string) => {
     setMenuOpen(false)
@@ -124,8 +126,8 @@ export function PulseNav({
               <User className="size-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-bold text-foreground leading-none">Aryan Sharma</p>
-              <p className="text-xs text-muted-foreground mt-0.5">aryan@pulse.health</p>
+              <p className="text-sm font-bold text-foreground leading-none">{user?.name || 'Guest'}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{user?.email || ''}</p>
             </div>
           </div>
           <button
@@ -178,7 +180,10 @@ export function PulseNav({
           {SECONDARY_ITEMS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
-              onClick={() => setMenuOpen(false)}
+              onClick={() => {
+                setMenuOpen(false)
+                if (id === 'logout') logout()
+              }}
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors",
                 id === "logout" ? "text-destructive hover:bg-destructive/10" : "text-foreground hover:bg-muted"
