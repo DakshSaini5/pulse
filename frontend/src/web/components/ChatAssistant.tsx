@@ -51,7 +51,6 @@ const ChatAssistant: React.FC = () => {
       });
       
       socket.on('connect', () => {
-        console.log('Chat socket connected');
         setMessages([{
           id: 'welcome',
           role: 'model',

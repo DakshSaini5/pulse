@@ -8,6 +8,7 @@ import { LocationProvider } from '../core/context/LocationContext';
 import { App as CapacitorApp } from '@capacitor/app';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { SplashScreen } from '@capacitor/splash-screen';
+import { ErrorBoundary } from '../core/components/ErrorBoundary';
 
 import { LandingScreen } from './screens/LandingScreen';
 import { HomeScreen } from './screens/HomeScreen';
@@ -33,7 +34,7 @@ const ScrollToTop: React.FC = () => {
   return null;
 };
 
-// Handles Android hardware back button
+// Handles Android hardware back button — navigates back or minimizes app
 const AndroidBackHandler: React.FC = () => {
   const navigate = useNavigate();
   useEffect(() => {
@@ -56,17 +57,13 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
-import { ErrorBoundary } from '../core/components/ErrorBoundary';
-
 export const MobileApp: React.FC = () => {
   // Initialize native Android UI on mount
   useEffect(() => {
     const initNative = async () => {
       try {
-        // Style the status bar to match Pulse dark theme
         await StatusBar.setStyle({ style: Style.Dark });
         await StatusBar.setBackgroundColor({ color: '#0B0F19' });
-        // Hide splash screen after a short delay so WebView has time to paint
         await SplashScreen.hide({ fadeOutDuration: 300 });
       } catch (e) {
         // Not running natively — silently ignore
@@ -88,45 +85,45 @@ export const MobileApp: React.FC = () => {
                   <Suspense fallback={<div className="flex-1 w-full h-full bg-[#F8FAFC] dark:bg-[#0B0F19]" />}>
                     <Routes>
                       <Route path="/" element={<LandingScreen />} />
-                      <Route 
-                        path="/home" 
+                      <Route
+                        path="/home"
                         element={
                           <ProtectedRoute>
                             <HomeScreen />
                           </ProtectedRoute>
-                        } 
+                        }
                       />
-                      <Route 
-                        path="/discover" 
+                      <Route
+                        path="/discover"
                         element={
                           <ProtectedRoute>
                             <DiscoverScreen activeScreen="discover" />
                           </ProtectedRoute>
-                        } 
+                        }
                       />
-                      <Route 
-                        path="/compare" 
+                      <Route
+                        path="/compare"
                         element={
                           <ProtectedRoute>
                             <HospitalCompareScreen />
                           </ProtectedRoute>
-                        } 
+                        }
                       />
-                      <Route 
-                        path="/records" 
+                      <Route
+                        path="/records"
                         element={
                           <ProtectedRoute>
                             <RecordsScreen activeScreen="records" />
                           </ProtectedRoute>
-                        } 
+                        }
                       />
-                      <Route 
-                        path="/trends" 
+                      <Route
+                        path="/trends"
                         element={
                           <ProtectedRoute>
                             <TrendsScreen activeScreen="trends" />
                           </ProtectedRoute>
-                        } 
+                        }
                       />
                       <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
