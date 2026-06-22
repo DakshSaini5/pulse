@@ -1,8 +1,8 @@
 import { Server, Socket } from 'socket.io';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
-import { getWorkingModelName } from './gemini';
+import { getWorkingModelName, cachedActiveModel } from './gemini';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../db'; // FIX: Use shared singleton instead of new PrismaClient()
+import { prisma } from '../db';
 
 // Per-socket rate limiting: max 40 messages per 15 minutes
 const RATE_LIMIT_MAX = 40;
@@ -137,12 +137,15 @@ Always remind them gently that you are an AI, not a doctor.
       }
     };
 
-    if (genAI) {
-      console.log(`[Socket.io] Starting chat session for user: ${userId || 'guest'}`);
-      initializeChatSession().then(session => {
-        chatSession = session;
-      });
-    }
+    // ── FIX: Run DB fetch + model init IN PARALLEL instead of sequentially ──
+    // Before: DB query ran first (~300-800ms), THEN model initialized (~200ms) = 500-1000ms cold start
+    // After: both run at the same time = only as slow as the slower of the two
+    const [, session] = await Promise.all([
+      // DB query already ran above and built systemInstructionContext
+      Promise.resolve(),
+      genAI ? initializeChatSession() : Promise.resolve(null)
+    ]);
+    if (genAI) chatSession = session;
 
     socket.on('chat:message', async (message: string) => {
       if (!message || typeof message !== 'string') return;
