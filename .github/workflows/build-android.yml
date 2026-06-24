@@ -1,0 +1,54 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch: # Allows you to manually trigger the build from GitHub Actions tab
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/src/mobile/**'
+      - 'frontend/android/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Frontend Dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Build Mobile Web Assets
+        working-directory: ./frontend
+        run: npm run build:mobile
+
+      - name: Sync Capacitor
+        working-directory: ./frontend
+        run: npx cap sync android
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        working-directory: ./frontend/android
+        run: chmod +x gradlew
+
+      - name: Build APK with Gradle
+        working-directory: ./frontend/android
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulse-app-debug.apk
+          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
