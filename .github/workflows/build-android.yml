@@ -30,8 +30,8 @@ jobs:
         working-directory: ./frontend
         run: |
           echo "VITE_APP_TARGET=mobile" > .env.mobile
-          echo "VITE_API_URL=https://pulse-production-f638.up.railway.app" >> .env.mobile
-          echo "VITE_GOOGLE_CLIENT_ID=367526945989-ebnif0f9q0s080kab2clgd42d10qqhok.apps.googleusercontent.com" >> .env.mobile
+          echo "VITE_API_URL=${{ secrets.VITE_API_URL }}" >> .env.mobile
+          echo "VITE_GOOGLE_CLIENT_ID=${{ secrets.VITE_GOOGLE_CLIENT_ID }}" >> .env.mobile
 
       - name: Build Mobile Web Assets
         working-directory: ./frontend
