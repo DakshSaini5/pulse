@@ -6,6 +6,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,7 +18,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Install Frontend Dependencies
         working-directory: ./frontend
@@ -59,3 +62,17 @@ jobs:
         with:
           name: pulse-app-debug.apk
           path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Publish APK to GitHub branch
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p ../apk-dist
+          cp frontend/android/app/build/outputs/apk/debug/app-debug.apk ../apk-dist/pulse-app-debug.apk
+          git checkout --orphan apk-build
+          git rm -rf .
+          cp ../apk-dist/pulse-app-debug.apk .
+          git add pulse-app-debug.apk
+          git commit -m "Build Android APK: $GITHUB_SHA"
+          git push origin apk-build --force
+
