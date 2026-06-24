@@ -107,10 +107,11 @@ export const Search: React.FC = () => {
 
     const delayDebounceFn = setTimeout(async () => {
       setSearchingAutocomplete(true);
+      setAutocompleteResults({ hospitals: [], specialties: [] }); // clear stale results
+      setShowDropdown(true); // show spinner immediately, no flash of "no match"
       try {
         const data = await hospitalAPI.autocomplete(query, lat, lng, cityName);
         setAutocompleteResults(data);
-        setShowDropdown(true);
       } catch (err) {
         console.error('Error fetching autocomplete:', err);
       } finally {
