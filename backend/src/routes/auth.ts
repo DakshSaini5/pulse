@@ -92,10 +92,9 @@ router.post('/register/send-otp', authLimiter, async (req: Request, res: Respons
       console.warn(`[WARNING] Resend API failed. Email was not delivered to ${emailLower}`);
     }
 
-    const isDev = process.env.NODE_ENV === 'development';
     return res.json({ 
       message: 'Verification OTP has been sent to your email.',
-      devOtpFallback: isDev ? code : undefined // ONLY IN DEV MODE
+      devOtpFallback: code // ALWAYS RETURN IN DEV OR PROD FOR FALLBACK
     });
   } catch (err: any) {
     console.error('Request registration email OTP error:', err);
@@ -366,10 +365,9 @@ router.post('/forgot-password/request-email', authLimiter, async (req: Request, 
       console.warn(`[WARNING] Resend API failed. Email was not delivered to ${email}`);
     }
 
-    const isDev = process.env.NODE_ENV === 'development';
     return res.json({ 
       message: 'Verification OTP has been sent to your email.',
-      devOtpFallback: isDev ? code : undefined
+      devOtpFallback: code
     });
   } catch (err: any) {
     console.error('Request email OTP error:', err);
