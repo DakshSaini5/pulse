@@ -1,22 +1,34 @@
 // @ts-nocheck
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search, MapPin, Star, Bookmark, ExternalLink, Phone, Sparkles,
-  X, CheckSquare, Map, SlidersHorizontal, Loader2
+  X, CheckSquare, Map, SlidersHorizontal, Loader2, Activity,
+  Stethoscope, TestTube, Syringe, Bone, Heart, Eye, Baby, Ear
 } from 'lucide-react';
 import { PulseNav } from './PulseNav';
 import { useUserLocation } from '@core/context/LocationContext';
-import axios from 'axios';
+import { hospitalAPI } from '@core/services/api';
 import toast from 'react-hot-toast';
 
 interface DiscoverScreenProps {
   activeScreen?: string;
 }
 
+// Service chips — uses q= so backend intentMapper resolves to correct specialty
+const SERVICE_CHIPS = [
+  { label: 'Blood Test', q: 'blood test', icon: TestTube },
+  { label: 'Vaccination', q: 'vaccination', icon: Syringe },
+  { label: 'Dental', specialty: 'Dental', icon: Bone },
+  { label: 'Cardiology', specialty: 'Cardiology', icon: Heart },
+  { label: 'Eye Care', specialty: 'Eye Care', icon: Eye },
+  { label: 'Pediatrics', specialty: 'Pediatrics', icon: Baby },
+  { label: 'General', specialty: 'General Medicine', icon: Stethoscope },
+];
+
 export function DiscoverScreen({ activeScreen }: DiscoverScreenProps) {
   const navigate = useNavigate();
-  const { lat, lng, label: cityName } = useUserLocation();
+  const { lat, lng, label: cityName } = useUserLocation() as any;
 
   const [query, setQuery] = useState('');
   const [specialty, setSpecialty] = useState('');
@@ -28,30 +40,28 @@ export function DiscoverScreen({ activeScreen }: DiscoverScreenProps) {
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
-  const token = localStorage.getItem('pulse_token');
-  const apiUrl = import.meta.env.VITE_API_URL;
+  // Autocomplete state
+  const [autocompleteResults, setAutocompleteResults] = useState<{ hospitals: any[]; specialties: any[] }>({ hospitals: [], specialties: [] });
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [autocompleteLoading, setAutocompleteLoading] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
-  const searchHospitals = async () => {
+  const searchHospitals = async (overrideQuery?: string, overrideSpecialty?: string) => {
     if (!lat || !lng) {
       toast.error('Location not available. Please enable location.');
       return;
     }
     setLoading(true);
+    setShowDropdown(false);
     try {
-      const params = new URLSearchParams({
-        lat: String(lat),
-        lng: String(lng),
-        radius: String(radius),
-        sort: sortBy,
-      });
-      if (query) params.set('q', query);
-      if (specialty) params.set('specialty', specialty);
-      if (hasER) params.set('emergency', 'true');
-
-      const res = await axios.get(`${apiUrl}/api/hospitals/search?${params}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setHospitals(res.data || []);
+      const q = overrideQuery !== undefined ? overrideQuery : query;
+      const spec = overrideSpecialty !== undefined ? overrideSpecialty : specialty;
+      const data = await hospitalAPI.search(q, spec, radius, lat, lng, cityName);
+      let filtered = hasER ? data.filter((h: any) => h.emergencyAvailable) : data;
+      if (sortBy === 'rating') filtered = filtered.sort((a: any, b: any) => b.rating - a.rating);
+      else if (sortBy === 'distance') filtered = filtered.sort((a: any, b: any) => (a.distance || 0) - (b.distance || 0));
+      else filtered = filtered.sort((a: any, b: any) => b.recommendationScore - a.recommendationScore);
+      setHospitals(filtered);
     } catch (err: any) {
       toast.error('Failed to search hospitals');
     } finally {
@@ -59,24 +69,69 @@ export function DiscoverScreen({ activeScreen }: DiscoverScreenProps) {
     }
   };
 
-  // Auto-search on mount
+  // Auto-search on mount when location is ready
   useEffect(() => {
     if (lat && lng) searchHospitals();
   }, [lat, lng]);
+
+  // Autocomplete — debounced 300ms
+  useEffect(() => {
+    if (query.trim().length < 2) {
+      setAutocompleteResults({ hospitals: [], specialties: [] });
+      setShowDropdown(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setAutocompleteLoading(true);
+      try {
+        const data = await hospitalAPI.autocomplete(query, lat, lng, cityName);
+        setAutocompleteResults(data);
+        setShowDropdown(true);
+      } catch {
+        // silent
+      } finally {
+        setAutocompleteLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query, lat, lng, cityName]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     searchHospitals();
   };
 
+  const handleChipPress = (chip: typeof SERVICE_CHIPS[0]) => {
+    if ('q' in chip) {
+      setQuery(chip.q as string);
+      setSpecialty('');
+      searchHospitals(chip.q as string, '');
+    } else {
+      setQuery('');
+      setSpecialty(chip.specialty as string);
+      searchHospitals('', chip.specialty as string);
+    }
+  };
+
   const toggleSave = async (id: string) => {
     try {
       if (savedIds.includes(id)) {
         setSavedIds(prev => prev.filter(s => s !== id));
-        await axios.delete(`${apiUrl}/api/hospitals/saved/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+        await hospitalAPI.unsave(id);
       } else {
         setSavedIds(prev => [...prev, id]);
-        await axios.post(`${apiUrl}/api/hospitals/saved`, { hospitalId: id }, { headers: { Authorization: `Bearer ${token}` } });
+        await hospitalAPI.save(id);
       }
     } catch {
       toast.error('Failed to update saved hospitals');
@@ -104,27 +159,106 @@ export function DiscoverScreen({ activeScreen }: DiscoverScreenProps) {
           </div>
         </div>
 
-        {/* Search Bar */}
-        <form onSubmit={handleSearch} className="px-4 mb-3">
-          <div className="flex gap-2">
-            <div className="flex-1 flex items-center gap-2.5 bg-[#111827] border border-slate-800/60 rounded-xl px-4 h-12">
-              <Search className="w-4 h-4 text-slate-500 shrink-0" />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search hospital or specialty..."
-                className="flex-1 text-sm bg-transparent outline-none text-white placeholder:text-slate-500"
-              />
+        {/* Search Bar with Autocomplete */}
+        <div ref={searchContainerRef} className="px-4 mb-3 relative">
+          <form onSubmit={handleSearch}>
+            <div className="flex gap-2">
+              <div className="flex-1 flex items-center gap-2.5 bg-[#111827] border border-slate-800/60 rounded-xl px-4 h-12">
+                <Search className="w-4 h-4 text-slate-500 shrink-0" />
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onFocus={() => { if (query.trim().length >= 2) setShowDropdown(true); }}
+                  placeholder="Search hospital, symptom, specialty..."
+                  className="flex-1 text-sm bg-transparent outline-none text-white placeholder:text-slate-500"
+                />
+                {query.length > 0 && (
+                  <button type="button" onClick={() => { setQuery(''); setShowDropdown(false); }}>
+                    <X className="w-4 h-4 text-slate-500" />
+                  </button>
+                )}
+              </div>
+              <button
+                type="submit"
+                className="h-12 px-5 bg-[#1E60D5] text-white font-semibold rounded-xl active:scale-95 transition-transform"
+              >
+                Search
+              </button>
             </div>
-            <button
-              type="submit"
-              className="h-12 px-5 bg-[#1E60D5] text-white font-semibold rounded-xl active:scale-95 transition-transform"
-            >
-              Search
-            </button>
+          </form>
+
+          {/* Autocomplete Dropdown */}
+          {showDropdown && query.trim().length >= 2 && (
+            <div className="absolute left-4 right-4 top-full mt-1 bg-[#111827] border border-slate-700/60 rounded-2xl shadow-2xl z-50 max-h-64 overflow-y-auto">
+              {autocompleteLoading ? (
+                <div className="flex items-center justify-center gap-2 py-4">
+                  <Activity className="w-4 h-4 animate-spin text-[#1E60D5]" />
+                  <span className="text-xs text-slate-400">Searching...</span>
+                </div>
+              ) : autocompleteResults.hospitals.length === 0 && autocompleteResults.specialties.length === 0 ? (
+                <p className="text-center text-xs text-slate-500 py-4">No matches found</p>
+              ) : (
+                <div className="p-2 space-y-1">
+                  {autocompleteResults.specialties.length > 0 && (
+                    <>
+                      <p className="text-[9px] font-bold text-[#1E60D5] uppercase tracking-widest px-2 pt-1">🩺 Services</p>
+                      {autocompleteResults.specialties.map((s) => (
+                        <button
+                          key={s.name}
+                          className="w-full text-left px-3 py-2 rounded-xl text-xs text-slate-200 hover:bg-slate-700/50 flex items-center justify-between"
+                          onClick={() => { setSpecialty(s.name); setQuery(''); setShowDropdown(false); searchHospitals('', s.name); }}
+                        >
+                          <span className="font-semibold">{s.name}</span>
+                          <span className="text-[9px] bg-[#1E60D5]/20 text-[#1E60D5] px-2 py-0.5 rounded-full">Filter</span>
+                        </button>
+                      ))}
+                    </>
+                  )}
+                  {autocompleteResults.hospitals.length > 0 && (
+                    <>
+                      <p className="text-[9px] font-bold text-red-400 uppercase tracking-widest px-2 pt-2">🏥 Hospitals</p>
+                      {autocompleteResults.hospitals.map((h) => (
+                        <button
+                          key={h.id}
+                          className="w-full text-left px-3 py-2 rounded-xl text-xs text-slate-200 hover:bg-slate-700/50 flex items-center justify-between"
+                          onClick={() => { setQuery(h.name); setShowDropdown(false); searchHospitals(h.name, ''); }}
+                        >
+                          <span className="font-semibold">{h.name}</span>
+                          <span className="text-[9px] bg-slate-700 text-slate-400 px-2 py-0.5 rounded-full">Select</span>
+                        </button>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Browse by Service Chips */}
+        <div className="px-4 mb-3">
+          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+            {SERVICE_CHIPS.map((chip) => {
+              const Icon = chip.icon;
+              const isActive = ('specialty' in chip && specialty === chip.specialty) || ('q' in chip && query === chip.q);
+              return (
+                <button
+                  key={chip.label}
+                  onClick={() => handleChipPress(chip)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold whitespace-nowrap transition-colors shrink-0 ${
+                    isActive
+                      ? 'border-[#1E60D5] bg-[#1E60D5]/15 text-[#1E60D5]'
+                      : 'border-slate-700/60 bg-[#111827] text-slate-300'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {chip.label}
+                </button>
+              );
+            })}
           </div>
-        </form>
+        </div>
 
         {/* Filter Toggle */}
         <div className="px-4 mb-3">
@@ -141,7 +275,6 @@ export function DiscoverScreen({ activeScreen }: DiscoverScreenProps) {
         {/* Filters Panel */}
         {showFilters && (
           <div className="mx-4 mb-3 p-4 bg-[#111827] border border-slate-800/60 rounded-xl space-y-4">
-            {/* Specialty */}
             <div>
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">Specialty</label>
               <select
@@ -158,12 +291,14 @@ export function DiscoverScreen({ activeScreen }: DiscoverScreenProps) {
                 <option value="Dermatology">Dermatology</option>
                 <option value="ENT">ENT</option>
                 <option value="Dental">Dental</option>
+                <option value="Eye Care">Eye Care</option>
+                <option value="Gastroenterology">Gastroenterology</option>
+                <option value="Pulmonology">Pulmonology</option>
                 <option value="General Medicine">General Medicine</option>
                 <option value="Emergency Medicine">Emergency Medicine</option>
               </select>
             </div>
 
-            {/* Radius */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Radius</label>
@@ -179,7 +314,6 @@ export function DiscoverScreen({ activeScreen }: DiscoverScreenProps) {
               />
             </div>
 
-            {/* ER + Search */}
             <div className="flex gap-2">
               <button
                 type="button"
@@ -206,8 +340,16 @@ export function DiscoverScreen({ activeScreen }: DiscoverScreenProps) {
         <div className="px-4 flex flex-col gap-3 pb-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-white">
-              {loading ? 'Searching...' : `${hospitals.length} Results`}
+              {loading ? 'Searching...' : `${hospitals.length} Result${hospitals.length !== 1 ? 's' : ''}`}
             </h3>
+            {specialty && (
+              <button
+                onClick={() => { setSpecialty(''); searchHospitals('', ''); }}
+                className="text-[10px] text-[#1E60D5] font-bold flex items-center gap-1"
+              >
+                Clear filter <X className="w-3 h-3" />
+              </button>
+            )}
           </div>
 
           {loading ? (
@@ -217,7 +359,7 @@ export function DiscoverScreen({ activeScreen }: DiscoverScreenProps) {
             </div>
           ) : hospitals.length === 0 ? (
             <div className="py-16 text-center text-slate-500 text-sm">
-              No hospitals found. Try adjusting your filters.
+              No hospitals found. Try adjusting your search or increasing the radius.
             </div>
           ) : (
             hospitals.map((hospital) => (
@@ -247,7 +389,6 @@ export function DiscoverScreen({ activeScreen }: DiscoverScreenProps) {
                     </button>
                   </div>
 
-                  {/* Rating */}
                   <div className="flex items-center gap-2 mt-2">
                     {hospital.rating && (
                       <div className="flex items-center gap-1">
@@ -265,9 +406,13 @@ export function DiscoverScreen({ activeScreen }: DiscoverScreenProps) {
                         24/7 ER
                       </span>
                     )}
+                    {hospital.distance && (
+                      <span className="text-[10px] text-slate-500 font-medium ml-auto">
+                        {hospital.distance.toFixed(1)} km
+                      </span>
+                    )}
                   </div>
 
-                  {/* AI Explanation */}
                   {hospital.explanation && (
                     <div className="mt-2.5 bg-[#1E60D5]/10 rounded-xl p-3 border border-[#1E60D5]/15">
                       <div className="flex items-start gap-2">
@@ -278,7 +423,6 @@ export function DiscoverScreen({ activeScreen }: DiscoverScreenProps) {
                   )}
                 </div>
 
-                {/* Footer */}
                 <div className="flex items-center justify-between px-4 py-3 border-t border-slate-800/40 bg-[#0B0F19]/50">
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full bg-emerald-400" />
@@ -286,7 +430,10 @@ export function DiscoverScreen({ activeScreen }: DiscoverScreenProps) {
                       {hospital.workingHours || 'Hours N/A'}
                     </span>
                   </div>
-                  <button className="flex items-center gap-1 text-xs font-bold text-[#1E60D5]">
+                  <button
+                    onClick={() => navigate(`/hospitals/${hospital.id}`)}
+                    className="flex items-center gap-1 text-xs font-bold text-[#1E60D5]"
+                  >
                     Details <ExternalLink className="w-3 h-3" />
                   </button>
                 </div>

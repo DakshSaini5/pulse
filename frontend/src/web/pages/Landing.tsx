@@ -363,18 +363,18 @@ export const Landing: React.FC = () => {
               <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-4 sm:mb-6 text-left">Browse Services</h2>
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-4">
                 {[
-                  { name: 'General', icon: Stethoscope, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-500/10' },
-                  { name: 'Vaccination', icon: Syringe, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
-                  { name: 'Blood Test', icon: TestTube, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-500/10' },
-                  { name: 'Dental', icon: Bone, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10' },
-                  { name: 'Cardiology', icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-500/10' },
-                  { name: 'Neurology', icon: Brain, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-500/10' },
-                  { name: 'Eye Care', icon: Eye, color: 'text-cyan-500', bg: 'bg-cyan-50 dark:bg-cyan-500/10' },
-                  { name: 'Pediatrics', icon: Baby, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-500/10' },
+                  { name: 'General', icon: Stethoscope, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-500/10', specialty: 'General Medicine' },
+                  { name: 'Vaccination', icon: Syringe, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10', query: 'vaccination' },
+                  { name: 'Blood Test', icon: TestTube, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-500/10', query: 'blood test' },
+                  { name: 'Dental', icon: Bone, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10', specialty: 'Dental' },
+                  { name: 'Cardiology', icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-500/10', specialty: 'Cardiology' },
+                  { name: 'Neurology', icon: Brain, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-500/10', specialty: 'Neurology' },
+                  { name: 'Eye Care', icon: Eye, color: 'text-cyan-500', bg: 'bg-cyan-50 dark:bg-cyan-500/10', specialty: 'Eye Care' },
+                  { name: 'Pediatrics', icon: Baby, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-500/10', specialty: 'Pediatrics' },
                 ].map((service, idx) => (
                   <Link 
                     key={idx}
-                    to={`/search?specialty=${encodeURIComponent(service.name)}`}
+                    to={'query' in service ? `/search?q=${encodeURIComponent(service.query as string)}` : `/search?specialty=${encodeURIComponent((service as any).specialty || service.name)}`}
                     className="flex flex-col items-center justify-center p-3 sm:p-6 bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl sm:rounded-3xl hover:-translate-y-1 transition-transform group shadow-sm hover:shadow-xl hover:shadow-slate-200/20 dark:hover:shadow-black/40"
                   >
                     <div className={`w-10 h-10 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl ${service.bg} flex items-center justify-center mb-2 sm:mb-4 group-hover:scale-110 transition-transform`}>
