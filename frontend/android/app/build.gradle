@@ -15,6 +15,12 @@ android {
         }
     }
     signingConfigs {
+        debug {
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
         release {
             // Read from environment variables so the password is never stored in git.
             // When building locally, set these variables or Android Studio will prompt you.
@@ -39,6 +45,7 @@ android {
         }
         debug {
             minifyEnabled false
+            signingConfig signingConfigs.debug
         }
     }
 }

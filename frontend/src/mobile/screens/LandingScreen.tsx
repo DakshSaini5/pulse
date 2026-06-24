@@ -169,6 +169,10 @@ export function LoginScreen() {
             By continuing, you agree to our{' '}
             <span className="underline text-slate-400">Privacy Policy</span>
           </p>
+          <p className="text-xs text-slate-400">
+            Don't have a login?{' '}
+            <Link to="/register" className="text-[#1E60D5] hover:underline font-bold">Create Free Account</Link>
+          </p>
         </div>
       </div>
 

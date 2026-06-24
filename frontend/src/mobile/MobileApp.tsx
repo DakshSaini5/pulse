@@ -12,6 +12,7 @@ import { SplashScreen } from '@capacitor/splash-screen';
 import { ErrorBoundary } from '../core/components/ErrorBoundary';
 
 import { LoginScreen } from './screens/LandingScreen';
+import { RegisterScreen } from './screens/RegisterScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { DiscoverScreen } from './screens/DiscoverScreen';
 import { HospitalCompareScreen } from './screens/HospitalCompareScreen';
@@ -120,8 +121,9 @@ export const MobileApp: React.FC = () => {
                   />
                   <Suspense fallback={<MobileLoadingScreen />}>
                     <Routes>
-                      {/* Login — skip if already authenticated */}
+                      {/* Login & Register — skip if already authenticated */}
                       <Route path="/" element={<AuthRedirect><LoginScreen /></AuthRedirect>} />
+                      <Route path="/register" element={<AuthRedirect><RegisterScreen /></AuthRedirect>} />
 
                       {/* Authenticated routes with bottom nav */}
                       <Route path="/home" element={<ProtectedRoute><AuthenticatedLayout><HomeScreen /></AuthenticatedLayout></ProtectedRoute>} />
