@@ -47,22 +47,16 @@ export const getInitialLocation = async (): Promise<{ latitude: number; longitud
  */
 export const getCityNameFromCoords = async (lat: number, lng: number): Promise<string> => {
   try {
+    const VITE_API_URL = import.meta.env.VITE_API_URL;
     const response = await fetch(
-      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`
+      `${VITE_API_URL}/api/geocoding/reverse-geocode?lat=${lat}&lng=${lng}`
     );
     if (!response.ok) throw new Error('Geocoding api error');
     const data = await response.json();
-    const city = data.city || data.locality || data.principalSubdivision || 'Unknown Location';
-    const state = data.principalSubdivision || '';
-    
-    if (state && state.toLowerCase() !== city.toLowerCase()) {
-      return `${city}, ${state}`;
-    }
-    const country = data.countryName || '';
-    return country ? `${city}, ${country}` : city;
+    return data.city || 'Current City';
   } catch (error) {
     console.error('Reverse geocoding failed:', error);
-    return 'Unknown Location';
+    return 'Current City';
   }
 };
 

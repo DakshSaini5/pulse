@@ -47,7 +47,7 @@ const ChatAssistant: React.FC = () => {
       const token = localStorage.getItem('pulse_token');
       const socket = io(url as any, {
         auth: { token },
-        transports: ['websocket']
+        transports: ['polling', 'websocket'] // Use polling first for maximum compatibility on native apps
       });
       
       socket.on('connect', () => {
@@ -202,20 +202,16 @@ const ChatAssistant: React.FC = () => {
       {!isOpen && (
         <div 
           ref={fabRef}
-          className="flex items-center gap-2 sm:gap-3 pointer-events-auto cursor-grab active:cursor-grabbing group animate-in slide-in-from-bottom-5 fade-in duration-500" 
+          className="flex items-center gap-2 pointer-events-auto cursor-grab active:cursor-grabbing bg-blue-600 hover:bg-blue-700 text-white rounded-full py-1.5 pl-1.5 pr-4 shadow-xl border border-blue-500/30 transition-transform hover:scale-105 active:scale-95 shrink-0" 
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           style={{ transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`, touchAction: 'none' }}
         >
-          <div className="hidden sm:flex bg-white px-4 py-2.5 rounded-2xl rounded-br-sm shadow-xl shadow-slate-200/50 border border-slate-200 text-sm font-bold text-slate-800 transition-transform group-hover:-translate-y-1 items-center gap-1.5">
-            Ask Pulse AI <span className="text-base leading-none">✨</span>
+          <div className="size-8 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm">
+            <PulseLogo variant="icon" size={20} />
           </div>
-          <button
-            className="bg-white hover:bg-slate-50 p-2.5 sm:p-3.5 rounded-full shadow-2xl shadow-red-500/20 transition-transform group-hover:scale-110 active:scale-95 flex items-center justify-center border border-slate-200"
-          >
-            <PulseLogo variant="icon" size={24} className="sm:w-8 sm:h-8" />
-          </button>
+          <span className="font-bold text-xs tracking-wide whitespace-nowrap">Pulse AI</span>
         </div>
       )}
 
@@ -226,8 +222,8 @@ const ChatAssistant: React.FC = () => {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/5">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center">
-                <Bot size={18} />
+              <div className="w-8 h-8 rounded-full bg-white border border-white/10 flex items-center justify-center shadow-inner">
+                <PulseLogo variant="icon" size={20} />
               </div>
               <div>
                 <h3 className="text-white font-medium text-sm">Pulse AI</h3>
@@ -253,8 +249,8 @@ const ChatAssistant: React.FC = () => {
                 className={`flex gap-3 \${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 {msg.role === 'model' && (
-                  <div className="w-6 h-6 rounded-full bg-blue-600/20 flex-shrink-0 flex items-center justify-center mt-1">
-                    <Bot size={14} className="text-blue-400" />
+                  <div className="w-6 h-6 rounded-full bg-white flex-shrink-0 flex items-center justify-center mt-1 shadow-sm border border-slate-200">
+                    <PulseLogo variant="icon" size={14} />
                   </div>
                 )}
                 

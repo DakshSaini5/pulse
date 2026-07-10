@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@core/context/AuthContext';
-import { emergencyAPI, hospitalAPI, EmergencyContact } from '@core/services/api';
+import { emergencyAPI, hospitalAPI, prescriptionAPI, trendAPI, EmergencyContact } from '@core/services/api';
 import EmergencyContactModal from '../components/EmergencyContactModal';
 import NeedHelpModal from '../components/NeedHelpModal';
 import BreathingCuesModal from '../components/BreathingCuesModal';
@@ -39,6 +39,64 @@ export const Landing: React.FC = () => {
   }>({ hospitals: [], specialties: [] });
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchingAutocomplete, setSearchingAutocomplete] = useState(false);
+
+  // Drag state for mobile web Panic Button
+  const [panicDragOffset, setPanicDragOffset] = useState({ x: 0, y: 0 });
+  const isPanicDragging = useRef(false);
+  const panicDragStartPos = useRef({ x: 0, y: 0 });
+
+  const handlePanicPointerDown = (e: React.PointerEvent) => {
+    isPanicDragging.current = true;
+    panicDragStartPos.current = {
+      x: e.clientX - panicDragOffset.x,
+      y: e.clientY - panicDragOffset.y
+    };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePanicPointerMove = (e: React.PointerEvent) => {
+    if (!isPanicDragging.current) return;
+    let nextX = e.clientX - panicDragStartPos.current.x;
+    let nextY = e.clientY - panicDragStartPos.current.y;
+    
+    // Bounds check
+    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 360;
+    const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 640;
+    
+    const maxLeftX = -screenWidth / 2 + 50;
+    const maxRightX = screenWidth / 2 - 50;
+    const maxUpY = -screenHeight + 100;
+    const maxDownY = 60;
+    
+    setPanicDragOffset({
+      x: Math.min(Math.max(nextX, maxLeftX), maxRightX),
+      y: Math.min(Math.max(nextY, maxUpY), maxDownY)
+    });
+  };
+
+  const handlePanicPointerUp = (e: React.PointerEvent) => {
+    isPanicDragging.current = false;
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+  };
+
+  // Dashboard Counts
+  const [dashboardCounts, setDashboardCounts] = useState({ saved: 0, scans: 0, trends: 0 });
+
+  useEffect(() => {
+    if (user && isNativeApp) {
+      Promise.all([
+        hospitalAPI.getSaved(lat, lng).catch(() => []),
+        prescriptionAPI.getAll().catch(() => []),
+        trendAPI.getTrends().catch(() => [])
+      ]).then(([hospitals, prescriptions, trends]) => {
+        setDashboardCounts({
+          saved: Array.isArray(hospitals) ? hospitals.length : 0,
+          scans: Array.isArray(prescriptions) ? prescriptions.length : 0,
+          trends: Array.isArray(trends) ? trends.length : 0
+        });
+      });
+    }
+  }, [user, isNativeApp, lat, lng]);
 
   useEffect(() => {
     if (user) {
@@ -249,13 +307,15 @@ export const Landing: React.FC = () => {
               <ActivityIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               Need Help?
             </button>
-              <button 
-                onClick={() => setShowPanicModal(true)}
-                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold rounded-xl shadow-md shadow-red-600/20 transition-all active:scale-95 flex items-center gap-2 border border-red-500/10"
-              >
-                <ShieldAlert className="w-4 h-4" />
-                PANIC
-              </button>
+              {!isNativeApp && (
+                <button 
+                  onClick={() => setShowPanicModal(true)}
+                  className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold rounded-xl shadow-md shadow-red-600/20 transition-all active:scale-95 flex items-center gap-2 border border-red-500/10"
+                >
+                  <ShieldAlert className="w-4 h-4" />
+                  PANIC
+                </button>
+              )}
           </div>
         </div>
 
@@ -421,11 +481,95 @@ export const Landing: React.FC = () => {
           </div>
         )}
 
-        <LocationModal 
-          isOpen={isLocationModalOpen} 
-          onClose={() => setIsLocationModalOpen(false)} 
-        />
+        {/* --- MOBILE NATIVE SECTIONS --- */}
+        {isNativeApp && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+            {/* Daily Health Tips */}
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-4 text-left">Daily Health Tips</h2>
+              <div className="flex overflow-x-auto gap-4 pb-4 snap-x hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+                <div className="w-60 h-32 p-4 bg-[#FFFBF0] dark:bg-amber-950/30 border border-[#FDE68A] dark:border-amber-800/50 rounded-2xl snap-center flex-shrink-0 flex flex-col justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-blue-400">💧</span>
+                    <h3 className="font-bold text-[#854D0E] dark:text-amber-500">Stay Hydrated</h3>
+                  </div>
+                  <p className="text-xs text-[#D97706] dark:text-amber-600/90 leading-relaxed font-medium">
+                    Drinking at least 8 glasses of water daily improves energy levels and keeps your skin glowing.
+                  </p>
+                </div>
+                <div className="w-60 h-32 p-4 bg-[#F0FDF4] dark:bg-emerald-950/30 border border-[#BBF7D0] dark:border-emerald-800/50 rounded-2xl snap-center flex-shrink-0 flex flex-col justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-500">🚶</span>
+                    <h3 className="font-bold text-[#166534] dark:text-emerald-500">Keep Moving</h3>
+                  </div>
+                  <p className="text-xs text-[#059669] dark:text-emerald-600/90 leading-relaxed font-medium">
+                    A brisk 30-minute walk every day can significantly boost your cardiovascular health.
+                  </p>
+                </div>
+                <div className="w-60 h-32 p-4 bg-[#FAF5FF] dark:bg-purple-950/30 border border-[#E9D5FF] dark:border-purple-800/50 rounded-2xl snap-center flex-shrink-0 flex flex-col justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-purple-500">💤</span>
+                    <h3 className="font-bold text-[#6B21A8] dark:text-purple-500">Quality Sleep</h3>
+                  </div>
+                  <p className="text-xs text-[#9333EA] dark:text-purple-600/90 leading-relaxed font-medium">
+                    Aim for 7-9 hours of uninterrupted sleep to enhance immune function and cognitive performance.
+                  </p>
+                </div>
+                <div className="w-60 h-32 p-4 bg-[#F0F9FF] dark:bg-sky-950/30 border border-[#BAE6FD] dark:border-sky-800/50 rounded-2xl snap-center flex-shrink-0 flex flex-col justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sky-500">🥗</span>
+                    <h3 className="font-bold text-[#075985] dark:text-sky-500">Balanced Diet</h3>
+                  </div>
+                  <p className="text-xs text-[#0369A1] dark:text-sky-600/90 leading-relaxed font-medium">
+                    Incorporate a variety of colorful vegetables and lean proteins to fuel your body throughout the day.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Health Summary / Dashboard */}
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-4 text-left">Your Health Summary</h2>
+              <div className="grid grid-cols-3 gap-2">
+                <Link to="/prescriptions" className="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-100 dark:border-slate-700 flex flex-col items-center justify-center text-center gap-0.5 active:scale-95 transition-transform shadow-sm">
+                  <span className="text-xl font-black text-blue-600 dark:text-blue-400">{dashboardCounts.scans}</span>
+                  <span className="block text-xs font-bold text-slate-800 dark:text-white mt-1">Scans</span>
+                  <span className="text-[9px] font-medium text-slate-500">prescriptions</span>
+                </Link>
+                <Link to="/saved" className="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-100 dark:border-slate-700 flex flex-col items-center justify-center text-center gap-0.5 active:scale-95 transition-transform shadow-sm">
+                  <span className="text-xl font-black text-blue-600 dark:text-blue-400">{dashboardCounts.saved}</span>
+                  <span className="block text-xs font-bold text-slate-800 dark:text-white mt-1">Hospitals</span>
+                  <span className="text-[9px] font-medium text-slate-500">saved</span>
+                </Link>
+                <Link to="/reports" className="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-100 dark:border-slate-700 flex flex-col items-center justify-center text-center gap-0.5 active:scale-95 transition-transform shadow-sm">
+                  <span className="text-xl font-black text-blue-600 dark:text-blue-400">{dashboardCounts.trends}</span>
+                  <span className="block text-xs font-bold text-slate-800 dark:text-white mt-1">Trends</span>
+                  <span className="text-[9px] font-medium text-slate-500">tracked</span>
+                </Link>
+              </div>
+            </div>
+
+          </div>
+        )}
+
         </div>
+
+        {/* Movable Panic Button for Mobile Dashboard */}
+        {isNativeApp && (
+          <button
+            onPointerDown={handlePanicPointerDown}
+            onPointerMove={handlePanicPointerMove}
+            onPointerUp={handlePanicPointerUp}
+            onClick={() => setShowPanicModal(true)}
+            style={{ transform: `translate(${panicDragOffset.x}px, ${panicDragOffset.y}px)`, touchAction: 'none' }}
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[200] h-10 px-2 pr-6 bg-[#DC2626] text-white text-xs font-black rounded-full shadow-[0_0_20px_rgba(220,38,38,0.6)] border border-red-400/30 flex items-center justify-center gap-2 cursor-grab active:cursor-grabbing transition-colors"
+          >
+            <div className="size-6 bg-white rounded-full flex items-center justify-center shrink-0 shadow-inner">
+              <span className="text-[#DC2626] font-black text-sm leading-none mt-0.5">!</span>
+            </div>
+            <span className="tracking-widest">PANIC</span>
+          </button>
+        )}
       </>
     );
   }
