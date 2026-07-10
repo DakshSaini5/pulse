@@ -45,13 +45,21 @@ export const setupChatSocket = (io: Server) => {
     
     if (userId) {
       try {
-        const user = await prisma.user.findUnique({
+        console.log(`[Socket.io] Fetching history for user: ${userId}`);
+        const userPromise = prisma.user.findUnique({
           where: { id: userId },
           include: {
             medicalReports: { include: { summary: true, values: true }, orderBy: { reportDate: 'desc' }, take: 5 },
             prescriptions: { include: { prescriptionAnalysis: true }, orderBy: { createdAt: 'desc' }, take: 5 },
           }
         });
+
+        // 3-second timeout to prevent Supabase/Prisma hangs from blocking the chat socket connection
+        const timeoutPromise = new Promise<any>((_, reject) => 
+          setTimeout(() => reject(new Error('Database query timed out')), 3000)
+        );
+
+        const user = await Promise.race([userPromise, timeoutPromise]);
 
         if (user) {
           const age = (user as any).age;
