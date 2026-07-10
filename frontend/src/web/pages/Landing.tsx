@@ -561,8 +561,8 @@ export const Landing: React.FC = () => {
             onPointerMove={handlePanicPointerMove}
             onPointerUp={handlePanicPointerUp}
             onClick={() => setShowPanicModal(true)}
-            style={{ transform: `translate(${panicDragOffset.x}px, ${panicDragOffset.y}px)`, touchAction: 'none' }}
-            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[200] h-10 px-2 pr-6 bg-[#DC2626] text-white text-xs font-black rounded-full shadow-[0_0_20px_rgba(220,38,38,0.6)] border border-red-400/30 flex items-center justify-center gap-2 cursor-grab active:cursor-grabbing transition-colors"
+            style={{ transform: `translate(calc(-50% + ${panicDragOffset.x}px), ${panicDragOffset.y}px)`, touchAction: 'none' }}
+            className="fixed bottom-24 left-1/2 z-[200] h-10 px-2 pr-6 bg-[#DC2626] text-white text-xs font-black rounded-full shadow-[0_0_20px_rgba(220,38,38,0.6)] border border-red-400/30 flex items-center justify-center gap-2 cursor-grab active:cursor-grabbing transition-colors"
           >
             <div className="size-6 bg-white rounded-full flex items-center justify-center shrink-0 shadow-inner">
               <span className="text-[#DC2626] font-black text-sm leading-none mt-0.5">!</span>

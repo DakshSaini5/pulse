@@ -6,7 +6,7 @@ if (!VITE_API_URL) {
   throw new Error('[Pulse] VITE_API_URL is not set. All API calls will fail. Please add it to your .env file.');
 }
 
-const api = axios.create({
+export const api = axios.create({
   baseURL: VITE_API_URL,
   headers: {
     'Content-Type': 'application/json',
