@@ -283,7 +283,10 @@ export const Landing: React.FC = () => {
                     <span>Showing care services in <strong className="text-slate-800 dark:text-white">{cityName}</strong></span>
                     <button
                       type="button"
-                      onClick={() => setIsLocationModalOpen(true)}
+                      onClick={() => {
+                        console.log("[Landing] Change Location clicked, setting modal open to true");
+                        setIsLocationModalOpen(true);
+                      }}
                       className="text-[10px] bg-primary/10 hover:bg-primary/20 text-primary px-2 py-0.5 rounded-lg ml-2 font-bold transition-all border border-primary/20 cursor-pointer relative z-50"
                     >
                       Change
