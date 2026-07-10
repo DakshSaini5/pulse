@@ -94,18 +94,9 @@ router.get('/reverse-geocode', async (req: Request, res: Response) => {
   }
 
   try {
-    const pathQuery = `/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=en`;
+    const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`;
 
-    const options = {
-      hostname: 'nominatim.openstreetmap.org',
-      path: pathQuery,
-      headers: {
-        'User-Agent': 'PulseHealthcareApp/1.0 (deepa@pulseapp.com)',
-      },
-      timeout: 10000,
-    };
-
-    const apiRequest = https.get(options, (apiRes) => {
+    const apiRequest = https.get(url, (apiRes) => {
       let data = '';
       apiRes.on('data', (chunk) => {
         data += chunk;
@@ -114,11 +105,10 @@ router.get('/reverse-geocode', async (req: Request, res: Response) => {
       apiRes.on('end', () => {
         try {
           const result = JSON.parse(data);
-          const address = result.address || {};
           
-          // Try to get city, town, village, or state district
-          const cityName = address.city || address.town || address.village || address.suburb || address.county || address.state_district || 'Unknown City';
-          const stateName = address.state || '';
+          // BigDataCloud response fields
+          const cityName = result.city || result.locality || result.principalSubdivision || 'Unknown City';
+          const stateName = result.principalSubdivision || '';
 
           let displayLabel = cityName;
           if (stateName && stateName.toLowerCase() !== cityName.toLowerCase()) {
@@ -127,20 +117,15 @@ router.get('/reverse-geocode', async (req: Request, res: Response) => {
 
           return res.json({ city: displayLabel });
         } catch (err) {
-          console.error('[geocoding] Error parsing Nominatim response:', err);
+          console.error('[geocoding] Error parsing BigDataCloud response:', err);
           return res.status(502).json({ message: 'Invalid response from geocoding service.' });
         }
       });
     });
 
     apiRequest.on('error', (err) => {
-      console.error('[geocoding] Nominatim request error:', err);
+      console.error('[geocoding] BigDataCloud request error:', err);
       return res.status(502).json({ message: 'Failed to connect to geocoding service.' });
-    });
-
-    apiRequest.on('timeout', () => {
-      apiRequest.destroy();
-      return res.status(504).json({ message: 'Geocoding service request timed out.' });
     });
   } catch (err) {
     console.error('[geocoding] Unexpected error in reverse geocoding:', err);
