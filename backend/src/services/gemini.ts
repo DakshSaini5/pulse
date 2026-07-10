@@ -16,11 +16,18 @@ export async function getWorkingModelName(genAI: GoogleGenerativeAI): Promise<st
     try {
       console.log(`[Gemini Selector] Probing model availability for: ${modelName}`);
       const model = genAI.getGenerativeModel({ model: modelName });
-      // Simple lightweight probe request
-      await model.generateContent({
+      
+      // 2-second timeout for the probe request to prevent hangs
+      const probePromise = model.generateContent({
         contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
         generationConfig: { maxOutputTokens: 5 }
       });
+
+      const timeoutPromise = new Promise<any>((_, reject) => 
+        setTimeout(() => reject(new Error('Probe timed out')), 2000)
+      );
+
+      await Promise.race([probePromise, timeoutPromise]);
       cachedActiveModel = modelName;
       console.log(`[Gemini Selector] Successfully detected and cached active model: ${modelName}`);
       return modelName;
