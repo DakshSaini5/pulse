@@ -53,6 +53,8 @@ const allowedOrigins = [
   'https://pulsehealthcare.in',
   'https://www.pulsehealthcare.in',
   'capacitor://localhost',
+  'http://localhost',
+  'https://localhost',
 ].filter(Boolean) as string[];
 
 app.use(cors({
