@@ -53,9 +53,9 @@ export const getCityNameFromCoords = async (lat: number, lng: number): Promise<s
       params: { lat, lng }
     });
     return response.data.city || 'Current City';
-  } catch (error) {
+  } catch (error: any) {
     console.error('Reverse geocoding failed:', error);
-    return 'Current City';
+    return `Err: ${error.message || 'Geocoding Failed'}`;
   }
 };
 
