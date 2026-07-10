@@ -57,16 +57,22 @@ export const Landing: React.FC = () => {
   const handlePanicPointerMove = (e: React.PointerEvent) => {
     if (!isPanicDragging.current) return;
     let nextX = e.clientX - panicDragStartPos.current.x;
+    let nextY = e.clientY - panicDragStartPos.current.y;
     
     // Bounds check
     const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 360;
+    const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 640;
     
     const maxLeftX = -screenWidth / 2 + 50;
     const maxRightX = screenWidth / 2 - 50;
     
+    // Restrict drag up so it never goes past the dashboard area into the top header (leave top 200px clear)
+    const maxUpY = -screenHeight + 200;
+    const maxDownY = 60;
+    
     setPanicDragOffset({
       x: Math.min(Math.max(nextX, maxLeftX), maxRightX),
-      y: 0 // Lock vertical dragging to 0 to prevent overlaps
+      y: Math.min(Math.max(nextY, maxUpY), maxDownY)
     });
   };
 
