@@ -378,9 +378,10 @@ router.get('/autocomplete', async (req: Request, res: Response) => {
 // GET /api/hospitals/:id (Public - single hospital metrics)
 router.get('/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { lat, lng } = req.query;
+  const { lat, lng, specialty } = req.query;
   const userLat = lat ? parseFloat(lat as string) : 28.6139;
   const userLng = lng ? parseFloat(lng as string) : 77.2090;
+  const targetSpecialty = (specialty as string) || 'General Medicine';
 
   try {
     const hospital = await prisma.hospital.findUnique({
@@ -398,7 +399,7 @@ router.get('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Hospital clinic not found.' });
     }
 
-    const { score, explanation } = scoreHospital(hospital as any, 'General Medicine', userLat, userLng);
+    const { score, explanation } = scoreHospital(hospital as any, targetSpecialty, userLat, userLng);
     const distance = calculateDistance(userLat, userLng, hospital.latitude, hospital.longitude);
 
     return res.json({
