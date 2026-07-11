@@ -80,25 +80,25 @@ export const setupChatSocket = (io: Server) => {
               systemInstructionContext += `\n`;
             }
 
-            const reports = user.medicalReports.filter(r => r.summary || r.values.length > 0);
+            const reports = user.medicalReports.filter((r: any) => r.summary || r.values.length > 0);
             if (reports.length > 0) {
               systemInstructionContext += `[Uploaded Medical Reports]:\n`;
-              reports.forEach(r => {
+              reports.forEach((r: any) => {
                 systemInstructionContext += `- Report Type: ${r.reportType} (Date: ${r.reportDate.toISOString().split('T')[0]})\n`;
                 if (r.summary) systemInstructionContext += `  Summary: ${r.summary.healthSummary}\n`;
-                const abnormals = r.values.filter(v => v.isAbnormal);
+                const abnormals = r.values.filter((v: any) => v.isAbnormal);
                 if (abnormals.length > 0) {
-                  systemInstructionContext += `  Abnormalities detected: ${abnormals.map(a => `${a.key} (${a.value} ${a.unit})`).join(', ')}\n`;
+                  systemInstructionContext += `  Abnormalities detected: ${abnormals.map((a: any) => `${a.key} (${a.value} ${a.unit})`).join(', ')}\n`;
                 }
               });
             }
 
-            const prescriptions = user.prescriptions.filter(p => p.prescriptionAnalysis.length > 0);
+            const prescriptions = user.prescriptions.filter((p: any) => p.prescriptionAnalysis.length > 0);
             if (prescriptions.length > 0) {
               systemInstructionContext += `\n[Uploaded Prescriptions/Medications]:\n`;
-              prescriptions.forEach(p => {
+              prescriptions.forEach((p: any) => {
                 systemInstructionContext += `- Medication List (from ${p.createdAt.toISOString().split('T')[0]}):\n`;
-                p.prescriptionAnalysis.forEach(med => {
+                p.prescriptionAnalysis.forEach((med: any) => {
                   systemInstructionContext += `  * ${med.medicineName}: ${med.dosage} (${med.simplifiedExplanation})\n`;
                 });
               });
