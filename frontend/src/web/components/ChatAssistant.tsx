@@ -90,6 +90,7 @@ const ChatAssistant: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const activeStreamIdRef = useRef<string | null>(null);
+  const watchdogTimerRef = useRef<any>(null);
   const [pendingMessages, setPendingMessages] = useState<ChatMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
 
@@ -100,6 +101,33 @@ const ChatAssistant: React.FC = () => {
   const pointerStartCoords = useRef({ x: 0, y: 0 });
   const currentOffset = useRef({ x: 0, y: 0 });
   const fabRef = useRef<HTMLDivElement>(null);
+
+  const startWatchdog = () => {
+    if (watchdogTimerRef.current) {
+      clearTimeout(watchdogTimerRef.current);
+    }
+    watchdogTimerRef.current = setTimeout(() => {
+      console.warn('[ChatAssistant] Watchdog timed out! Unlocking chatbox.');
+      const streamId = activeStreamIdRef.current;
+      if (streamId) {
+        setMessages(prev => prev.map(msg => 
+          msg.id === streamId 
+            ? { ...msg, text: msg.text + '\n\n*(Connection lost. Please try again.)*', isError: true } 
+            : msg
+        ));
+      }
+      setIsTyping(false);
+      activeStreamIdRef.current = null;
+      watchdogTimerRef.current = null;
+    }, 30000);
+  };
+
+  const clearWatchdog = () => {
+    if (watchdogTimerRef.current) {
+      clearTimeout(watchdogTimerRef.current);
+      watchdogTimerRef.current = null;
+    }
+  };
 
   // Auto-scroll to bottom
   const scrollToBottom = () => {
@@ -280,6 +308,7 @@ const ChatAssistant: React.FC = () => {
 
       socket.on('chat:response', (data: { text: string, isError: boolean }) => {
         setIsTyping(false);
+        clearWatchdog();
         const streamId = activeStreamIdRef.current;
         if (streamId) {
           setMessages(prev => prev.map(msg => 
@@ -307,6 +336,7 @@ const ChatAssistant: React.FC = () => {
 
       socket.on('chat:response:start', (data: { id: string }) => {
         setIsTyping(false);
+        startWatchdog();
         const resId = data.id || Date.now().toString();
         activeStreamIdRef.current = resId;
         // Instantly clear the 'sending' status of user messages and insert a model message placeholder
@@ -322,6 +352,7 @@ const ChatAssistant: React.FC = () => {
       });
 
       socket.on('chat:response:chunk', (data: { text: string }) => {
+        startWatchdog(); // Reset watchdog timer on every chunk packet (heartbeat)
         const streamId = activeStreamIdRef.current;
         if (!streamId) return;
         setMessages(prev => prev.map(msg => 
@@ -334,12 +365,14 @@ const ChatAssistant: React.FC = () => {
       socket.on('disconnect', () => {
         console.log('[ChatAssistant] Socket disconnected.');
         setIsConnected(false);
+        clearWatchdog();
       });
 
       socketRef.current = socket;
     }
 
     return () => {
+      clearWatchdog();
       // Clean up when Component unmounts entirely (not when isOpen closes)
       if (socketRef.current) {
         console.log('[ChatAssistant] Component unmount: disconnecting socket.');
