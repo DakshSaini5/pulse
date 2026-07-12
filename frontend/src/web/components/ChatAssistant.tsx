@@ -89,7 +89,6 @@ const ChatAssistant: React.FC = () => {
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const [activeStreamText, setActiveStreamText] = useState<string | null>(null);
   const activeStreamIdRef = useRef<string | null>(null);
   const [pendingMessages, setPendingMessages] = useState<ChatMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -108,10 +107,10 @@ const ChatAssistant: React.FC = () => {
   };
 
   useEffect(() => {
-    if (isOpen || activeStreamText !== null) {
+    if (isOpen || activeStreamIdRef.current !== null) {
       scrollToBottom();
     }
-  }, [messages, isOpen, activeStreamText]);
+  }, [messages, isOpen]);
 
   useEffect(() => {
     const handleOpen = () => setIsOpen(true);
@@ -281,36 +280,55 @@ const ChatAssistant: React.FC = () => {
 
       socket.on('chat:response', (data: { text: string, isError: boolean }) => {
         setIsTyping(false);
-        setMessages(prev => {
-          // Clear sending statuses
-          const updated: ChatMessage[] = prev.map(msg => msg.status === 'sending' ? { ...msg, status: 'sent' as const } : msg);
-
-          const resId = activeStreamIdRef.current || Date.now().toString();
-          // Avoid duplicate appends if chunk processing already push-assembled it
-          if (updated.some(m => m.id === resId)) return updated;
-
-          return [...updated, {
-            id: resId,
-            role: 'model' as const,
-            text: data.text,
-            isError: data.isError,
-            status: 'sent' as const
-          }];
-        });
-        setActiveStreamText(null);
+        const streamId = activeStreamIdRef.current;
+        if (streamId) {
+          setMessages(prev => prev.map(msg => 
+            msg.id === streamId 
+              ? { ...msg, text: data.text, isError: data.isError } 
+              : msg
+          ));
+        } else {
+          // Fallback if start wasn't received
+          const resId = Date.now().toString();
+          setMessages(prev => {
+            const updated = prev.map(msg => msg.status === 'sending' ? { ...msg, status: 'sent' as const } : msg);
+            if (updated.some(m => m.id === resId)) return updated;
+            return [...updated, {
+              id: resId,
+              role: 'model' as const,
+              text: data.text,
+              isError: data.isError,
+              status: 'sent' as const
+            }];
+          });
+        }
         activeStreamIdRef.current = null;
       });
 
       socket.on('chat:response:start', (data: { id: string }) => {
         setIsTyping(false);
-        // Instantly clear the 'sending' status of any pending messages since the server has begun responding
-        setMessages(prev => prev.map(msg => msg.status === 'sending' ? { ...msg, status: 'sent' as const } : msg));
-        activeStreamIdRef.current = data.id || Date.now().toString();
-        setActiveStreamText('');
+        const resId = data.id || Date.now().toString();
+        activeStreamIdRef.current = resId;
+        // Instantly clear the 'sending' status of user messages and insert a model message placeholder
+        setMessages(prev => [
+          ...prev.map(msg => msg.status === 'sending' ? { ...msg, status: 'sent' as const } : msg),
+          {
+            id: resId,
+            role: 'model' as const,
+            text: '',
+            status: 'sent' as const
+          }
+        ]);
       });
 
       socket.on('chat:response:chunk', (data: { text: string }) => {
-        setActiveStreamText(prev => (prev === null ? data.text : prev + data.text));
+        const streamId = activeStreamIdRef.current;
+        if (!streamId) return;
+        setMessages(prev => prev.map(msg => 
+          msg.id === streamId 
+            ? { ...msg, text: msg.text + data.text } 
+            : msg
+        ));
       });
 
       socket.on('disconnect', () => {
@@ -334,7 +352,7 @@ const ChatAssistant: React.FC = () => {
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     const queryText = input.trim();
-    if (!queryText || isTyping) return;
+    if (!queryText || isTyping || activeStreamIdRef.current !== null) return;
 
     const messageId = Date.now().toString();
     const userMessage: ChatMessage = {
@@ -633,52 +651,7 @@ const ChatAssistant: React.FC = () => {
                 )}
               </div>
             ))}
-
-            {/* Render Isolated Streaming Response Bubble (Task 3) */}
-            {activeStreamText !== null && (
-              <div className="flex gap-3 justify-start animate-in fade-in duration-200">
-                <div className="w-6 h-6 rounded-full bg-white flex-shrink-0 flex items-center justify-center mt-1 shadow-sm border border-slate-200">
-                  <PulseLogo variant="icon" size={14} />
-                </div>
-                <div className="max-w-[80%] rounded-2xl px-4 py-2 text-sm leading-relaxed bg-white/10 text-gray-200 rounded-tl-sm">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      h2: ({ children }) => <h2 className="text-blue-400 font-semibold text-sm mt-2 mb-1">{children}</h2>,
-                      h3: ({ children }) => <h3 className="text-blue-300 font-medium text-xs mt-2 mb-1">{children}</h3>,
-                      p: ({ children }) => <p className="text-gray-200 text-sm mb-1.5 leading-relaxed">{children}</p>,
-                      ul: ({ children }) => <ul className="list-disc list-inside text-gray-300 text-sm space-y-0.5 ml-1">{children}</ul>,
-                      ol: ({ children }) => <ol className="list-decimal list-inside text-gray-300 text-sm space-y-0.5 ml-1">{children}</ol>,
-                      li: ({ children }) => <li className="text-sm">{children}</li>,
-                      strong: ({ children }) => <strong className="text-white font-semibold">{children}</strong>,
-                      em: ({ children }) => <em className="text-gray-400 italic">{children}</em>,
-                      hr: () => <hr className="border-white/10 my-2" />,
-                      code: ({ children }) => <code className="bg-white/10 px-1 py-0.5 rounded text-blue-300 text-xs">{children}</code>,
-                      a: ({ href, children }) => {
-                        const isInternal = href && href.startsWith('/');
-                        if (isInternal) {
-                          return (
-                            <button
-                              onClick={() => {
-                                setIsOpen(false);
-                                navigate(href);
-                              }}
-                              className="text-blue-400 font-bold hover:underline transition-colors cursor-pointer text-left bg-transparent border-none p-0 inline"
-                            >
-                              {children}
-                            </button>
-                          );
-                        }
-                        return <a href={href} className="text-blue-400 font-bold hover:underline transition-colors">{children}</a>;
-                      },
-                    }}
-                  >
-                    {activeStreamText}
-                  </ReactMarkdown>
-                </div>
-              </div>
-            )}
-
+            
             {/* Typing Indicator */}
             {isTyping && (
               <div className="flex gap-3 justify-start animate-pulse">
@@ -700,12 +673,13 @@ const ChatAssistant: React.FC = () => {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about your health..."
-                className="w-full bg-white/5 border border-white/10 text-white placeholder:text-gray-500 rounded-full py-2.5 pl-4 pr-12 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all text-sm"
+                disabled={isTyping || activeStreamIdRef.current !== null}
+                placeholder={isTyping || activeStreamIdRef.current !== null ? "AI is responding..." : "Ask about your health..."}
+                className="w-full bg-white/5 border border-white/10 text-white placeholder:text-gray-500 rounded-full py-2.5 pl-4 pr-12 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all text-sm disabled:opacity-50"
               />
               <button
                 type="submit"
-                disabled={!input.trim() || isTyping}
+                disabled={!input.trim() || isTyping || activeStreamIdRef.current !== null}
                 className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 bg-blue-600 hover:bg-blue-500 disabled:bg-white/5 disabled:text-gray-500 text-white rounded-full transition-colors"
               >
                 <Send size={16} />
