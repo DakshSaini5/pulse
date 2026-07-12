@@ -7,12 +7,15 @@ import remarkGfm from 'remark-gfm';
 import { isNativeApp, useKeyboardActive } from '@core/utils/platform';
 import { chatAPI } from '@core/services/api';
 import { useNavigate } from 'react-router-dom';
+import { Preferences } from '@capacitor/preferences';
+import { App } from '@capacitor/app';
 
 interface ChatMessage {
   id: string;
   role: 'user' | 'model';
   text: string;
   isError?: boolean;
+  status?: 'sending' | 'sent';
 }
 
 const CRISIS_PATTERNS = [
@@ -85,6 +88,10 @@ const ChatAssistant: React.FC = () => {
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const [activeStreamText, setActiveStreamText] = useState<string | null>(null);
+  const activeStreamIdRef = useRef<string | null>(null);
+  const [pendingMessages, setPendingMessages] = useState<ChatMessage[]>([]);
+
   // Drag state for mobile web
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const isDragging = useRef(false);
@@ -99,10 +106,10 @@ const ChatAssistant: React.FC = () => {
   };
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen || activeStreamText !== null) {
       scrollToBottom();
     }
-  }, [messages, isOpen]);
+  }, [messages, isOpen, activeStreamText]);
 
   useEffect(() => {
     const handleOpen = () => setIsOpen(true);
@@ -110,115 +117,223 @@ const ChatAssistant: React.FC = () => {
     return () => window.removeEventListener('pulse-ai:open', handleOpen);
   }, []);
 
-  // Socket initialization
+  // Load local chat cache on mount (Task 1)
   useEffect(() => {
-    // Only connect when opened for the first time
-    if (isOpen && !socketRef.current) {
+    const loadCache = async () => {
+      try {
+        let cached: string | null = null;
+        if (isNativeApp) {
+          const { value } = await Preferences.get({ key: 'pulse_chat_cache' });
+          cached = value;
+        } else {
+          cached = localStorage.getItem('pulse_chat_cache');
+        }
+        if (cached) {
+          const parsed = JSON.parse(cached) as ChatMessage[];
+          if (parsed && parsed.length > 0) {
+            setMessages(parsed);
+          }
+        }
+      } catch (err) {
+        console.error('[ChatAssistant] Failed to load chat cache:', err);
+      }
+    };
+    loadCache();
+  }, []);
+
+  // Save latest 20 messages to cache on change (Task 1)
+  useEffect(() => {
+    const saveCache = async () => {
+      if (messages.length === 0) return;
+      try {
+        const cleanMessages: ChatMessage[] = messages.slice(-20).map(msg => ({
+          ...msg,
+          status: (msg.status === 'sending' ? 'sending' : 'sent') as 'sending' | 'sent'
+        }));
+        const serialized = JSON.stringify(cleanMessages);
+        if (isNativeApp) {
+          await Preferences.set({ key: 'pulse_chat_cache', value: serialized });
+        } else {
+          localStorage.setItem('pulse_chat_cache', serialized);
+        }
+      } catch (err) {
+        console.error('[ChatAssistant] Failed to save chat cache:', err);
+      }
+    };
+    saveCache();
+  }, [messages]);
+
+  // App Backgrounding Socket Lifecycle Manager (Task 2)
+  useEffect(() => {
+    if (!isNativeApp) return;
+
+    const listener = App.addListener('appStateChange', async (state) => {
+      console.log('[ChatAssistant] App lifecycle state change:', state);
+      if (state.isActive) {
+        // App is active: trigger connect
+        if (socketRef.current) {
+          if (!socketRef.current.connected) {
+            console.log('[ChatAssistant] App active: reconnecting socket...');
+            socketRef.current.connect();
+          }
+          // Request missing messages
+          const lastMsgId = messages.length > 0 ? messages[messages.length - 1].id : null;
+          console.log('[ChatAssistant] Syncing missing messages since:', lastMsgId);
+          socketRef.current.emit('chat:sync', { lastMessageId: lastMsgId });
+        }
+      } else {
+        // App is backgrounded: disconnect
+        if (socketRef.current && socketRef.current.connected) {
+          console.log('[ChatAssistant] App backgrounded: disconnecting socket...');
+          socketRef.current.disconnect();
+        }
+      }
+    });
+
+    return () => {
+      listener.then(h => h.remove());
+    };
+  }, [messages]);
+
+  // Process Offline Pending Message Queue (Task 4)
+  useEffect(() => {
+    if (socketRef.current && socketRef.current.connected && pendingMessages.length > 0) {
+      console.log('[ChatAssistant] Socket connected. Sending queued messages:', pendingMessages);
+      pendingMessages.forEach(msg => {
+        socketRef.current?.emit('chat:message', { text: msg.text });
+      });
+      setPendingMessages([]);
+    }
+  }, [pendingMessages, socketRef.current?.connected]);
+
+  // Socket initialization (Persistent Keep-Alive on Mount)
+  useEffect(() => {
+    if (!socketRef.current) {
       const url = import.meta.env.VITE_API_URL || undefined;
       const token = localStorage.getItem('pulse_token');
+      
+      console.log('[ChatAssistant] Connecting socket via WebSockets...');
       const socket = io(url as any, {
         auth: { token },
-        transports: ['polling', 'websocket'] // Use polling first for maximum compatibility on native apps
+        transports: ['websocket'],
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000
       });
       
       socket.on('connect', () => {
+        console.log('[ChatAssistant] Socket connected.');
+        
+        // Load history only if we do not already have messages loaded in UI
         const loadHistory = async () => {
           try {
             const history = await chatAPI.getHistory();
             if (history && history.length > 0) {
               setMessages(history.map(msg => ({
                 id: msg.id,
-                role: msg.role === 'model' ? 'model' : 'user',
-                text: msg.content
+                role: (msg.role === 'model' ? 'model' : 'user') as 'model' | 'user',
+                text: msg.content,
+                status: 'sent' as const
               })));
             } else {
               setMessages([{
                 id: 'welcome',
-                role: 'model',
-                text: 'Hi there! I am PulseAI. How can I help you with your health reports or prescriptions today?'
+                role: 'model' as const,
+                text: 'Hi there! I am PulseAI. How can I help you with your health reports or prescriptions today?',
+                status: 'sent' as const
               }]);
             }
           } catch (err) {
             console.error("Failed to load chat history:", err);
             setMessages([{
               id: 'welcome',
-              role: 'model',
-              text: 'Hi there! I am PulseAI. How can I help you with your health reports or prescriptions today?'
+              role: 'model' as const,
+              text: 'Hi there! I am PulseAI. How can I help you with your health reports or prescriptions today?',
+              status: 'sent' as const
             }]);
           }
         };
 
-        loadHistory();
+        // If messages contain only a cached or welcome message, refresh history
+        setMessages(prev => {
+          if (prev.length <= 1) {
+            loadHistory();
+          }
+          return prev;
+        });
       });
 
       socket.on('chat:response', (data: { text: string, isError: boolean }) => {
         setIsTyping(false);
-        setMessages(prev => [...prev, {
-          id: Date.now().toString(),
-          role: 'model',
-          text: data.text,
-          isError: data.isError
-        }]);
+        setMessages(prev => {
+          // Clear sending statuses
+          const updated: ChatMessage[] = prev.map(msg => msg.status === 'sending' ? { ...msg, status: 'sent' as const } : msg);
+          
+          const resId = activeStreamIdRef.current || Date.now().toString();
+          // Avoid duplicate appends if chunk processing already push-assembled it
+          if (updated.some(m => m.id === resId)) return updated;
+
+          return [...updated, {
+            id: resId,
+            role: 'model' as const,
+            text: data.text,
+            isError: data.isError,
+            status: 'sent' as const
+          }];
+        });
+        setActiveStreamText(null);
+        activeStreamIdRef.current = null;
       });
 
       socket.on('chat:response:start', (data: { id: string }) => {
         setIsTyping(false);
-        setMessages(prev => [...prev, {
-          id: data.id || Date.now().toString(),
-          role: 'model',
-          text: '',
-          isError: false
-        }]);
+        activeStreamIdRef.current = data.id || Date.now().toString();
+        setActiveStreamText('');
       });
 
       socket.on('chat:response:chunk', (data: { text: string }) => {
-        setMessages(prev => {
-          const newMessages = [...prev];
-          const lastMsgIndex = newMessages.length - 1;
-          if (lastMsgIndex >= 0 && newMessages[lastMsgIndex].role === 'model') {
-            newMessages[lastMsgIndex] = {
-              ...newMessages[lastMsgIndex],
-              text: newMessages[lastMsgIndex].text + data.text
-            };
-          }
-          return newMessages;
-        });
+        setActiveStreamText(prev => (prev === null ? data.text : prev + data.text));
       });
 
       socketRef.current = socket;
     }
 
     return () => {
+      // Clean up when Component unmounts entirely (not when isOpen closes)
       if (socketRef.current) {
+        console.log('[ChatAssistant] Component unmount: disconnecting socket.');
         socketRef.current.disconnect();
         socketRef.current = null;
       }
     };
-  }, [isOpen]);
+  }, []);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     const queryText = input.trim();
     if (!queryText || isTyping) return;
 
+    const messageId = Date.now().toString();
     const userMessage: ChatMessage = {
-      id: Date.now().toString(),
+      id: messageId,
       role: 'user',
-      text: queryText
+      text: queryText,
+      status: 'sending'
     };
 
     // 1. Suicide / Self-Harm Intercept
     if (CRISIS_PATTERNS.some(p => p.test(queryText))) {
-      setMessages(prev => [...prev, userMessage]);
+      setMessages(prev => [...prev, { ...userMessage, status: 'sent' as const }]);
       setInput('');
       setIsTyping(true);
       setTimeout(() => {
         setIsTyping(false);
         setMessages(prev => [...prev, {
           id: Date.now().toString(),
-          role: 'model',
+          role: 'model' as const,
           text: `### **Emergency Support Available (India)**\n\nPlease know that you are not alone, and there is support available right now. Your life is extremely valuable, and there are people who want to listen and help you through this difficult time.\n\nPlease contact one of the following helplines immediately:\n\n* 🚨 **National Emergency Helpline**: [Call 112](tel:112) (Immediate police & medical response)\n* 📞 **Tele-MANAS (Mental Health Helpline)**: [Call 14416](tel:14416) or [Call 1800-891-4416](tel:18008914416) (24/7 free counseling)\n* 🏥 **Kiran Mental Health Helpline**: [Call 1800-599-0019](tel:18005990019) (24/7 free support)\n* 🤝 **AASRA (Suicide Prevention Helpline)**: [Call 9152987821](tel:9152987821)\n\nPlease reach out to them or contact a trusted friend, family member, or healthcare professional immediately. We care about your safety and well-being.`,
-          isError: false
+          isError: false,
+          status: 'sent' as const
         }]);
       }, 800);
       return;
@@ -226,16 +341,17 @@ const ChatAssistant: React.FC = () => {
 
     // 2. Emergency Triage Intercept
     if (EMERGENCY_PATTERNS.some(p => p.test(queryText))) {
-      setMessages(prev => [...prev, userMessage]);
+      setMessages(prev => [...prev, { ...userMessage, status: 'sent' as const }]);
       setInput('');
       setIsTyping(true);
       setTimeout(() => {
         setIsTyping(false);
         setMessages(prev => [...prev, {
           id: Date.now().toString(),
-          role: 'model',
+          role: 'model' as const,
           text: `### 🚨 **Potential Medical Emergency**\n\nYou are describing symptoms (such as chest pain or breathing difficulties) that could indicate a life-threatening medical emergency.\n\n**Please do not wait.**\n\n* 📞 **Call Emergency Helpline**: [Call 112](tel:112) or [Call 108](tel:108) immediately.\n* 🏥 **Navigate to Care**: [Find Nearest Emergency Room](/search?emergency=true&sort=distance)`,
-          isError: false
+          isError: false,
+          status: 'sent' as const
         }]);
       }, 800);
       return;
@@ -243,16 +359,17 @@ const ChatAssistant: React.FC = () => {
 
     // 3. Medication / Self-Medication Intercept
     if (MEDICATION_PATTERNS.some(p => p.test(queryText))) {
-      setMessages(prev => [...prev, userMessage]);
+      setMessages(prev => [...prev, { ...userMessage, status: 'sent' as const }]);
       setInput('');
       setIsTyping(true);
       setTimeout(() => {
         setIsTyping(false);
         setMessages(prev => [...prev, {
           id: Date.now().toString(),
-          role: 'model',
+          role: 'model' as const,
           text: `### 💊 **Medication Advisory**\n\nPulse AI is a triage assistant and cannot prescribe medications or calculate dosages. Self-medication (especially with antibiotics, heavy painkillers, or schedule-H drugs) can carry serious health risks.\n\nPlease upload your doctor's prescription for a safe, simplified analysis and dosage tracker:\n\n* 📄 [Upload Prescription for Analysis](/prescriptions)`,
-          isError: false
+          isError: false,
+          status: 'sent' as const
         }]);
       }, 800);
       return;
@@ -260,16 +377,17 @@ const ChatAssistant: React.FC = () => {
 
     // 4. Feature Shortcut Links Intercept
     if (FEATURE_PATTERNS.some(p => p.test(queryText))) {
-      setMessages(prev => [...prev, userMessage]);
+      setMessages(prev => [...prev, { ...userMessage, status: 'sent' as const }]);
       setInput('');
       setIsTyping(true);
       setTimeout(() => {
         setIsTyping(false);
         setMessages(prev => [...prev, {
           id: Date.now().toString(),
-          role: 'model',
+          role: 'model' as const,
           text: `### 📄 **Pulse Feature Guide**\n\nYou can easily navigate to the correct section of the Pulse platform using the quick links below:\n\n* 📈 **Health Trends**: Check your bio-marker history in [Trends Center](/trends).\n* ❤️ **Saved Facilities**: View your bookmarked clinics in [Saved Hospitals](/saved).\n* 📄 **Reports**: Upload clinical document scans in [Report Center](/reports).\n* 💊 **Prescriptions**: Extract and parse dosage timelines in [Prescription Center](/prescriptions).`,
-          isError: false
+          isError: false,
+          status: 'sent' as const
         }]);
       }, 800);
       return;
@@ -279,18 +397,11 @@ const ChatAssistant: React.FC = () => {
     setInput('');
     setIsTyping(true);
 
-    if (socketRef.current) {
+    if (socketRef.current && socketRef.current.connected) {
       socketRef.current.emit('chat:message', { text: userMessage.text });
     } else {
-      setTimeout(() => {
-        setIsTyping(false);
-        setMessages(prev => [...prev, {
-          id: Date.now().toString(),
-          role: 'model',
-          text: "I'm sorry, I'm currently disconnected from the chat server. Please check your internet connection or try again later.",
-          isError: true
-        }]);
-      }, 1000);
+      console.warn('[ChatAssistant] Socket offline. Queuing message.');
+      setPendingMessages(prev => [...prev, userMessage]);
     }
   };
 
@@ -434,23 +545,27 @@ const ChatAssistant: React.FC = () => {
             {messages.map((msg) => (
               <div 
                 key={msg.id} 
-                className={`flex gap-3 \${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 {msg.role === 'model' && (
                   <div className="w-6 h-6 rounded-full bg-white flex-shrink-0 flex items-center justify-center mt-1 shadow-sm border border-slate-200">
                     <PulseLogo variant="icon" size={14} />
                   </div>
                 )}
-                
-                <div className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm leading-relaxed \${
+                <div className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm leading-relaxed ${
                   msg.role === 'user' 
-                    ? 'bg-blue-600 text-white rounded-tr-sm' 
+                    ? `bg-blue-600 text-white rounded-tr-sm ${msg.status === 'sending' ? 'opacity-70' : ''}` 
                     : msg.isError 
                       ? 'bg-red-500/20 border border-red-500/30 text-red-200 rounded-tl-sm'
                       : 'bg-white/10 text-gray-200 rounded-tl-sm'
                 }`}>
                   {msg.role === 'user' ? (
-                    msg.text
+                    <div className="relative">
+                      {msg.text}
+                      {msg.status === 'sending' && (
+                        <span className="block text-[9px] text-blue-200 text-right mt-0.5 animate-pulse">Sending...</span>
+                      )}
+                    </div>
                   ) : (
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
@@ -496,6 +611,51 @@ const ChatAssistant: React.FC = () => {
                 )}
               </div>
             ))}
+            
+            {/* Render Isolated Streaming Response Bubble (Task 3) */}
+            {activeStreamText !== null && (
+              <div className="flex gap-3 justify-start animate-in fade-in duration-200">
+                <div className="w-6 h-6 rounded-full bg-white flex-shrink-0 flex items-center justify-center mt-1 shadow-sm border border-slate-200">
+                  <PulseLogo variant="icon" size={14} />
+                </div>
+                <div className="max-w-[80%] rounded-2xl px-4 py-2 text-sm leading-relaxed bg-white/10 text-gray-200 rounded-tl-sm">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      h2: ({children}) => <h2 className="text-blue-400 font-semibold text-sm mt-2 mb-1">{children}</h2>,
+                      h3: ({children}) => <h3 className="text-blue-300 font-medium text-xs mt-2 mb-1">{children}</h3>,
+                      p: ({children}) => <p className="text-gray-200 text-sm mb-1.5 leading-relaxed">{children}</p>,
+                      ul: ({children}) => <ul className="list-disc list-inside text-gray-300 text-sm space-y-0.5 ml-1">{children}</ul>,
+                      ol: ({children}) => <ol className="list-decimal list-inside text-gray-300 text-sm space-y-0.5 ml-1">{children}</ol>,
+                      li: ({children}) => <li className="text-sm">{children}</li>,
+                      strong: ({children}) => <strong className="text-white font-semibold">{children}</strong>,
+                      em: ({children}) => <em className="text-gray-400 italic">{children}</em>,
+                      hr: () => <hr className="border-white/10 my-2" />,
+                      code: ({children}) => <code className="bg-white/10 px-1 py-0.5 rounded text-blue-300 text-xs">{children}</code>,
+                      a: ({href, children}) => {
+                        const isInternal = href && href.startsWith('/');
+                        if (isInternal) {
+                          return (
+                            <button
+                              onClick={() => {
+                                setIsOpen(false);
+                                navigate(href);
+                              }}
+                              className="text-blue-400 font-bold hover:underline transition-colors cursor-pointer text-left bg-transparent border-none p-0 inline"
+                            >
+                              {children}
+                            </button>
+                          );
+                        }
+                        return <a href={href} className="text-blue-400 font-bold hover:underline transition-colors">{children}</a>;
+                      },
+                    }}
+                  >
+                    {activeStreamText}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            )}
             
             {/* Typing Indicator */}
             {isTyping && (

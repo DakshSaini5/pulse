@@ -21,6 +21,15 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(() => {
+    if (!isNativeApp) return false;
+    return localStorage.getItem('pulse_privacy_accepted') !== 'true';
+  });
+
+  const handleAcceptPrivacy = () => {
+    localStorage.setItem('pulse_privacy_accepted', 'true');
+    setShowPrivacyModal(false);
+  };
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -276,6 +285,69 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       
       {/* Floating AI Chat Assistant */}
       {user && <ChatAssistant />}
+
+      {/* Prominent Privacy Disclosure Modal for App Store Compliance */}
+      {showPrivacyModal && (
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-sm w-full space-y-6 shadow-2xl animate-in zoom-in-95 duration-200 text-left">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <Bell className="w-6 h-6 animate-pulse" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Privacy & Data Safety</h3>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">Play Store Onboarding Compliance</p>
+              </div>
+            </div>
+            
+            <div className="space-y-4 text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-semibold">
+              <p>
+                To provide intelligent clinical assistance, Pulse securely handles specific types of health data:
+              </p>
+              <div className="space-y-3 pl-1">
+                <div className="flex items-start gap-2">
+                  <span className="shrink-0 mt-0.5">📍</span>
+                  <p><strong className="text-slate-900 dark:text-white">Location Access:</strong> Calculates transit distances to emergency rooms and nearby CGHS facilities.</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="shrink-0 mt-0.5">📄</span>
+                  <p><strong className="text-slate-900 dark:text-white">Health Documents:</strong> Uploaded prescriptions and reports are structured privately via Google Gemini AI.</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="shrink-0 mt-0.5">💬</span>
+                  <p><strong className="text-slate-900 dark:text-white">Chat Triage Logs:</strong> Inquiry history is saved in a private database for you to access anytime.</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="shrink-0 mt-0.5">🔒</span>
+                  <p><strong className="text-slate-900 dark:text-white">Data Control:</strong> You are in full control. Delete your uploads or your account at any time in settings.</p>
+                </div>
+              </div>
+              <p className="text-[10px] text-slate-500 mt-2">
+                By clicking Accept, you agree to our <Link to="/privacy" onClick={() => setShowPrivacyModal(false)} className="text-primary underline">Privacy Policy</Link>.
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  toast.error("You must accept the privacy policy to use the app.");
+                }}
+                className="flex-1 py-3 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-95"
+              >
+                Decline
+              </button>
+              <button
+                type="button"
+                onClick={handleAcceptPrivacy}
+                className="flex-1 py-3 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl shadow-md shadow-primary/20 transition-all active:scale-95"
+              >
+                Accept & Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };;
