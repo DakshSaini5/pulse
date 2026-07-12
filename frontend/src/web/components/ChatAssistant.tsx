@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { isNativeApp, useKeyboardActive } from '@core/utils/platform';
 import { chatAPI } from '@core/services/api';
+import { useNavigate } from 'react-router-dom';
 
 interface ChatMessage {
   id: string;
@@ -14,7 +15,67 @@ interface ChatMessage {
   isError?: boolean;
 }
 
+const CRISIS_PATTERNS = [
+  /suicide/i,
+  /kill\s+my\s*self/i,
+  /kill\s+him\s*self/i,
+  /kill\s+her\s*self/i,
+  /want\s+to\s+die/i,
+  /want\s+to\s+end\s+my\s+life/i,
+  /hurt\s+my\s*self/i,
+  /harm\s+my\s*self/i,
+  /self[- ]harm/i,
+  /suicidal/i,
+  /don't\s+want\s+to\s+live/i,
+  /dont\s+want\s+to\s+live/i,
+  /hanging\s+my\s*self/i,
+  /cutting\s+my\s*self/i,
+  /die\s+now/i,
+  /end\s+it\s+all/i,
+  /feel\s+like\s+dying/i,
+  /dont\s+feel\s+good\s+wanna\s+die/i,
+  /wanna\s+kill\s+my\s*self/i,
+  /wish\s+i\s+was\s+dead/i,
+  /wish\s+i\s+were\s+dead/i
+];
+
+const EMERGENCY_PATTERNS = [
+  /chest\s+pain/i,
+  /cannot\s+breathe/i,
+  /can't\s+breathe/i,
+  /breathing\s+diffic/i,
+  /shortness\s+of\s+breath/i,
+  /sudden\s+paralysis/i,
+  /severe\s+bleeding/i,
+  /heavy\s+bleeding/i,
+  /unconscious/i,
+  /heart\s+attack/i,
+  /stroke\s+symptom/i
+];
+
+const MEDICATION_PATTERNS = [
+  /which\s+antibiotic/i,
+  /recommend\s+an\s+antibiotic/i,
+  /suggest\s+a\s+medicine/i,
+  /prescribe\s+a\s+pill/i,
+  /dosage\s+for/i,
+  /what\s+is\s+the\s+dosage\s+of/i,
+  /how\s+many\s+mg\s+of/i,
+  /dose\s+of/i
+];
+
+const FEATURE_PATTERNS = [
+  /how\s+(to|do\s+i)\s+upload/i,
+  /see\s+my\s+trends/i,
+  /saved\s+hospital/i,
+  /where\s+is\s+saved/i,
+  /my\s+reports/i,
+  /prescription\s+analys/i,
+  /how\s+does\s+the\s+app\s+work/i
+];
+
 const ChatAssistant: React.FC = () => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -137,13 +198,82 @@ const ChatAssistant: React.FC = () => {
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isTyping) return;
+    const queryText = input.trim();
+    if (!queryText || isTyping) return;
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
-      text: input
+      text: queryText
     };
+
+    // 1. Suicide / Self-Harm Intercept
+    if (CRISIS_PATTERNS.some(p => p.test(queryText))) {
+      setMessages(prev => [...prev, userMessage]);
+      setInput('');
+      setIsTyping(true);
+      setTimeout(() => {
+        setIsTyping(false);
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          role: 'model',
+          text: `### **Emergency Support Available (India)**\n\nPlease know that you are not alone, and there is support available right now. Your life is extremely valuable, and there are people who want to listen and help you through this difficult time.\n\nPlease contact one of the following helplines immediately:\n\n* 🚨 **National Emergency Helpline**: [Call 112](tel:112) (Immediate police & medical response)\n* 📞 **Tele-MANAS (Mental Health Helpline)**: [Call 14416](tel:14416) or [Call 1800-891-4416](tel:18008914416) (24/7 free counseling)\n* 🏥 **Kiran Mental Health Helpline**: [Call 1800-599-0019](tel:18005990019) (24/7 free support)\n* 🤝 **AASRA (Suicide Prevention Helpline)**: [Call 9152987821](tel:9152987821)\n\nPlease reach out to them or contact a trusted friend, family member, or healthcare professional immediately. We care about your safety and well-being.`,
+          isError: false
+        }]);
+      }, 800);
+      return;
+    }
+
+    // 2. Emergency Triage Intercept
+    if (EMERGENCY_PATTERNS.some(p => p.test(queryText))) {
+      setMessages(prev => [...prev, userMessage]);
+      setInput('');
+      setIsTyping(true);
+      setTimeout(() => {
+        setIsTyping(false);
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          role: 'model',
+          text: `### 🚨 **Potential Medical Emergency**\n\nYou are describing symptoms (such as chest pain or breathing difficulties) that could indicate a life-threatening medical emergency.\n\n**Please do not wait.**\n\n* 📞 **Call Emergency Helpline**: [Call 112](tel:112) or [Call 108](tel:108) immediately.\n* 🏥 **Navigate to Care**: [Find Nearest Emergency Room](/search?emergency=true&sort=distance)`,
+          isError: false
+        }]);
+      }, 800);
+      return;
+    }
+
+    // 3. Medication / Self-Medication Intercept
+    if (MEDICATION_PATTERNS.some(p => p.test(queryText))) {
+      setMessages(prev => [...prev, userMessage]);
+      setInput('');
+      setIsTyping(true);
+      setTimeout(() => {
+        setIsTyping(false);
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          role: 'model',
+          text: `### 💊 **Medication Advisory**\n\nPulse AI is a triage assistant and cannot prescribe medications or calculate dosages. Self-medication (especially with antibiotics, heavy painkillers, or schedule-H drugs) can carry serious health risks.\n\nPlease upload your doctor's prescription for a safe, simplified analysis and dosage tracker:\n\n* 📄 [Upload Prescription for Analysis](/prescriptions)`,
+          isError: false
+        }]);
+      }, 800);
+      return;
+    }
+
+    // 4. Feature Shortcut Links Intercept
+    if (FEATURE_PATTERNS.some(p => p.test(queryText))) {
+      setMessages(prev => [...prev, userMessage]);
+      setInput('');
+      setIsTyping(true);
+      setTimeout(() => {
+        setIsTyping(false);
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          role: 'model',
+          text: `### 📄 **Pulse Feature Guide**\n\nYou can easily navigate to the correct section of the Pulse platform using the quick links below:\n\n* 📈 **Health Trends**: Check your bio-marker history in [Trends Center](/trends).\n* ❤️ **Saved Facilities**: View your bookmarked clinics in [Saved Hospitals](/saved).\n* 📄 **Reports**: Upload clinical document scans in [Report Center](/reports).\n* 💊 **Prescriptions**: Extract and parse dosage timelines in [Prescription Center](/prescriptions).`,
+          isError: false
+        }]);
+      }, 800);
+      return;
+    }
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
@@ -335,6 +465,23 @@ const ChatAssistant: React.FC = () => {
                         em: ({children}) => <em className="text-gray-400 italic">{children}</em>,
                         hr: () => <hr className="border-white/10 my-2" />,
                         code: ({children}) => <code className="bg-white/10 px-1 py-0.5 rounded text-blue-300 text-xs">{children}</code>,
+                        a: ({href, children}) => {
+                          const isInternal = href && href.startsWith('/');
+                          if (isInternal) {
+                            return (
+                              <button
+                                onClick={() => {
+                                  setIsOpen(false);
+                                  navigate(href);
+                                }}
+                                className="text-blue-400 font-bold hover:underline transition-colors cursor-pointer text-left bg-transparent border-none p-0 inline"
+                              >
+                                {children}
+                              </button>
+                            );
+                          }
+                          return <a href={href} className="text-blue-400 font-bold hover:underline transition-colors">{children}</a>;
+                        },
                       }}
                     >
                       {msg.text}
