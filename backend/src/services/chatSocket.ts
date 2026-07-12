@@ -190,8 +190,14 @@ REGIONAL HOTLINE RULE: If the patient is experiencing a medical or mental health
       if (genAI) chatSession = session;
       socket.emit('chat:debug', { step: '7_parallel_init_success', sessionCreated: !!chatSession });
 
-      socket.on('chat:message', async (message: string) => {
-        if (!message || typeof message !== 'string') return;
+      socket.on('chat:message', async (data: any) => {
+        let message = '';
+        if (typeof data === 'string') {
+          message = data;
+        } else if (data && typeof data === 'object' && typeof data.text === 'string') {
+          message = data.text;
+        }
+        if (!message) return;
         socket.emit('chat:debug', { step: '8_message_received', message });
 
         // Rate limiting: sliding window of RATE_LIMIT_MAX messages per RATE_LIMIT_WINDOW_MS
