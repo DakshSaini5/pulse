@@ -85,7 +85,7 @@ const ChatAssistant: React.FC = () => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const isKeyboardActive = useKeyboardActive();
-  
+
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -133,7 +133,19 @@ const ChatAssistant: React.FC = () => {
         if (cached) {
           const parsed = JSON.parse(cached) as ChatMessage[];
           if (parsed && parsed.length > 0) {
-            setMessages(parsed);
+            // Force status: 'sent' for all historical cached messages
+            let sanitized = parsed.map(msg => ({
+              ...msg,
+              status: 'sent' as const
+            }));
+            
+            // Clean up unanswered user messages at the end of the history
+            while (sanitized.length > 0 && sanitized[sanitized.length - 1].role === 'user') {
+              console.log('[ChatAssistant] Cleaning up unanswered user message from cache:', sanitized[sanitized.length - 1]);
+              sanitized.pop();
+            }
+
+            setMessages(sanitized);
           }
         }
       } catch (err) {
@@ -148,9 +160,10 @@ const ChatAssistant: React.FC = () => {
     const saveCache = async () => {
       if (messages.length === 0) return;
       try {
+        // Always save cached messages as 'sent'
         const cleanMessages: ChatMessage[] = messages.slice(-20).map(msg => ({
           ...msg,
-          status: (msg.status === 'sending' ? 'sending' : 'sent') as 'sending' | 'sent'
+          status: 'sent' as const
         }));
         const serialized = JSON.stringify(cleanMessages);
         if (isNativeApp) {
@@ -213,7 +226,7 @@ const ChatAssistant: React.FC = () => {
     if (!socketRef.current) {
       const url = import.meta.env.VITE_API_URL || undefined;
       const token = localStorage.getItem('pulse_token');
-      
+
       console.log('[ChatAssistant] Connecting socket via WebSockets with Polling fallback...');
       const socket = io(url as any, {
         auth: { token },
@@ -222,11 +235,11 @@ const ChatAssistant: React.FC = () => {
         reconnectionAttempts: 10,
         reconnectionDelay: 1000
       });
-      
+
       socket.on('connect', () => {
         console.log('[ChatAssistant] Socket connected.');
         setIsConnected(true);
-        
+
         // Load history only if we do not already have messages loaded in UI
         const loadHistory = async () => {
           try {
@@ -271,7 +284,7 @@ const ChatAssistant: React.FC = () => {
         setMessages(prev => {
           // Clear sending statuses
           const updated: ChatMessage[] = prev.map(msg => msg.status === 'sending' ? { ...msg, status: 'sent' as const } : msg);
-          
+
           const resId = activeStreamIdRef.current || Date.now().toString();
           // Avoid duplicate appends if chunk processing already push-assembled it
           if (updated.some(m => m.id === resId)) return updated;
@@ -290,6 +303,8 @@ const ChatAssistant: React.FC = () => {
 
       socket.on('chat:response:start', (data: { id: string }) => {
         setIsTyping(false);
+        // Instantly clear the 'sending' status of any pending messages since the server has begun responding
+        setMessages(prev => prev.map(msg => msg.status === 'sending' ? { ...msg, status: 'sent' as const } : msg));
         activeStreamIdRef.current = data.id || Date.now().toString();
         setActiveStreamText('');
       });
@@ -430,33 +445,33 @@ const ChatAssistant: React.FC = () => {
     if (!isDragging.current) return;
     const nextX = e.clientX - dragStartPos.current.x;
     const nextY = e.clientY - dragStartPos.current.y;
-    
+
     // Bounds check to keep button within viewport
     const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 360;
     const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 640;
-    
+
     const maxLeftX = -screenWidth + 80;
     const maxRightX = 20;
     const maxUpY = -screenHeight + 140;
     const maxDownY = 20;
-    
+
     currentOffset.current = {
       x: Math.min(Math.max(nextX, maxLeftX), maxRightX),
       y: Math.min(Math.max(nextY, maxUpY), maxDownY)
     };
-    
+
     setDragOffset(currentOffset.current);
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
     isDragging.current = false;
     (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-    
+
     // Check if it was a simple tap/click
     const dx = e.clientX - pointerStartCoords.current.x;
     const dy = e.clientY - pointerStartCoords.current.y;
     const moveDistance = Math.sqrt(dx * dx + dy * dy);
-    
+
     if (moveDistance < 6) {
       setIsOpen(true);
       return;
@@ -465,17 +480,17 @@ const ChatAssistant: React.FC = () => {
     // Snap to left or right edge of screen
     const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 360;
     const threshold = -screenWidth / 2;
-    
+
     if (currentOffset.current.x < threshold) {
       // Snap to left
       currentOffset.current.x = -screenWidth + 90;
-      
+
       setDragOffset(currentOffset.current);
-      
+
       if (fabRef.current) {
         fabRef.current.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
         fabRef.current.style.transform = `translate(${currentOffset.current.x}px, ${currentOffset.current.y}px)`;
-        
+
         setTimeout(() => {
           if (fabRef.current) {
             fabRef.current.style.transition = 'none';
@@ -485,14 +500,14 @@ const ChatAssistant: React.FC = () => {
     } else {
       // Snap to right
       currentOffset.current.x = 0;
-      
+
       setDragOffset(currentOffset.current);
-      
+
       if (fabRef.current) {
         // Add a smooth easing transition only for the snap effect
         fabRef.current.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
         fabRef.current.style.transform = `translate(${currentOffset.current.x}px, ${currentOffset.current.y}px)`;
-        
+
         // Remove the transition after it finishes so next drag is smooth again
         setTimeout(() => {
           if (fabRef.current) {
@@ -507,9 +522,9 @@ const ChatAssistant: React.FC = () => {
     <div className="fixed bottom-20 left-4 right-4 sm:bottom-6 sm:right-6 sm:left-auto z-50 flex flex-col items-end pointer-events-none">
       {/* Floating Button with Label */}
       {!isOpen && !isKeyboardActive && (
-        <div 
+        <div
           ref={fabRef}
-          className="flex items-center gap-2 pointer-events-auto cursor-grab active:cursor-grabbing bg-blue-600 hover:bg-blue-700 text-white rounded-full py-1.5 pl-1.5 pr-4 shadow-xl border border-blue-500/30 transition-transform hover:scale-105 active:scale-95 shrink-0" 
+          className="flex items-center gap-2 pointer-events-auto cursor-grab active:cursor-grabbing bg-blue-600 hover:bg-blue-700 text-white rounded-full py-1.5 pl-1.5 pr-4 shadow-xl border border-blue-500/30 transition-transform hover:scale-105 active:scale-95 shrink-0"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
@@ -525,7 +540,7 @@ const ChatAssistant: React.FC = () => {
       {/* Chat Window */}
       {isOpen && (
         <div className="w-full sm:w-[400px] h-[450px] sm:h-[500px] max-h-[80vh] flex flex-col bg-[#0B0F19]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-blue-900/20 overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300 pointer-events-auto transition-all">
-          
+
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/5">
             <div className="flex items-center space-x-2">
@@ -540,7 +555,7 @@ const ChatAssistant: React.FC = () => {
                 </p>
               </div>
             </div>
-            <button 
+            <button
               onClick={() => setIsOpen(false)}
               className="text-gray-400 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
             >
@@ -551,8 +566,8 @@ const ChatAssistant: React.FC = () => {
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10">
             {messages.map((msg) => (
-              <div 
-                key={msg.id} 
+              <div
+                key={msg.id}
                 className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 {msg.role === 'model' && (
@@ -560,13 +575,12 @@ const ChatAssistant: React.FC = () => {
                     <PulseLogo variant="icon" size={14} />
                   </div>
                 )}
-                <div className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm leading-relaxed ${
-                  msg.role === 'user' 
-                    ? `bg-blue-600 text-white rounded-tr-sm ${msg.status === 'sending' ? 'opacity-70' : ''}` 
-                    : msg.isError 
+                <div className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm leading-relaxed ${msg.role === 'user'
+                    ? `bg-blue-600 text-white rounded-tr-sm ${msg.status === 'sending' ? 'opacity-70' : ''}`
+                    : msg.isError
                       ? 'bg-red-500/20 border border-red-500/30 text-red-200 rounded-tl-sm'
                       : 'bg-white/10 text-gray-200 rounded-tl-sm'
-                }`}>
+                  }`}>
                   {msg.role === 'user' ? (
                     <div className="relative">
                       {msg.text}
@@ -578,17 +592,17 @@ const ChatAssistant: React.FC = () => {
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
-                        h2: ({children}) => <h2 className="text-blue-400 font-semibold text-sm mt-2 mb-1">{children}</h2>,
-                        h3: ({children}) => <h3 className="text-blue-300 font-medium text-xs mt-2 mb-1">{children}</h3>,
-                        p: ({children}) => <p className="text-gray-200 text-sm mb-1.5 leading-relaxed">{children}</p>,
-                        ul: ({children}) => <ul className="list-disc list-inside text-gray-300 text-sm space-y-0.5 ml-1">{children}</ul>,
-                        ol: ({children}) => <ol className="list-decimal list-inside text-gray-300 text-sm space-y-0.5 ml-1">{children}</ol>,
-                        li: ({children}) => <li className="text-sm">{children}</li>,
-                        strong: ({children}) => <strong className="text-white font-semibold">{children}</strong>,
-                        em: ({children}) => <em className="text-gray-400 italic">{children}</em>,
+                        h2: ({ children }) => <h2 className="text-blue-400 font-semibold text-sm mt-2 mb-1">{children}</h2>,
+                        h3: ({ children }) => <h3 className="text-blue-300 font-medium text-xs mt-2 mb-1">{children}</h3>,
+                        p: ({ children }) => <p className="text-gray-200 text-sm mb-1.5 leading-relaxed">{children}</p>,
+                        ul: ({ children }) => <ul className="list-disc list-inside text-gray-300 text-sm space-y-0.5 ml-1">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal list-inside text-gray-300 text-sm space-y-0.5 ml-1">{children}</ol>,
+                        li: ({ children }) => <li className="text-sm">{children}</li>,
+                        strong: ({ children }) => <strong className="text-white font-semibold">{children}</strong>,
+                        em: ({ children }) => <em className="text-gray-400 italic">{children}</em>,
                         hr: () => <hr className="border-white/10 my-2" />,
-                        code: ({children}) => <code className="bg-white/10 px-1 py-0.5 rounded text-blue-300 text-xs">{children}</code>,
-                        a: ({href, children}) => {
+                        code: ({ children }) => <code className="bg-white/10 px-1 py-0.5 rounded text-blue-300 text-xs">{children}</code>,
+                        a: ({ href, children }) => {
                           const isInternal = href && href.startsWith('/');
                           if (isInternal) {
                             return (
@@ -619,7 +633,7 @@ const ChatAssistant: React.FC = () => {
                 )}
               </div>
             ))}
-            
+
             {/* Render Isolated Streaming Response Bubble (Task 3) */}
             {activeStreamText !== null && (
               <div className="flex gap-3 justify-start animate-in fade-in duration-200">
@@ -630,17 +644,17 @@ const ChatAssistant: React.FC = () => {
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
-                      h2: ({children}) => <h2 className="text-blue-400 font-semibold text-sm mt-2 mb-1">{children}</h2>,
-                      h3: ({children}) => <h3 className="text-blue-300 font-medium text-xs mt-2 mb-1">{children}</h3>,
-                      p: ({children}) => <p className="text-gray-200 text-sm mb-1.5 leading-relaxed">{children}</p>,
-                      ul: ({children}) => <ul className="list-disc list-inside text-gray-300 text-sm space-y-0.5 ml-1">{children}</ul>,
-                      ol: ({children}) => <ol className="list-decimal list-inside text-gray-300 text-sm space-y-0.5 ml-1">{children}</ol>,
-                      li: ({children}) => <li className="text-sm">{children}</li>,
-                      strong: ({children}) => <strong className="text-white font-semibold">{children}</strong>,
-                      em: ({children}) => <em className="text-gray-400 italic">{children}</em>,
+                      h2: ({ children }) => <h2 className="text-blue-400 font-semibold text-sm mt-2 mb-1">{children}</h2>,
+                      h3: ({ children }) => <h3 className="text-blue-300 font-medium text-xs mt-2 mb-1">{children}</h3>,
+                      p: ({ children }) => <p className="text-gray-200 text-sm mb-1.5 leading-relaxed">{children}</p>,
+                      ul: ({ children }) => <ul className="list-disc list-inside text-gray-300 text-sm space-y-0.5 ml-1">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal list-inside text-gray-300 text-sm space-y-0.5 ml-1">{children}</ol>,
+                      li: ({ children }) => <li className="text-sm">{children}</li>,
+                      strong: ({ children }) => <strong className="text-white font-semibold">{children}</strong>,
+                      em: ({ children }) => <em className="text-gray-400 italic">{children}</em>,
                       hr: () => <hr className="border-white/10 my-2" />,
-                      code: ({children}) => <code className="bg-white/10 px-1 py-0.5 rounded text-blue-300 text-xs">{children}</code>,
-                      a: ({href, children}) => {
+                      code: ({ children }) => <code className="bg-white/10 px-1 py-0.5 rounded text-blue-300 text-xs">{children}</code>,
+                      a: ({ href, children }) => {
                         const isInternal = href && href.startsWith('/');
                         if (isInternal) {
                           return (
@@ -664,7 +678,7 @@ const ChatAssistant: React.FC = () => {
                 </div>
               </div>
             )}
-            
+
             {/* Typing Indicator */}
             {isTyping && (
               <div className="flex gap-3 justify-start animate-pulse">
@@ -689,7 +703,7 @@ const ChatAssistant: React.FC = () => {
                 placeholder="Ask about your health..."
                 className="w-full bg-white/5 border border-white/10 text-white placeholder:text-gray-500 rounded-full py-2.5 pl-4 pr-12 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all text-sm"
               />
-              <button 
+              <button
                 type="submit"
                 disabled={!input.trim() || isTyping}
                 className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 bg-blue-600 hover:bg-blue-500 disabled:bg-white/5 disabled:text-gray-500 text-white rounded-full transition-colors"
@@ -701,7 +715,7 @@ const ChatAssistant: React.FC = () => {
               I am an AI and can make mistakes. Always consult with your doctor before making medical decisions.
             </div>
           </div>
-          
+
         </div>
       )}
     </div>
