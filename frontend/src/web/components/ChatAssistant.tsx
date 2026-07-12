@@ -39,7 +39,8 @@ const CRISIS_PATTERNS = [
   /dont\s+feel\s+good\s+wanna\s+die/i,
   /wanna\s+kill\s+my\s*self/i,
   /wish\s+i\s+was\s+dead/i,
-  /wish\s+i\s+were\s+dead/i
+  /wish\s+i\s+were\s+dead/i,
+  /\bkms\b/i
 ];
 
 const EMERGENCY_PATTERNS = [
@@ -91,6 +92,7 @@ const ChatAssistant: React.FC = () => {
   const [activeStreamText, setActiveStreamText] = useState<string | null>(null);
   const activeStreamIdRef = useRef<string | null>(null);
   const [pendingMessages, setPendingMessages] = useState<ChatMessage[]>([]);
+  const [isConnected, setIsConnected] = useState(false);
 
   // Drag state for mobile web
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -212,10 +214,10 @@ const ChatAssistant: React.FC = () => {
       const url = import.meta.env.VITE_API_URL || undefined;
       const token = localStorage.getItem('pulse_token');
       
-      console.log('[ChatAssistant] Connecting socket via WebSockets...');
+      console.log('[ChatAssistant] Connecting socket via WebSockets with Polling fallback...');
       const socket = io(url as any, {
         auth: { token },
-        transports: ['websocket'],
+        transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionAttempts: 10,
         reconnectionDelay: 1000
@@ -223,6 +225,7 @@ const ChatAssistant: React.FC = () => {
       
       socket.on('connect', () => {
         console.log('[ChatAssistant] Socket connected.');
+        setIsConnected(true);
         
         // Load history only if we do not already have messages loaded in UI
         const loadHistory = async () => {
@@ -293,6 +296,11 @@ const ChatAssistant: React.FC = () => {
 
       socket.on('chat:response:chunk', (data: { text: string }) => {
         setActiveStreamText(prev => (prev === null ? data.text : prev + data.text));
+      });
+
+      socket.on('disconnect', () => {
+        console.log('[ChatAssistant] Socket disconnected.');
+        setIsConnected(false);
       });
 
       socketRef.current = socket;
@@ -526,9 +534,9 @@ const ChatAssistant: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-white font-medium text-sm">Pulse AI</h3>
-                <p className="text-blue-400/60 text-xs flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                  Online
+                <p className={`${isConnected ? 'text-green-400/80' : 'text-yellow-500/80'} text-xs flex items-center gap-1`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></span>
+                  {isConnected ? 'Online' : 'Connecting...'}
                 </p>
               </div>
             </div>
