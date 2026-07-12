@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
-import { getWorkingModelName, cachedActiveModel } from './gemini';
+import { getWorkingModelName } from './gemini';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../db';
 
@@ -8,124 +8,7 @@ import { prisma } from '../db';
 const RATE_LIMIT_MAX = 40;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 
-export const setupChatSocket = (io: Server) => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  let genAI: GoogleGenerativeAI | null = null;
-  if (apiKey) {
-    genAI = new GoogleGenerativeAI(apiKey);
-  }
-
-    io.on('connection', async (socket: Socket) => {
-      console.log(`[Socket.io] Client connected: ${socket.id}`);
-      socket.emit('chat:debug', { step: '1_connected' });
-
-      let chatSession: any = null;
-      let userId: string | null = null;
-
-      // Per-socket message rate limiting state
-      const messageTimestamps: number[] = [];
-
-      // Authenticate user via token
-      const token = socket.handshake.auth?.token;
-      socket.emit('chat:debug', { step: '2_token_received', hasToken: !!token });
-      if (token) {
-        try {
-          const jwtSecret = process.env.JWT_SECRET;
-          if (!jwtSecret) {
-            console.error('[Socket.io] JWT_SECRET is not set — cannot authenticate socket.');
-          } else {
-            const decoded = jwt.verify(token, jwtSecret) as { id: string };
-            userId = decoded.id;
-            socket.emit('chat:debug', { step: '3_token_verified', userId });
-          }
-        } catch (err: any) {
-          console.error('[Socket.io] Invalid token provided:', err);
-          socket.emit('chat:debug', { step: '3_token_failed', error: err.message });
-        }
-      }
-
-      // Build context-aware medical history string
-      let systemInstructionContext = `You are 'Pulse', an AI triage assistant.\n\n`;
-      let chatHistory: any[] = [];
-      
-      if (userId) {
-        try {
-          socket.emit('chat:debug', { step: '4_db_query_start' });
-          console.log(`[Socket.io] Fetching history for user: ${userId}`);
-          const userPromise = prisma.user.findUnique({
-            where: { id: userId },
-            include: {
-              medicalReports: { include: { summary: true, values: true }, orderBy: { reportDate: 'desc' }, take: 5 },
-              prescriptions: { include: { prescriptionAnalysis: true }, orderBy: { createdAt: 'desc' }, take: 5 },
-            }
-          });
-
-          // 3-second timeout to prevent Supabase/Prisma hangs from blocking the chat socket connection
-          const timeoutPromise = new Promise<any>((_, reject) => 
-            setTimeout(() => reject(new Error('Database query timed out')), 3000)
-          );
-
-          const [user, pastMessages] = await Promise.all([
-            Promise.race([userPromise, timeoutPromise]),
-            prisma.aIChatMessage.findMany({
-              where: { userId },
-              orderBy: { createdAt: 'asc' },
-              take: 40
-            })
-          ]);
-          socket.emit('chat:debug', { step: '5_db_query_success', userFound: !!user });
-
-          if (pastMessages && pastMessages.length > 0) {
-            chatHistory = pastMessages.map(msg => ({
-              role: msg.role === 'model' ? 'model' : 'user',
-              parts: [{ text: msg.content }]
-            }));
-          }
-
-          if (user) {
-            const age = (user as any).age;
-            const gender = (user as any).gender;
-            const weight = (user as any).weight;
-
-            if (age || gender || weight) {
-              systemInstructionContext += `Patient Profile:\n`;
-              if (age) systemInstructionContext += `- Age: ${age}\n`;
-              if (gender) systemInstructionContext += `- Gender: ${gender}\n`;
-              if (weight) systemInstructionContext += `- Weight: ${weight}\n`;
-              systemInstructionContext += `\n`;
-            }
-
-            const reports = user.medicalReports.filter((r: any) => r.summary || r.values.length > 0);
-            if (reports.length > 0) {
-              systemInstructionContext += `[Uploaded Medical Reports]:\n`;
-              reports.forEach((r: any) => {
-                systemInstructionContext += `- Report Type: ${r.reportType} (Date: ${r.reportDate.toISOString().split('T')[0]})\n`;
-                if (r.summary) systemInstructionContext += `  Summary: ${r.summary.healthSummary}\n`;
-                const abnormals = r.values.filter((v: any) => v.isAbnormal);
-                if (abnormals.length > 0) {
-                  systemInstructionContext += `  Abnormalities detected: ${abnormals.map((a: any) => `${a.key} (${a.value} ${a.unit})`).join(', ')}\n`;
-                }
-              });
-            }
-
-            const prescriptions = user.prescriptions.filter((p: any) => p.prescriptionAnalysis.length > 0);
-            if (prescriptions.length > 0) {
-              systemInstructionContext += `\n[Uploaded Prescriptions/Medications]:\n`;
-              prescriptions.forEach((p: any) => {
-                systemInstructionContext += `- Medication List (from ${p.createdAt.toISOString().split('T')[0]}):\n`;
-                p.prescriptionAnalysis.forEach((med: any) => {
-                  systemInstructionContext += `  * ${med.medicineName}: ${med.dosage} (${med.simplifiedExplanation})\n`;
-                });
-              });
-            }
-          }
-        } catch (err: any) {
-          console.error('[Socket.io] Failed to fetch medical history:', err);
-          socket.emit('chat:debug', { step: '5_db_query_failed', error: err.message });
-        }
-      }
-
-      systemInstructionContext += `
+const STRICT_RULES = `
 YOUR STRICT RULES:
 
 1. GREETINGS & MILD SYMPTOM RULE: 
@@ -149,164 +32,240 @@ If the user asks if you have access to their medical records, prescriptions, or 
 - Always remind them gently that you are an AI, not a doctor.
 `;
 
-      // History array managed locally to persist across error resets
-      // Declared above db query block to allow pre-seeding from database
+async function buildSystemInstructionContext(userId: string | null): Promise<string> {
+  let context = `You are 'Pulse', an AI triage assistant.\n\n`;
+  if (!userId) return context;
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        medicalReports: { include: { summary: true, values: true }, orderBy: { reportDate: 'desc' }, take: 5 },
+        prescriptions: { include: { prescriptionAnalysis: true }, orderBy: { createdAt: 'desc' }, take: 5 },
+      }
+    });
 
-      const initializeChatSession = async () => {
+    if (user) {
+      const age = (user as any).age;
+      const gender = (user as any).gender;
+      const weight = (user as any).weight;
+
+      if (age || gender || weight) {
+        context += `Patient Profile:\n`;
+        if (age) context += `- Age: ${age}\n`;
+        if (gender) context += `- Gender: ${gender}\n`;
+        if (weight) context += `- Weight: ${weight}\n`;
+        context += `\n`;
+      }
+
+      const reports = user.medicalReports.filter((r: any) => r.summary || r.values.length > 0);
+      if (reports.length > 0) {
+        context += `[Uploaded Medical Reports]:\n`;
+        reports.forEach((r: any) => {
+          context += `- Report Type: ${r.reportType} (Date: ${r.reportDate.toISOString().split('T')[0]})\n`;
+          if (r.summary) context += `  Summary: ${r.summary.healthSummary}\n`;
+          const abnormals = r.values.filter((v: any) => v.isAbnormal);
+          if (abnormals.length > 0) {
+            context += `  Abnormalities detected: ${abnormals.map((a: any) => `${a.key} (${a.value} ${a.unit})`).join(', ')}\n`;
+          }
+        });
+      }
+
+      const prescriptions = user.prescriptions.filter((p: any) => p.prescriptionAnalysis.length > 0);
+      if (prescriptions.length > 0) {
+        context += `\n[Uploaded Prescriptions/Medications]:\n`;
+        prescriptions.forEach((p: any) => {
+          context += `- Medication List (from ${p.createdAt.toISOString().split('T')[0]}):\n`;
+          p.prescriptionAnalysis.forEach((med: any) => {
+            context += `  * ${med.medicineName}: ${med.dosage} (${med.simplifiedExplanation})\n`;
+          });
+        });
+      }
+    }
+  } catch (err) {
+    console.error('[Socket.io] Error building system instruction context:', err);
+  }
+  return context;
+}
+
+export const setupChatSocket = (io: Server) => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  let genAI: GoogleGenerativeAI | null = null;
+  if (apiKey) {
+    genAI = new GoogleGenerativeAI(apiKey);
+  }
+
+  io.on('connection', async (socket: Socket) => {
+    console.log(`[Socket.io] Client connected: ${socket.id}`);
+    socket.emit('chat:debug', { step: '1_connected' });
+
+    let chatSession: any = null;
+    let userId: string | null = null;
+    let chatHistory: any[] = [];
+
+    // Per-socket message rate limiting state
+    const messageTimestamps: number[] = [];
+
+    // Authenticate user via token
+    const token = socket.handshake.auth?.token;
+    socket.emit('chat:debug', { step: '2_token_received', hasToken: !!token });
+    if (token) {
+      try {
+        const jwtSecret = process.env.JWT_SECRET;
+        if (!jwtSecret) {
+          console.error('[Socket.io] JWT_SECRET is not set — cannot authenticate socket.');
+        } else {
+          const decoded = jwt.verify(token, jwtSecret) as { id: string };
+          userId = decoded.id;
+          socket.emit('chat:debug', { step: '3_token_verified', userId });
+        }
+      } catch (err: any) {
+        console.error('[Socket.io] Invalid token provided:', err);
+        socket.emit('chat:debug', { step: '3_token_failed', error: err.message });
+      }
+    }
+
+    // Load initial chat history from DB
+    if (userId) {
+      try {
+        socket.emit('chat:debug', { step: '4_db_query_start' });
+        const pastMessages = await prisma.aIChatMessage.findMany({
+          where: { userId },
+          orderBy: { createdAt: 'asc' },
+          take: 40
+        });
+        if (pastMessages && pastMessages.length > 0) {
+          chatHistory = pastMessages.map(msg => ({
+            role: msg.role === 'model' ? 'model' : 'user',
+            parts: [{ text: msg.content }]
+          }));
+        }
+        socket.emit('chat:debug', { step: '5_db_query_success', messagesLoaded: chatHistory.length });
+      } catch (err: any) {
+        console.error('[Socket.io] Failed to fetch medical history:', err);
+        socket.emit('chat:debug', { step: '5_db_query_failed', error: err.message });
+      }
+    }
+
+    socket.on('chat:message', async (data: any) => {
+      let message = '';
+      if (typeof data === 'string') {
+        message = data;
+      } else if (data && typeof data === 'object' && typeof data.text === 'string') {
+        message = data.text;
+      }
+      if (!message) return;
+      socket.emit('chat:debug', { step: '8_message_received', message });
+
+      // Rate limiting
+      const now = Date.now();
+      while (messageTimestamps.length > 0 && messageTimestamps[0] < now - RATE_LIMIT_WINDOW_MS) {
+        messageTimestamps.shift();
+      }
+
+      if (messageTimestamps.length >= RATE_LIMIT_MAX) {
+        socket.emit('chat:response', {
+          text: 'You have 0 chat attempts left for this window. Please wait 15 minutes before sending more messages.',
+          isError: true
+        });
+        return;
+      }
+
+      messageTimestamps.push(now);
+      
+      try {
         if (!genAI) {
-          socket.emit('chat:debug', { step: '6_init_chat_genai_null' });
-          return null;
-        }
-        try {
-          socket.emit('chat:debug', { step: '6_init_chat_model_resolving' });
-          const modelName = await getWorkingModelName(genAI);
-          socket.emit('chat:debug', { step: '6_init_chat_model_resolved', modelName });
-          const model = genAI.getGenerativeModel({ 
-            model: modelName,
-            systemInstruction: systemInstructionContext,
-            safetySettings: [
-              { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-              { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-              { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-              { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
-            ]
-          });
-          
-          socket.emit('chat:debug', { step: '6_init_chat_session_start' });
-          const session = model.startChat({
-            history: chatHistory,
-            generationConfig: {
-              maxOutputTokens: 1000,
-            },
-          });
-          socket.emit('chat:debug', { step: '6_init_chat_session_success' });
-          return session;
-        } catch (err: any) {
-          console.error('[Socket.io] Failed to initialize model:', err);
-          socket.emit('chat:debug', { step: '6_init_chat_failed', error: err.message });
-          return null;
-        }
-      };
-
-      // ── FIX: Run DB fetch + model init IN PARALLEL instead of sequentially ──
-      // Before: DB query ran first (~300-800ms), THEN model initialized (~200ms) = 500-1000ms cold start
-      // After: both run at the same time = only as slow as the slower of the two
-      socket.emit('chat:debug', { step: '7_parallel_init_start' });
-      const [, session] = await Promise.all([
-        // DB query already ran above and built systemInstructionContext
-        Promise.resolve(),
-        genAI ? initializeChatSession() : Promise.resolve(null)
-      ]);
-      if (genAI) chatSession = session;
-      socket.emit('chat:debug', { step: '7_parallel_init_success', sessionCreated: !!chatSession });
-
-      socket.on('chat:message', async (data: any) => {
-        let message = '';
-        if (typeof data === 'string') {
-          message = data;
-        } else if (data && typeof data === 'object' && typeof data.text === 'string') {
-          message = data.text;
-        }
-        if (!message) return;
-        socket.emit('chat:debug', { step: '8_message_received', message });
-
-        // Rate limiting: sliding window of RATE_LIMIT_MAX messages per RATE_LIMIT_WINDOW_MS
-        const now = Date.now();
-        while (messageTimestamps.length > 0 && messageTimestamps[0] < now - RATE_LIMIT_WINDOW_MS) {
-          messageTimestamps.shift();
-        }
-
-        if (messageTimestamps.length >= RATE_LIMIT_MAX) {
-          socket.emit('chat:response', {
-            text: 'You have 0 chat attempts left for this window. Please wait 15 minutes before sending more messages.',
-            isError: true
-          });
+          socket.emit('chat:debug', { step: '9_message_no_genai' });
           return;
         }
 
-        messageTimestamps.push(now);
+        // Dynamically compile the latest context to capture newly uploaded files instantly
+        socket.emit('chat:debug', { step: '9_message_dynamic_context_fetching' });
+        const latestContext = await buildSystemInstructionContext(userId);
+
+        // Re-initialize chat model session with the latest instructions + existing history
+        const modelName = await getWorkingModelName(genAI);
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          systemInstruction: latestContext + STRICT_RULES,
+          safetySettings: [
+            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
+          ]
+        });
+
+        chatSession = model.startChat({
+          history: chatHistory,
+          generationConfig: {
+            maxOutputTokens: 1000,
+          },
+        });
+
+        socket.emit('chat:debug', { step: '9_message_sending_to_gemini' });
+        chatHistory.push({ role: 'user', parts: [{ text: message }] });
         
-        try {
-          if (!chatSession) {
-            socket.emit('chat:debug', { step: '9_message_no_session' });
-            setTimeout(() => {
-              socket.emit('chat:response', {
-                text: "Hello! I am currently running in offline demo mode, so I cannot process live AI queries right now. Please configure the GEMINI_API_KEY to enable full chat functionality!",
-                isError: false
-              });
-            }, 1000);
-            return;
-          }
-
-          socket.emit('chat:debug', { step: '9_message_sending_to_gemini' });
-          chatHistory.push({ role: 'user', parts: [{ text: message }] });
-          
-          if (userId) {
-            prisma.aIChatMessage.create({
-              data: {
-                userId,
-                role: 'user',
-                content: message
-              }
-            }).catch(err => console.error('[Socket.io] Failed to save user message:', err));
-          }
-
-          const result = await chatSession.sendMessageStream(message);
-          
-          const messageId = Date.now().toString();
-          socket.emit('chat:response:start', { id: messageId });
-          socket.emit('chat:debug', { step: '9_message_gemini_stream_started' });
-
-          // Stream chunks asynchronously in a non-blocking background task
-          (async () => {
-            try {
-              for await (const chunk of result.stream) {
-                socket.emit('chat:response:chunk', { text: chunk.text() });
-              }
-            } catch (err) {
-              console.error('[Socket.io] Stream chunk error:', err);
+        if (userId) {
+          prisma.aIChatMessage.create({
+            data: {
+              userId,
+              role: 'user',
+              content: message
             }
-          })();
-
-          // Wait for the compiled full response promise to resolve instantly on last token
-          const response = await result.response;
-          const fullText = response.text();
-          
-          chatHistory.push({ role: 'model', parts: [{ text: fullText }] });
-          
-          if (userId && fullText) {
-            prisma.aIChatMessage.create({
-              data: {
-                userId,
-                role: 'model',
-                content: fullText
-              }
-            }).catch(err => console.error('[Socket.io] Failed to save model response:', err));
-          }
-
-          socket.emit('chat:response', { text: fullText, isError: false });
-          socket.emit('chat:debug', { step: '9_message_success' });
-
-        } catch (error: any) {
-          console.error('[Socket.io] Chat Error:', error instanceof Error ? error.message : 'Unknown error');
-          socket.emit('chat:debug', { step: '9_message_failed', error: error.message });
-          
-          // Re-initialize chat session to clear corrupted session state but keep history
-          // Remove the failed user message from history so it doesn't cause errors on next attempt
-          if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
-            chatHistory.pop(); 
-          }
-
-          initializeChatSession().then(session => {
-            chatSession = session;
-          });
-
-          socket.emit('chat:response', {
-            text: `I'm sorry, an error occurred: ${error.message || error}. Please try again.`,
-            isError: true
-          });
+          }).catch(err => console.error('[Socket.io] Failed to save user message:', err));
         }
-      });
+
+        const result = await chatSession.sendMessageStream(message);
+        
+        const messageId = Date.now().toString();
+        socket.emit('chat:response:start', { id: messageId });
+        socket.emit('chat:debug', { step: '9_message_gemini_stream_started' });
+
+        // Stream chunks asynchronously in a non-blocking background task
+        (async () => {
+          try {
+            for await (const chunk of result.stream) {
+              socket.emit('chat:response:chunk', { text: chunk.text() });
+            }
+          } catch (err) {
+            console.error('[Socket.io] Stream chunk error:', err);
+          }
+        })();
+
+        // Wait for the compiled full response promise to resolve instantly on last token
+        const response = await result.response;
+        const fullText = response.text();
+        
+        chatHistory.push({ role: 'model', parts: [{ text: fullText }] });
+        
+        if (userId && fullText) {
+          prisma.aIChatMessage.create({
+            data: {
+              userId,
+              role: 'model',
+              content: fullText
+            }
+          }).catch(err => console.error('[Socket.io] Failed to save model response:', err));
+        }
+
+        socket.emit('chat:response', { text: fullText, isError: false });
+        socket.emit('chat:debug', { step: '9_message_success' });
+
+      } catch (error: any) {
+        console.error('[Socket.io] Chat Error:', error instanceof Error ? error.message : 'Unknown error');
+        socket.emit('chat:debug', { step: '9_message_failed', error: error.message });
+        
+        // Remove the failed user message from history
+        if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
+          chatHistory.pop(); 
+        }
+
+        socket.emit('chat:response', {
+          text: `I'm sorry, an error occurred: ${error.message || error}. Please try again.`,
+          isError: true
+        });
+      }
+    });
 
     socket.on('disconnect', () => {
       console.log(`[Socket.io] Client disconnected: ${socket.id}`);
