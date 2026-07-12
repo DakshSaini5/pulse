@@ -257,12 +257,20 @@ If the user asks if you have access to their medical records, prescriptions, or 
           socket.emit('chat:response:start', { id: messageId });
           socket.emit('chat:debug', { step: '9_message_gemini_stream_started' });
 
-          let fullText = "";
-          for await (const chunk of result.stream) {
-            const chunkText = chunk.text();
-            fullText += chunkText;
-            socket.emit('chat:response:chunk', { text: chunkText });
-          }
+          // Stream chunks asynchronously in a non-blocking background task
+          (async () => {
+            try {
+              for await (const chunk of result.stream) {
+                socket.emit('chat:response:chunk', { text: chunk.text() });
+              }
+            } catch (err) {
+              console.error('[Socket.io] Stream chunk error:', err);
+            }
+          })();
+
+          // Wait for the compiled full response promise to resolve instantly on last token
+          const response = await result.response;
+          const fullText = response.text();
           
           chatHistory.push({ role: 'model', parts: [{ text: fullText }] });
           
@@ -276,7 +284,7 @@ If the user asks if you have access to their medical records, prescriptions, or 
             }).catch(err => console.error('[Socket.io] Failed to save model response:', err));
           }
 
-          socket.emit('chat:response:end', { text: fullText });
+          socket.emit('chat:response', { text: fullText, isError: false });
           socket.emit('chat:debug', { step: '9_message_success' });
 
         } catch (error: any) {
