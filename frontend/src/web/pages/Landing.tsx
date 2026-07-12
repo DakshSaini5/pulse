@@ -15,7 +15,16 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Capacitor } from '@capacitor/core';
-import { isNativeApp } from '@core/utils/platform';
+import { isNativeApp, useKeyboardActive } from '@core/utils/platform';
+
+const toTitleCase = (str: string): string => {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
 
 export const Landing: React.FC = () => {
   const { user } = useAuth();
@@ -27,6 +36,7 @@ export const Landing: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [panicLoading, setPanicLoading] = useState(false);
   const [contactsLoading, setContactsLoading] = useState(true);
+  const isKeyboardActive = useKeyboardActive();
 
   // Global user location hook
   const { latitude: lat, longitude: lng, label: cityName, locationStatus, requestGPSLocation } = useUserLocation();
@@ -82,7 +92,17 @@ export const Landing: React.FC = () => {
   };
 
   // Dashboard Counts
-  const [dashboardCounts, setDashboardCounts] = useState({ saved: 0, scans: 0, trends: 0 });
+  const [dashboardCounts, setDashboardCounts] = useState<{ saved: number; scans: number; trends: number }>(() => {
+    const saved = localStorage.getItem('pulse_cached_counts');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        // ignore
+      }
+    }
+    return { saved: 0, scans: 0, trends: 0 };
+  });
 
   useEffect(() => {
     if (user && isNativeApp) {
@@ -91,11 +111,13 @@ export const Landing: React.FC = () => {
         prescriptionAPI.getAll().catch(() => []),
         trendAPI.getTrends().catch(() => [])
       ]).then(([hospitals, prescriptions, trends]) => {
-        setDashboardCounts({
+        const counts = {
           saved: Array.isArray(hospitals) ? hospitals.length : 0,
           scans: Array.isArray(prescriptions) ? prescriptions.length : 0,
           trends: Array.isArray(trends) ? trends.length : 0
-        });
+        };
+        setDashboardCounts(counts);
+        localStorage.setItem('pulse_cached_counts', JSON.stringify(counts));
       });
     }
   }, [user, isNativeApp, lat, lng]);
@@ -274,7 +296,7 @@ export const Landing: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6 text-left">
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                Hi, {user.name} 👋
+                Hi, {toTitleCase(user.name)} 👋
               </h1>
               <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
                 {locationStatus === 'granted' && cityName ? (
@@ -312,15 +334,13 @@ export const Landing: React.FC = () => {
                 <ActivityIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 Need Help?
               </button>
-              {!isNativeApp && (
-                <button
-                  onClick={() => setShowPanicModal(true)}
-                  className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold rounded-xl shadow-md shadow-red-600/20 transition-all active:scale-95 flex items-center gap-2 border border-red-500/10"
-                >
-                  <ShieldAlert className="w-4 h-4" />
-                  PANIC
-                </button>
-              )}
+              <button
+                onClick={() => setShowPanicModal(true)}
+                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold rounded-xl shadow-md shadow-red-600/20 transition-all active:scale-95 flex items-center gap-2 border border-red-500/10"
+              >
+                <ShieldAlert className="w-4 h-4" />
+                PANIC
+              </button>
             </div>
           </div>
 
@@ -559,22 +579,7 @@ export const Landing: React.FC = () => {
 
         </div>
 
-        {/* Movable Panic Button for Mobile Dashboard */}
-        {isNativeApp && (
-          <button
-            onPointerDown={handlePanicPointerDown}
-            onPointerMove={handlePanicPointerMove}
-            onPointerUp={handlePanicPointerUp}
-            onClick={() => setShowPanicModal(true)}
-            style={{ transform: `translate(calc(-50% + ${panicDragOffset.x}px), ${panicDragOffset.y}px)`, touchAction: 'none' }}
-            className="fixed bottom-24 left-1/2 z-[99999] h-10 px-2 pr-6 bg-[#DC2626] text-white text-xs font-black rounded-full shadow-[0_0_20px_rgba(220,38,38,0.6)] border border-red-400/30 flex items-center justify-center gap-2 cursor-grab active:cursor-grabbing transition-colors"
-          >
-            <div className="size-6 bg-white rounded-full flex items-center justify-center shrink-0 shadow-inner">
-              <span className="text-[#DC2626] font-black text-sm leading-none mt-0.5">!</span>
-            </div>
-            <span className="tracking-widest">PANIC</span>
-          </button>
-        )}
+
 
         <LocationModal
           isOpen={isLocationModalOpen}

@@ -93,7 +93,7 @@ export function HospitalCompareScreen({ onTabChange, activeScreen, onNavigate, o
                   </div>
                   {isSelected && (
                     <Badge variant="secondary" className="font-bold text-primary text-[10px] shrink-0">
-                      Score {Math.round(h.recommendationScore * 100)}%
+                      Score {h.recommendationScore}%
                     </Badge>
                   )}
                 </button>
@@ -130,7 +130,7 @@ export function HospitalCompareScreen({ onTabChange, activeScreen, onNavigate, o
 
               {[
                 { label: "Rating",      render: (h: Hospital) => <div className="flex items-center gap-1"><Star className="size-3 text-[var(--pulse-amber)] fill-[var(--pulse-amber)]" /><span className="text-sm font-bold text-foreground">{h.rating}</span></div> },
-                { label: "Match Score", render: (h: Hospital) => <Badge variant="outline" className="text-[10px] font-bold border-[var(--pulse-amber)]/40 text-[var(--pulse-amber)]">{Math.round(h.recommendationScore * 100)}%</Badge> },
+                { label: "Match Score", render: (h: Hospital) => <Badge variant="outline" className="text-[10px] font-bold border-[var(--pulse-amber)]/40 text-[var(--pulse-amber)]">{h.recommendationScore}%</Badge> },
                 { label: "Distance",    render: (h: Hospital) => <span className="text-sm font-semibold text-primary">{h.distance?.toFixed(1)} km</span> },
                 { label: "Wait Time",   render: (h: Hospital) => <div className="flex items-center gap-1"><Clock className="size-3 text-muted-foreground" /><span className="text-xs font-semibold text-foreground">~15 min</span></div> },
                 { label: "Beds",        render: (h: Hospital) => <span className="text-sm font-semibold text-foreground">Available</span> },

@@ -4,6 +4,8 @@ import { PulseLogo } from './PulseLogo';
 import io, { Socket } from 'socket.io-client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { isNativeApp, useKeyboardActive } from '@core/utils/platform';
+import { chatAPI } from '@core/services/api';
 
 interface ChatMessage {
   id: string;
@@ -17,6 +19,7 @@ const ChatAssistant: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const isKeyboardActive = useKeyboardActive();
   
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -25,6 +28,7 @@ const ChatAssistant: React.FC = () => {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const isDragging = useRef(false);
   const dragStartPos = useRef({ x: 0, y: 0 });
+  const pointerStartCoords = useRef({ x: 0, y: 0 });
   const currentOffset = useRef({ x: 0, y: 0 });
   const fabRef = useRef<HTMLDivElement>(null);
 
@@ -39,6 +43,12 @@ const ChatAssistant: React.FC = () => {
     }
   }, [messages, isOpen]);
 
+  useEffect(() => {
+    const handleOpen = () => setIsOpen(true);
+    window.addEventListener('pulse-ai:open', handleOpen);
+    return () => window.removeEventListener('pulse-ai:open', handleOpen);
+  }, []);
+
   // Socket initialization
   useEffect(() => {
     // Only connect when opened for the first time
@@ -51,11 +61,33 @@ const ChatAssistant: React.FC = () => {
       });
       
       socket.on('connect', () => {
-        setMessages([{
-          id: 'welcome',
-          role: 'model',
-          text: 'Hi there! I am PulseAI. How can I help you with your health reports or prescriptions today?'
-        }]);
+        const loadHistory = async () => {
+          try {
+            const history = await chatAPI.getHistory();
+            if (history && history.length > 0) {
+              setMessages(history.map(msg => ({
+                id: msg.id,
+                role: msg.role === 'model' ? 'model' : 'user',
+                text: msg.content
+              })));
+            } else {
+              setMessages([{
+                id: 'welcome',
+                role: 'model',
+                text: 'Hi there! I am PulseAI. How can I help you with your health reports or prescriptions today?'
+              }]);
+            }
+          } catch (err) {
+            console.error("Failed to load chat history:", err);
+            setMessages([{
+              id: 'welcome',
+              role: 'model',
+              text: 'Hi there! I am PulseAI. How can I help you with your health reports or prescriptions today?'
+            }]);
+          }
+        };
+
+        loadHistory();
       });
 
       socket.on('chat:response', (data: { text: string, isError: boolean }) => {
@@ -105,78 +137,105 @@ const ChatAssistant: React.FC = () => {
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || !socketRef.current) return;
+    if (!input.trim() || isTyping) return;
 
-    const userMsg: ChatMessage = {
+    const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
-      text: input.trim()
+      text: input
     };
 
-    setMessages(prev => [...prev, userMsg]);
-    setIsTyping(true);
-    socketRef.current.emit('chat:message', input.trim());
+    setMessages(prev => [...prev, userMessage]);
     setInput('');
-  };
+    setIsTyping(true);
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    e.currentTarget.setPointerCapture(e.pointerId);
-    isDragging.current = false;
-    dragStartPos.current = { x: e.clientX - currentOffset.current.x, y: e.clientY - currentOffset.current.y };
-    
-    // Remove transition during drag for 1:1 smooth movement
-    if (fabRef.current) {
-      fabRef.current.style.transition = 'none';
-    }
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
-    
-    const deltaX = Math.abs(e.clientX - dragStartPos.current.x - currentOffset.current.x);
-    const deltaY = Math.abs(e.clientY - dragStartPos.current.y - currentOffset.current.y);
-    
-    if (!isDragging.current && (deltaX > 5 || deltaY > 5)) {
-      isDragging.current = true;
-    }
-    
-    if (isDragging.current) {
-      let nextX = e.clientX - dragStartPos.current.x;
-      let nextY = e.clientY - dragStartPos.current.y;
-      
-      // Keep it strictly within the screen
-      const maxLeft = -(typeof window !== 'undefined' ? window.innerWidth - 80 : 300);
-      const maxRight = 10;
-      const maxUp = -(typeof window !== 'undefined' ? window.innerHeight - 120 : 600);
-      const maxDown = 80;
-
-      currentOffset.current = {
-        x: Math.min(Math.max(nextX, maxLeft), maxRight),
-        y: Math.min(Math.max(nextY, maxUp), maxDown)
-      };
-
-      if (fabRef.current) {
-        fabRef.current.style.transform = `translate(${currentOffset.current.x}px, ${currentOffset.current.y}px)`;
-      }
-    }
-  };
-
-  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    e.currentTarget.releasePointerCapture(e.pointerId);
-    if (!isDragging.current) {
-      setIsOpen(true);
+    if (socketRef.current) {
+      socketRef.current.emit('chat:message', { text: userMessage.text });
     } else {
-      // Smooth Snap-to-Edge Logic
-      const maxLeft = -(typeof window !== 'undefined' ? window.innerWidth - 80 : 300);
-      const maxRight = 10;
-      const threshold = maxLeft / 2;
+      setTimeout(() => {
+        setIsTyping(false);
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          role: 'model',
+          text: "I'm sorry, I'm currently disconnected from the chat server. Please check your internet connection or try again later.",
+          isError: true
+        }]);
+      }, 1000);
+    }
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    isDragging.current = true;
+    dragStartPos.current = {
+      x: e.clientX - dragOffset.x,
+      y: e.clientY - dragOffset.y
+    };
+    pointerStartCoords.current = {
+      x: e.clientX,
+      y: e.clientY
+    };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging.current) return;
+    const nextX = e.clientX - dragStartPos.current.x;
+    const nextY = e.clientY - dragStartPos.current.y;
+    
+    // Bounds check to keep button within viewport
+    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 360;
+    const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 640;
+    
+    const maxLeftX = -screenWidth + 80;
+    const maxRightX = 20;
+    const maxUpY = -screenHeight + 140;
+    const maxDownY = 20;
+    
+    currentOffset.current = {
+      x: Math.min(Math.max(nextX, maxLeftX), maxRightX),
+      y: Math.min(Math.max(nextY, maxUpY), maxDownY)
+    };
+    
+    setDragOffset(currentOffset.current);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    isDragging.current = false;
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    
+    // Check if it was a simple tap/click
+    const dx = e.clientX - pointerStartCoords.current.x;
+    const dy = e.clientY - pointerStartCoords.current.y;
+    const moveDistance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (moveDistance < 6) {
+      setIsOpen(true);
+      return;
+    }
+
+    // Snap to left or right edge of screen
+    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 360;
+    const threshold = -screenWidth / 2;
+    
+    if (currentOffset.current.x < threshold) {
+      // Snap to left
+      currentOffset.current.x = -screenWidth + 90;
       
-      const targetX = currentOffset.current.x < threshold ? maxLeft : maxRight;
+      setDragOffset(currentOffset.current);
       
-      currentOffset.current = {
-        x: targetX,
-        y: currentOffset.current.y
-      };
+      if (fabRef.current) {
+        fabRef.current.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
+        fabRef.current.style.transform = `translate(${currentOffset.current.x}px, ${currentOffset.current.y}px)`;
+        
+        setTimeout(() => {
+          if (fabRef.current) {
+            fabRef.current.style.transition = 'none';
+          }
+        }, 400);
+      }
+    } else {
+      // Snap to right
+      currentOffset.current.x = 0;
       
       setDragOffset(currentOffset.current);
       
@@ -193,13 +252,12 @@ const ChatAssistant: React.FC = () => {
         }, 400);
       }
     }
-    setTimeout(() => { isDragging.current = false; }, 50);
   };
 
   return (
     <div className="fixed bottom-20 left-4 right-4 sm:bottom-6 sm:right-6 sm:left-auto z-50 flex flex-col items-end pointer-events-none">
       {/* Floating Button with Label */}
-      {!isOpen && (
+      {!isOpen && !isKeyboardActive && (
         <div 
           ref={fabRef}
           className="flex items-center gap-2 pointer-events-auto cursor-grab active:cursor-grabbing bg-blue-600 hover:bg-blue-700 text-white rounded-full py-1.5 pl-1.5 pr-4 shadow-xl border border-blue-500/30 transition-transform hover:scale-105 active:scale-95 shrink-0" 

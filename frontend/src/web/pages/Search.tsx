@@ -1,16 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { hospitalAPI, Hospital } from '@core/services/api';
 import { Map } from '../components/Map';
 import { 
   Search as SearchIcon, MapPin, Star, AlertCircle, Heart, Phone,
-  Activity, ArrowRight, ShieldCheck, HelpCircle, Layers, CheckSquare, Square, Globe
+  Activity, ArrowRight, ShieldCheck, HelpCircle, Layers, CheckSquare, Square, Globe,
+  ChevronUp, ChevronDown, Navigation
 } from 'lucide-react';
 import { useAuth } from '@core/context/AuthContext';
 import { formatIndianPhoneNumber, getDialerHref } from '@core/utils/phoneFormatter';
 import toast from 'react-hot-toast';
 import { useUserLocation } from '@core/context/LocationContext';
 import LocationModal from '../components/LocationModal';
+import { isNativeApp } from '@core/utils/platform';
+import { getHospitalDisplayName } from '@core/utils/utils';
 
 
 export const Search: React.FC = () => {
@@ -32,6 +35,44 @@ export const Search: React.FC = () => {
   // Use global user location hook
   const { latitude: lat, longitude: lng, label: cityName, locationStatus, requestGPSLocation } = useUserLocation();
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+
+  // Bottom sheet height states: 'collapsed' (80px), 'half' (320px), 'expanded' (85vh)
+  const [sheetHeight, setSheetHeight] = useState<number>(320);
+  const [isDraggingSheet, setIsDraggingSheet] = useState(false);
+  const dragStartY = useRef(0);
+  const dragStartHeight = useRef(320);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    dragStartY.current = e.touches[0].clientY;
+    dragStartHeight.current = sheetHeight;
+    setIsDraggingSheet(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!dragStartY.current) return;
+    const deltaY = e.touches[0].clientY - dragStartY.current;
+    const newHeight = Math.max(80, Math.min(window.innerHeight * 0.85, dragStartHeight.current - deltaY));
+    setSheetHeight(newHeight);
+  };
+
+  const handleTouchEnd = () => {
+    setIsDraggingSheet(false);
+    const expandedVal = window.innerHeight * 0.85;
+    const diffs = [
+      { height: 80, diff: Math.abs(sheetHeight - 80) },
+      { height: 320, diff: Math.abs(sheetHeight - 320) },
+      { height: expandedVal, diff: Math.abs(sheetHeight - expandedVal) }
+    ];
+    diffs.sort((a, b) => a.diff - b.diff);
+    setSheetHeight(diffs[0].height);
+  };
+
+  // Trigger fresh GPS coordinates fetch on native app mount if consent exists
+  useEffect(() => {
+    if (isNativeApp) {
+      requestGPSLocation();
+    }
+  }, [isNativeApp]);
 
   // Autocomplete Dropdown State
   const [autocompleteResults, setAutocompleteResults] = useState<{
@@ -212,8 +253,6 @@ export const Search: React.FC = () => {
       return [...prev, id];
     });
   };
-
-
 
   return (
     <div className="space-y-8 pb-20 relative">
@@ -500,7 +539,7 @@ export const Search: React.FC = () => {
                         )}
                         <div className="flex justify-between items-start gap-4">
                           <div>
-                            <h3 className="font-bold text-slate-900 dark:text-white text-base leading-snug">{hosp.name}</h3>
+                            <h3 className="font-bold text-slate-900 dark:text-white text-base leading-snug">{getHospitalDisplayName(hosp.name, hosp.address)}</h3>
                             <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1 leading-none">
                               <MapPin className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                               {hosp.address}
@@ -557,7 +596,7 @@ export const Search: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-4 text-xs font-semibold">
+                        <div className="flex items-center gap-4 text-xs font-semibold flex-wrap">
                           <span className="flex items-center gap-1 text-warning">
                             <Star className="w-4 h-4 fill-warning text-warning" />
                             {hosp.rating.toFixed(1)}
@@ -571,6 +610,10 @@ export const Search: React.FC = () => {
 
                           <span className="text-[10px] bg-slate-100 dark:bg-slate-800 border border-pulseBorder dark:border-slate-600 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full font-medium">
                             Score: {hosp.recommendationScore}%
+                          </span>
+
+                          <span className="text-[10px] bg-primary/10 border border-primary/20 text-primary px-2.5 py-0.5 rounded-full font-bold whitespace-nowrap">
+                            📍 {hosp.distance ? `${hosp.distance.toFixed(1)} KM` : '0 KM'}
                           </span>
                         </div>
 
@@ -630,15 +673,29 @@ export const Search: React.FC = () => {
                         })()}
                       </div>
 
-                      <div className="flex justify-between items-center pt-4 border-t border-pulseBorder dark:border-slate-700 mt-4">
+                      <div className="flex justify-between items-center pt-4 border-t border-pulseBorder dark:border-slate-700 mt-4 gap-4 flex-wrap">
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Open: {hosp.workingHours}</span>
-                        <button
-                          onClick={() => navigate(`/hospitals/${hosp.id}`)}
-                          className="text-xs text-primary font-bold flex items-center gap-1 hover:underline"
-                        >
-                          Full Departments
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
+                        
+                        <div className="flex items-center gap-3">
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${hosp.latitude},${hosp.longitude}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-xs text-slate-600 hover:text-primary font-extrabold flex items-center gap-1 hover:underline"
+                          >
+                            <Navigation className="w-3.5 h-3.5 text-primary shrink-0 animate-bounce" />
+                            Start Navigation
+                          </a>
+
+                          <button
+                            onClick={() => navigate(`/hospitals/${hosp.id}${specialty ? `?specialty=${specialty}` : ''}`)}
+                            className="text-xs text-primary font-bold flex items-center gap-1 hover:underline"
+                          >
+                            Full Departments
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -677,7 +734,7 @@ export const Search: React.FC = () => {
                 }))}
                 selectedHospitalId={selectedHospitalId}
                 onSelectHospital={handleSelectHospital}
-                onViewDetails={(id) => navigate(`/hospitals/${id}`)}
+                onViewDetails={(id) => navigate(`/hospitals/${id}${specialty ? `?specialty=${specialty}` : ''}`)}
                 userLat={lat!}
                 userLng={lng!}
               />

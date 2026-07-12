@@ -26,6 +26,7 @@ import userRouter from './routes/user';
 import reviewsRouter from './routes/reviews';
 import emergencyRouter from './routes/emergency';
 import geocodingRouter from './routes/geocoding';
+import chatRouter from './routes/chat';
 
 // Mobile isolated route imports removed to enforce DRY
 
@@ -116,6 +117,7 @@ app.use('/api/admin', adminRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/user', userRouter);
 app.use('/api/emergency', emergencyRouter);
+app.use('/api/chat', chatRouter);
 app.use('/api/geocoding', geocodingRouter);
 
 // Register New Isolated Mobile APK API endpoints removed. Mobile app now uses standard /api endpoints.

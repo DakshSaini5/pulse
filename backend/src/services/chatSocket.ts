@@ -46,6 +46,7 @@ export const setupChatSocket = (io: Server) => {
 
       // Build context-aware medical history string
       let systemInstructionContext = `You are 'Pulse', an AI triage assistant.\n\n`;
+      let chatHistory: any[] = [];
       
       if (userId) {
         try {
@@ -64,8 +65,22 @@ export const setupChatSocket = (io: Server) => {
             setTimeout(() => reject(new Error('Database query timed out')), 3000)
           );
 
-          const user = await Promise.race([userPromise, timeoutPromise]);
+          const [user, pastMessages] = await Promise.all([
+            Promise.race([userPromise, timeoutPromise]),
+            prisma.aIChatMessage.findMany({
+              where: { userId },
+              orderBy: { createdAt: 'asc' },
+              take: 40
+            })
+          ]);
           socket.emit('chat:debug', { step: '5_db_query_success', userFound: !!user });
+
+          if (pastMessages && pastMessages.length > 0) {
+            chatHistory = pastMessages.map(msg => ({
+              role: msg.role === 'model' ? 'model' : 'user',
+              parts: [{ text: msg.content }]
+            }));
+          }
 
           if (user) {
             const age = (user as any).age;
@@ -120,10 +135,12 @@ NEVER make a definitive diagnosis.
 If a user gives a vague symptom (like 'fever'), you MUST ask clarifying questions (e.g., 'How long have you had it?', 'What is your temperature?', 'Any other symptoms?').
 
 Always remind them gently that you are an AI, not a doctor.
+
+REGIONAL HOTLINE RULE: If the patient is experiencing a medical or mental health emergency, always advise them to contact the Indian emergency services immediately: call 112 for the national emergency helpline, 102 for Ambulance, or 108 for Disaster/Ambulance, and 14416 / 1800-891-4416 for Tele-MANAS (Government of India's mental health helpline). NEVER suggest US or foreign emergency numbers like 911 or 988.
 `;
 
       // History array managed locally to persist across error resets
-      let chatHistory: any[] = [];
+      // Declared above db query block to allow pre-seeding from database
 
       const initializeChatSession = async () => {
         if (!genAI) {
@@ -207,6 +224,17 @@ Always remind them gently that you are an AI, not a doctor.
 
           socket.emit('chat:debug', { step: '9_message_sending_to_gemini' });
           chatHistory.push({ role: 'user', parts: [{ text: message }] });
+          
+          if (userId) {
+            prisma.aIChatMessage.create({
+              data: {
+                userId,
+                role: 'user',
+                content: message
+              }
+            }).catch(err => console.error('[Socket.io] Failed to save user message:', err));
+          }
+
           const result = await chatSession.sendMessageStream(message);
           
           const messageId = Date.now().toString();
@@ -221,6 +249,17 @@ Always remind them gently that you are an AI, not a doctor.
           }
           
           chatHistory.push({ role: 'model', parts: [{ text: fullText }] });
+          
+          if (userId && fullText) {
+            prisma.aIChatMessage.create({
+              data: {
+                userId,
+                role: 'model',
+                content: fullText
+              }
+            }).catch(err => console.error('[Socket.io] Failed to save model response:', err));
+          }
+
           socket.emit('chat:response:end', { text: fullText });
           socket.emit('chat:debug', { step: '9_message_success' });
 

@@ -5,9 +5,12 @@ const config: CapacitorConfig = {
   appName: 'Pulse',
   webDir: 'dist',
   server: {
-    androidScheme: 'https',
+    androidScheme: 'capacitor',
   },
   plugins: {
+    CapacitorHttp: {
+      enabled: true,
+    },
     Camera: {
       presentationStyle: 'fullscreen'
     },

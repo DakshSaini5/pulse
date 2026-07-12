@@ -1,5 +1,9 @@
 import React, { useEffect, Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { SplashScreen } from '@capacitor/splash-screen';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '../core/context/AuthContext';
 import { ThemeProvider } from '../core/context/ThemeContext';
@@ -42,6 +46,38 @@ const ScrollToTop: React.FC = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
+
+  return null;
+};
+
+// Handles Android hardware back button and splash screen
+const NativeHandler: React.FC = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const initNative = async () => {
+      try {
+        await StatusBar.setStyle({ style: Style.Dark });
+        await StatusBar.setBackgroundColor({ color: '#0B0F19' });
+        await SplashScreen.hide({ fadeOutDuration: 300 });
+      } catch (e) {
+        // Silently ignore if plugins fail
+      }
+    };
+    initNative();
+
+    const listener = CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+      if (canGoBack) {
+        navigate(-1);
+      } else {
+        CapacitorApp.minimizeApp();
+      }
+    });
+
+    return () => { listener.then(l => l.remove()); };
+  }, [navigate]);
 
   return null;
 };
@@ -89,6 +125,7 @@ export const App: React.FC = () => {
     <QueryClientProvider client={queryClient}>
       <Router>
         <ScrollToTop />
+        <NativeHandler />
         <AuthProvider>
           <ThemeProvider>
             <LocationProvider>

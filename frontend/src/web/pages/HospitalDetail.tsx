@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { hospitalAPI, Hospital } from '@core/services/api';
-import { getInitialLocation } from '@core/utils/geolocation';
+import { useUserLocation } from '@core/context/LocationContext';
 import { 
   ArrowLeft, MapPin, Phone, Globe, Clock, Star, 
   Activity, AlertCircle, ShieldCheck, Heart, User 
 } from 'lucide-react';
 import { useAuth } from '@core/context/AuthContext';
 import { formatIndianPhoneNumber, getDialerHref } from '@core/utils/phoneFormatter';
+import toast from 'react-hot-toast';
 
 
 export const HospitalDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const specParam = searchParams.get('specialty') || undefined;
+  
+  const { latitude: lat, longitude: lng } = useUserLocation();
   
   const [hospital, setHospital] = useState<Hospital | null>(null);
   const [loading, setLoading] = useState(true);
@@ -22,15 +27,12 @@ export const HospitalDetail: React.FC = () => {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [totalReviews, setTotalReviews] = useState(0);
 
-  const [lat, setLat] = useState<number | undefined>(undefined);
-  const [lng, setLng] = useState<number | undefined>(undefined);
-
   const fetchDetails = async (userLat = lat, userLng = lng) => {
     if (!id) return;
     setLoading(true);
     try {
       const [hospitalData, reviewsData] = await Promise.all([
-        hospitalAPI.getById(id, userLat, userLng),
+        hospitalAPI.getById(id, userLat || undefined, userLng || undefined, specParam),
         hospitalAPI.getReviews(id)
       ]);
       setHospital(hospitalData);
@@ -44,45 +46,20 @@ export const HospitalDetail: React.FC = () => {
   };
 
   useEffect(() => {
-    const loadLocation = () => {
-      getInitialLocation()
-        .then((res) => {
-          setLat(res.latitude);
-          setLng(res.longitude);
-          fetchDetails(res.latitude, res.longitude);
-        })
-        .catch((err) => {
-          console.warn('Geolocation failed:', err);
-          fetchDetails();
-        });
-    };
-
-    loadLocation();
-
-    if (navigator.permissions && navigator.permissions.query) {
-      navigator.permissions.query({ name: 'geolocation' })
-        .then((status) => {
-          status.onchange = () => {
-            if (status.state === 'granted') {
-              loadLocation();
-            }
-          };
-        })
-        .catch(err => console.log('Permissions API query not supported:', err));
-    }
-  }, [id]);
+    fetchDetails(lat || undefined, lng || undefined);
+  }, [id, lat, lng]);
 
   const handleAddReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reviewText.trim() || !id) return;
     
     if (!user) {
-      alert("Please log in to submit a review.");
+      toast.error("Please log in to submit a review.");
       return;
     }
 
     if (reviewText.trim().length < 10) {
-      alert("Your review must be at least 10 characters long.");
+      toast.error("Your review must be at least 10 characters long.");
       return;
     }
     
@@ -94,13 +71,14 @@ export const HospitalDetail: React.FC = () => {
       setReviewText('');
       setReviewRating(5);
       
+      toast.success("Review submitted successfully!");
       // Update hospital rating visually
       fetchDetails(); // Refetch to get updated hospital rating
     } catch (err: any) {
       const validationMessage = err.response?.data?.errors
         ? err.response.data.errors.map((e: any) => `${e.field}: ${e.message}`).join('\n')
         : null;
-      alert(validationMessage || err.response?.data?.message || 'Failed to submit review');
+      toast.error(validationMessage || err.response?.data?.message || 'Failed to submit review');
     } finally {
       setSubmittingReview(false);
     }
@@ -206,14 +184,11 @@ export const HospitalDetail: React.FC = () => {
                         {spec.averageCost > 0 
                           ? `₹${spec.averageCost}` 
                           : (
-                              <a 
-                                href={`https://www.google.com/search?q=${encodeURIComponent(`${hospital.name} consultation fees`)}`} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="hover:text-primary hover:underline transition-colors cursor-pointer"
-                              >
-                                Contact Hospital
-                              </a>
+                              <div className="font-extrabold text-slate-900 dark:text-white text-[11px]">
+                                <a href={`https://www.google.com/search?q=${encodeURIComponent(hospital.name + " consult fees")}`} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors hover:underline">
+                                  Contact Hospital
+                                </a>
+                              </div>
                             )}
                       </span>
                     </div>

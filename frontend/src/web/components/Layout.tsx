@@ -4,7 +4,7 @@ import { useAuth } from '@core/context/AuthContext';
 import {
   Activity, Search, Heart, FileText, ClipboardList, TrendingUp,
   LogOut, LogIn, UserPlus, Menu, X, Bell, User as UserIcon, ShieldAlert, Settings,
-  Phone, KeyRound, MessageSquare, CheckCircle2
+  Phone, KeyRound, MessageSquare, CheckCircle2, Bot
 } from 'lucide-react';
 import ChatAssistant from './ChatAssistant';
 import AIChatbox from './AIChatbox';
@@ -48,94 +48,6 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   const [panicActive, setPanicActive] = useState(false);
 
-  // If we are on mobile, use the exact v0 design wrapper
-  if (isNativeApp) {
-    const isAppScreen = location.pathname !== '/';
-    
-    return (
-      <div className="min-h-screen bg-[oklch(0.92_0.01_250)] flex flex-col items-center">
-        {/* Screen switcher pill - floats above everything */}
-        <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-1 bg-card/90 backdrop-blur-md border border-border rounded-full px-2 py-1.5 shadow-xl">
-          {Object.entries(SCREEN_LABELS).map(([path, label]) => (
-            <Link
-              key={path}
-              to={path}
-              className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${
-                location.pathname === path
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
-
-        {/* Mobile viewport wrapper */}
-        <div className="w-full max-w-[390px] min-h-screen bg-background shadow-2xl relative overflow-hidden">
-          {/* Top padding so content clears the pill nav */}
-          <div className="h-12" />
-
-          {children}
-
-          {/* ── Persistent PANIC button overlay (app screens only) ── */}
-          {isAppScreen && !panicActive && (
-            <button
-              onClick={() => setPanicActive(true)}
-              className="absolute bottom-[72px] left-1/2 -translate-x-1/2 z-[150] pointer-events-none"
-              aria-label="Panic emergency button"
-              tabIndex={-1}
-              style={{ pointerEvents: "none" }}
-            />
-          )}
-
-          {/* PANIC modal */}
-          {panicActive && (
-            <div className="absolute inset-0 z-[300] flex flex-col items-center justify-center bg-destructive/95 backdrop-blur-sm">
-              <div className="flex flex-col items-center gap-6 px-8 text-center">
-                <div className="w-24 h-24 rounded-full bg-white/20 ring-8 ring-white/30 flex items-center justify-center">
-                  <ShieldAlert className="w-12 h-12 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-3xl font-black text-white tracking-tight">PANIC ATTACK</h2>
-                  <p className="text-white/80 text-sm mt-2 leading-relaxed">
-                    Contacting nearest hospital and sharing your live location...
-                  </p>
-                </div>
-                <div className="flex flex-col gap-3 w-full">
-                  <div className="bg-white/10 rounded-2xl px-5 py-3 border border-white/20">
-                    <p className="text-xs text-white/70 font-medium">Nearest Emergency</p>
-                    <p className="text-base font-bold text-white mt-0.5">CGHS Inderpuri — 2.1 km</p>
-                    <p className="text-xs text-white/60 mt-0.5">011-25836573 · Open 24 Hours</p>
-                  </div>
-                  <a
-                    href="tel:108"
-                    className="flex items-center justify-center gap-2 bg-white text-destructive font-black text-base py-4 rounded-2xl shadow-lg"
-                  >
-                    Call 108 — Ambulance
-                  </a>
-                  <button
-                    onClick={() => setPanicActive(false)}
-                    className="text-white/60 text-sm font-semibold underline underline-offset-2 mt-1"
-                  >
-                    Cancel — I am safe
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Mobile Bottom Navigation */}
-          <MobileBottomNav />
-
-          {/* Floating AI Chat Assistant */}
-          {user && <AIChatbox />}
-        </div>
-      </div>
-    );
-  }
-
-  // --- STANDARD WEB LAYOUT BELOW ---
   return (
     <div className="min-h-screen bg-pulseBg dark:bg-[#181c1e] text-slate-800 dark:text-slate-100 flex flex-col relative selection:bg-primary selection:text-white transition-colors duration-300">
       {/* Background visual graphics */}
@@ -144,8 +56,11 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[radial-gradient(circle_at_center,rgba(239,68,68,0.03)_0%,transparent_70%)]" />
       </div>
 
-      {/* Top Header */}
-      <header className="sticky top-0 z-40 w-full bg-white/90 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 backdrop-blur-md">
+      {/* Top Header with Safe Area Padding for Mobile Notches */}
+      <header 
+        className="sticky top-0 z-40 w-full bg-white/90 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 backdrop-blur-md"
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center group">
@@ -153,27 +68,22 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           </Link>
 
           {/* Desktop Navigation */}
-          {!isNativeApp && (
-            <nav className="hidden lg:flex items-center gap-1">
-              {navItems.filter(item => item.guest || user).map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  aria-label={`Navigate to ${item.name}`}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${isActive(item.path)
-                      ? 'bg-primary/10 text-primary border border-primary/20'
-                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent'
-                    }`}
-                >
-                  <item.icon className="w-4 h-4" aria-hidden="true" />
-                  {item.name}
-                </Link>
-              ))}
-            </nav>
-          )}
-
-          {/* Placeholder for future mobile UI overhaul */}
-          {/* {isNativeApp && <MobileNavPlaceholder />} */}
+          <nav className="hidden lg:flex items-center gap-1">
+            {navItems.filter(item => item.guest || user).map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                aria-label={`Navigate to ${item.name}`}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${isActive(item.path)
+                    ? 'bg-primary/10 text-primary border border-primary/20'
+                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent'
+                  }`}
+              >
+                <item.icon className="w-4 h-4" aria-hidden="true" />
+                {item.name}
+              </Link>
+            ))}
+          </nav>
         </div>
 
         <div className="flex items-center gap-4">
@@ -339,7 +249,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       </main>
 
       {/* Footer - Only show on web */}
-      <footer className="w-full glass-panel rounded-none border-b-0 border-x-0 border-pulseBorder dark:border-slate-800 mt-auto pt-8 pb-6 text-center md:text-left">
+      <footer 
+        className="w-full glass-panel rounded-none border-b-0 border-x-0 border-pulseBorder dark:border-slate-800 mt-auto pt-8 pb-6 text-center md:text-left"
+        style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
           {/* Medical Disclaimer */}

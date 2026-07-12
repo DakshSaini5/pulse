@@ -34,6 +34,7 @@ model User {
   aiUsages        AIUsage[]
   notifications   Notification[]
   emergencyContacts EmergencyContact[]
+  aiChatMessages  AIChatMessage[]
 }
 
 model Hospital {
@@ -320,5 +321,17 @@ model OTPVerification {
   createdAt DateTime @default(now())
 
   @@index([email])
+}
+
+model AIChatMessage {
+  id        String   @id @default(uuid())
+  userId    String
+  role      String   // "user" or "model"
+  content   String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 

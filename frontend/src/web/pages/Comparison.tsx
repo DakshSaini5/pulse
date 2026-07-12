@@ -7,7 +7,7 @@ import {
   MapPin, HelpCircle, Phone, Globe, Layers 
 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
-
+import { getHospitalDisplayName } from '@core/utils/utils';
 import { useNavigate } from 'react-router-dom';
 
 export const Comparison: React.FC = () => {
@@ -112,7 +112,7 @@ export const Comparison: React.FC = () => {
               <th className="p-5 font-bold text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wider w-1/4">Comparison Metric</th>
               {hospitals.map(h => (
                 <th key={h.id} className="p-5 font-extrabold text-slate-900 dark:text-white text-sm w-1/4">
-                  {h.name}
+                  {getHospitalDisplayName(h.name, h.address)}
                 </th>
               ))}
             </tr>
@@ -199,7 +199,9 @@ export const Comparison: React.FC = () => {
                 if (costs.length === 0) {
                   return (
                     <td key={h.id} className="p-5 text-slate-500 dark:text-slate-400 text-xs italic">
-                      Contact Hospital
+                      <a href={`https://www.google.com/search?q=${encodeURIComponent(h.name + " consult fees")}`} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors hover:underline">
+                        Contact Hospital
+                      </a>
                     </td>
                   );
                 }

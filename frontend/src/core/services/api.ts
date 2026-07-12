@@ -353,9 +353,9 @@ export const hospitalAPI = {
     });
     return res.data as { hospitals: Array<{ id: string; name: string }>; specialties: Array<{ name: string }> };
   },
-  getById: async (id: string, lat?: number, lng?: number) => {
+  getById: async (id: string, lat?: number, lng?: number, specialty?: string) => {
     const res = await api.get(`/api/hospitals/${id}`, {
-      params: { lat, lng }
+      params: { lat, lng, specialty }
     });
     return res.data as Hospital;
   },
@@ -569,4 +569,15 @@ export const emergencyAPI = {
     const res = await api.post('/api/emergency/panic', { lat, lng });
     return res.data as { message: string, results: any[], simulated: boolean };
   },
+};
+
+export const chatAPI = {
+  getHistory: async () => {
+    const res = await api.get('/api/chat/history');
+    return res.data as Array<{ id: string; role: 'user' | 'model'; content: string; createdAt: string }>;
+  },
+  clearHistory: async () => {
+    const res = await api.delete('/api/chat/history');
+    return res.data;
+  }
 };

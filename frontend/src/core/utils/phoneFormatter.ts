@@ -110,9 +110,12 @@ function formatSingleIndianPhoneNumber(phone: string, address: string): string {
       }
     }
     
-    if (stdPrefix) {
-      return `${stdPrefix} ${digitsOnly.substring(0, 4)} ${digitsOnly.substring(4)}`;
+    // Default to 011 (Delhi/NCR) if city not detected
+    if (!stdPrefix) {
+      stdPrefix = '011';
     }
+    
+    return `${stdPrefix}-${digitsOnly.substring(0, 4)} ${digitsOnly.substring(4)}`;
   }
   
   // If it's a 10-digit number starting with city code without leading 0 (like 8022868423 or 1126588500)
@@ -161,9 +164,11 @@ export function getDialerHref(phone: string, address: string): string {
       }
     }
     
-    if (stdPrefix) {
-      return `tel:${stdPrefix}${cleaned}`;
+    if (!stdPrefix) {
+      stdPrefix = '011';
     }
+    
+    return `tel:${stdPrefix}${cleaned}`;
   }
   
   if (cleaned.length === 10 && /^\d+$/.test(cleaned)) {

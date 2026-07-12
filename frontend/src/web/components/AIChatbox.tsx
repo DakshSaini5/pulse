@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from "react"
-import { MessageCircle, X, Send, Sparkles, Bot, Loader2, Flag } from "lucide-react"
+import { MessageCircle, X, Send, Sparkles, Bot, Loader2, Flag, MapPin, Plus } from "lucide-react"
 import { PulseLogo } from "./PulseLogo"
 import { cn } from "@core/utils/utils"
 import io, { Socket } from 'socket.io-client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import toast from 'react-hot-toast';
+import { useAuth } from "@core/context/AuthContext";
 
 interface Message {
   id: string
@@ -21,6 +22,7 @@ const QUICK_PROMPTS = [
 ]
 
 export const AIChatbox: React.FC = () => {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
@@ -47,16 +49,19 @@ export const AIChatbox: React.FC = () => {
       const token = localStorage.getItem('pulse_token');
       const socket = io(url as any, {
         auth: { token },
-        transports: ['websocket']
+        transports: ['websocket', 'polling'] // Prefer websocket on mobile to bypass CORS issues
       });
       
       socket.on('connect', () => {
         console.log('Chat socket connected');
-        setMessages([{
-          id: 'welcome',
-          role: 'assistant',
-          text: 'Hi! I\'m Pulse AI. Ask me anything about nearby hospitals, your prescriptions, or health conditions.'
-        }]);
+        setMessages(prev => {
+          if (prev.some(m => m.id === 'welcome')) return prev;
+          return [{
+            id: 'welcome',
+            role: 'assistant',
+            text: `Hi ${user?.name ? user.name.split(' ')[0] : ''}! I'm Pulse AI. Ask me anything about nearby hospitals, your prescriptions, or health conditions.`
+          }, ...prev];
+        });
       });
 
       socket.on('chat:response', (data: { text: string, isError: boolean }) => {
@@ -159,8 +164,11 @@ export const AIChatbox: React.FC = () => {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3.5 bg-primary">
             <div className="flex items-center gap-2.5">
-              <div className="size-7 rounded-full bg-white/20 flex items-center justify-center">
-                <Sparkles className="size-3.5 text-white" />
+              <div className="size-7 rounded-full bg-white flex items-center justify-center relative shrink-0">
+                <MapPin className="size-5 text-red-500 fill-red-500" />
+                <div className="absolute top-[6px] left-1/2 -translate-x-1/2 text-white bg-red-500 rounded-full w-2 h-2 flex items-center justify-center">
+                  <Plus className="size-2" strokeWidth={5} />
+                </div>
               </div>
               <div>
                 <p className="text-sm font-bold text-white leading-none">Pulse AI</p>
@@ -187,8 +195,11 @@ export const AIChatbox: React.FC = () => {
                 className={cn("flex gap-2 max-w-[90%]", msg.role === "user" ? "ml-auto flex-row-reverse" : "mr-auto")}
               >
                 {(msg.role === "assistant" || msg.role === "model") && (
-                  <div className="size-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <Bot className="size-3.5 text-primary" />
+                  <div className="size-6 rounded-full bg-white border border-slate-200 flex items-center justify-center shrink-0 mt-0.5 relative shadow-sm">
+                    <MapPin className="size-4 text-red-500 fill-red-500" />
+                    <div className="absolute top-[5px] left-1/2 -translate-x-1/2 text-white bg-red-500 rounded-full w-[6px] h-[6px] flex items-center justify-center">
+                      <Plus className="w-1.5 h-1.5" strokeWidth={5} />
+                    </div>
                   </div>
                 )}
                 <div className="flex flex-col gap-1">
@@ -290,12 +301,26 @@ export const AIChatbox: React.FC = () => {
         onPointerUp={handlePointerUp}
         style={{ transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`, touchAction: 'none' }}
         className={cn(
-          "size-12 sm:size-14 rounded-full shadow-xl flex items-center justify-center transition-all z-[200] pointer-events-auto",
-          isOpen ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground shadow-primary/30 cursor-grab active:cursor-grabbing"
+          "shadow-xl flex items-center justify-center transition-all z-[200] pointer-events-auto cursor-grab active:cursor-grabbing",
+          isOpen 
+            ? "size-12 sm:size-14 rounded-full bg-muted text-muted-foreground" 
+            : "h-12 px-1.5 pr-5 rounded-full bg-[#3B82F6] hover:bg-blue-600 text-white shadow-blue-500/30 gap-2.5"
         )}
         aria-label={isOpen ? "Close AI chat" : "Open AI chat"}
       >
-        {isOpen ? <X className="size-5 sm:size-6" /> : <PulseLogo variant="icon" size={28} className="sm:w-8 sm:h-8" />}
+        {isOpen ? (
+          <X className="size-5 sm:size-6" />
+        ) : (
+          <>
+            <div className="size-9 rounded-full bg-white flex items-center justify-center shrink-0 relative">
+              <MapPin className="w-6 h-6 text-red-500 fill-red-500" />
+              <div className="absolute top-2.5 left-1/2 -translate-x-1/2 text-white bg-red-500 rounded-full w-2.5 h-2.5 flex items-center justify-center">
+                <Plus className="w-3 h-3" strokeWidth={5} />
+              </div>
+            </div>
+            <span className="font-bold text-sm tracking-wide">Pulse AI</span>
+          </>
+        )}
       </button>
     </div>
   )

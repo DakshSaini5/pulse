@@ -381,8 +381,6 @@ router.get('/:id', async (req: Request, res: Response) => {
   const { lat, lng, specialty } = req.query;
   const userLat = lat ? parseFloat(lat as string) : 28.6139;
   const userLng = lng ? parseFloat(lng as string) : 77.2090;
-  const targetSpecialty = (specialty as string) || 'General Medicine';
-
   try {
     const hospital = await prisma.hospital.findUnique({
       where: { id },
@@ -397,6 +395,15 @@ router.get('/:id', async (req: Request, res: Response) => {
 
     if (!hospital) {
       return res.status(404).json({ message: 'Hospital clinic not found.' });
+    }
+
+    let targetSpecialty = specialty as string;
+    if (!targetSpecialty) {
+      if (hospital.specialties && hospital.specialties.length > 0) {
+        targetSpecialty = hospital.specialties[0].specialty.name;
+      } else {
+        targetSpecialty = 'General Medicine';
+      }
     }
 
     const { score, explanation } = scoreHospital(hospital as any, targetSpecialty, userLat, userLng);
