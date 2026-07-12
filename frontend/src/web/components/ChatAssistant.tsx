@@ -70,12 +70,12 @@ const MEDICATION_PATTERNS = [
 
 const FEATURE_PATTERNS = [
   /how\s+(to|do\s+i)\s+upload/i,
-  /see\s+my\s+trends/i,
-  /saved\s+hospital/i,
-  /where\s+is\s+saved/i,
-  /my\s+reports/i,
-  /prescription\s+analys/i,
-  /how\s+does\s+the\s+app\s+work/i
+  /where\s+(to|do\s+i)\s+upload/i,
+  /how\s+(to|do\s+i)\s+see\s+trends/i,
+  /where\s+(is|are)\s+saved\s+hospitals/i,
+  /how\s+does\s+the\s+app\s+work/i,
+  /show\s+features/i,
+  /feature\s+guide/i
 ];
 
 const ChatAssistant: React.FC = () => {
