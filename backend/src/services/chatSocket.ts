@@ -184,15 +184,17 @@ export const setupChatSocket = (io: Server) => {
 
         // Re-initialize chat model session with the latest instructions + existing history
         const modelName = await getWorkingModelName(genAI);
+        const safetySettings = [
+          { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+          { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+          { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+          { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
+        ];
+
         const model = genAI.getGenerativeModel({
           model: modelName,
           systemInstruction: latestContext + STRICT_RULES,
-          safetySettings: [
-            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
-          ]
+          safetySettings
         });
 
         chatSession = model.startChat({
@@ -200,6 +202,7 @@ export const setupChatSocket = (io: Server) => {
           generationConfig: {
             maxOutputTokens: 1000,
           },
+          safetySettings
         });
 
         socket.emit('chat:debug', { step: '9_message_sending_to_gemini' });
