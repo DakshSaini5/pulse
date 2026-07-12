@@ -221,20 +221,12 @@ export const setupChatSocket = (io: Server) => {
         socket.emit('chat:response:start', { id: messageId });
         socket.emit('chat:debug', { step: '9_message_gemini_stream_started' });
 
-        // Stream chunks asynchronously in a non-blocking background task
-        (async () => {
-          try {
-            for await (const chunk of result.stream) {
-              socket.emit('chat:response:chunk', { text: chunk.text() });
-            }
-          } catch (err) {
-            console.error('[Socket.io] Stream chunk error:', err);
-          }
-        })();
-
-        // Wait for the compiled full response promise to resolve instantly on last token
-        const response = await result.response;
-        const fullText = response.text();
+        let fullText = "";
+        for await (const chunk of result.stream) {
+          const chunkText = chunk.text();
+          fullText += chunkText;
+          socket.emit('chat:response:chunk', { text: chunkText });
+        }
         
         chatHistory.push({ role: 'model', parts: [{ text: fullText }] });
         
