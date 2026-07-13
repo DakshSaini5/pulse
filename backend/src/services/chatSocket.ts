@@ -9,18 +9,29 @@ import { prisma } from '../db';
 const RATE_LIMIT_MAX = 40;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 
-const STRICT_RULES = `
-You are 'Pulse AI', a clinical data assistant. When analyzing lab reports, CBCs, or medical data, you must act strictly as an objective data extractor. 
-1. State the facts, compare the values, and explain what the metrics measure.
-2. NEVER provide a medical diagnosis. 
-3. NEVER use urgent directive language like 'this requires immediate medical attention', 'seek help', or 'severe risk'. 
-4. Always present comparisons in a neutral, calm, and highly objective tone. 
+const MEDICAL_ANALYSIS_RULES = `
+[MEDICAL ANALYSIS MODE — Apply these rules ONLY when the user explicitly asks about their lab reports, CBC, prescriptions, medications, or health data]:
+1. Act as an objective data extractor. State the facts, compare the values, and explain what the metrics measure.
+2. NEVER provide a medical diagnosis.
+3. NEVER use urgent directive language like 'this requires immediate medical attention', 'seek help', or 'severe risk'.
+4. Always present comparisons in a neutral, calm, and highly objective tone.
 5. Conclude your analysis by neutrally reminding the user to discuss these specific factual findings with their primary physician.
 `;
 
+const BASE_PERSONALITY = `You are 'Pulse AI', a friendly and supportive health companion built into the Pulse healthcare app.
+
+CORE BEHAVIOR RULES:
+- For casual messages (greetings, small talk, how are you, etc.), respond warmly and conversationally like a friendly assistant. Keep it short and natural. Do NOT mention or analyze any medical data.
+- For emotional messages (stress, anxiety, feeling unwell, etc.), respond with empathy and supportive language. You may gently suggest general wellness tips (deep breathing, hydration, rest). Do NOT dump medical report data unless the user specifically asks about it.
+- For general health questions (what is diabetes, how does blood pressure work, etc.), answer the question helpfully using general medical knowledge. Do NOT reference the user's personal data unless they ask.
+- For personal medical data requests (analyze my report, what's my hemoglobin, compare my CBCs, list my medications, etc.), ONLY THEN use the user's uploaded data from the [REFERENCE DATA] section below, and follow the Medical Analysis Mode rules.
+
+CRITICAL: The [REFERENCE DATA] section contains the user's private medical records. This data exists so you CAN answer when asked. But NEVER proactively analyze, summarize, or mention this data unless the user's message explicitly requests information about their reports, labs, medications, or health records.
+`;
+
 async function buildSystemInstructionContext(userId: string | null): Promise<string> {
-  let context = `You are 'Pulse', an AI triage assistant.\n\n`;
-  if (!userId) return context;
+  let context = BASE_PERSONALITY + '\n';
+  if (!userId) return context + MEDICAL_ANALYSIS_RULES;
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -35,17 +46,22 @@ async function buildSystemInstructionContext(userId: string | null): Promise<str
       const gender = (user as any).gender;
       const weight = (user as any).weight;
 
+      // Add user profile for personalization (greeting by name, etc.)
+      const userName = (user as any).name;
+      if (userName) {
+        context += `\nThe user's name is ${userName}. You may use their first name in greetings.\n`;
+      }
+
       if (age || gender || weight) {
-        context += `Patient Profile:\n`;
+        context += `\n[REFERENCE DATA — Patient Profile]:\n`;
         if (age) context += `- Age: ${age}\n`;
         if (gender) context += `- Gender: ${gender}\n`;
         if (weight) context += `- Weight: ${weight}\n`;
-        context += `\n`;
       }
 
       const reports = user.medicalReports.filter((r: any) => r.summary || r.values.length > 0);
       if (reports.length > 0) {
-        context += `[Uploaded Medical Reports]:\n`;
+        context += `\n[REFERENCE DATA — Uploaded Medical Reports] (Use ONLY when the user asks about their reports):\n`;
         reports.forEach((r: any) => {
           context += `- Report Type: ${r.reportType} (Date: ${r.reportDate.toISOString().split('T')[0]})\n`;
           if (r.summary) context += `  Summary: ${r.summary.healthSummary}\n`;
@@ -58,7 +74,7 @@ async function buildSystemInstructionContext(userId: string | null): Promise<str
 
       const prescriptions = user.prescriptions.filter((p: any) => p.prescriptionAnalysis.length > 0);
       if (prescriptions.length > 0) {
-        context += `\n[Uploaded Prescriptions/Medications]:\n`;
+        context += `\n[REFERENCE DATA — Uploaded Prescriptions/Medications] (Use ONLY when the user asks about their medications):\n`;
         prescriptions.forEach((p: any) => {
           context += `- Medication List (from ${p.createdAt.toISOString().split('T')[0]}):\n`;
           p.prescriptionAnalysis.forEach((med: any) => {
@@ -70,6 +86,7 @@ async function buildSystemInstructionContext(userId: string | null): Promise<str
   } catch (err) {
     console.error('[Socket.io] Error building system instruction context:', err);
   }
+  context += '\n' + MEDICAL_ANALYSIS_RULES;
   return context;
 }
 
@@ -170,7 +187,7 @@ export const setupChatSocket = (io: Server) => {
 
         // Re-initialize chat model session with the latest instructions + existing history
         const modelName = 'gemini-flash-latest';
-        const systemInstruction = latestContext + STRICT_RULES;
+        const systemInstruction = latestContext;
 
         const safetySettings = [
           { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
