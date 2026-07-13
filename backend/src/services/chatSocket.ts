@@ -3,6 +3,17 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 import { getWorkingModelName } from './gemini';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../db';
+import fs from 'fs';
+import path from 'path';
+
+function writeLog(msg: string) {
+  try {
+    fs.appendFileSync(path.resolve(__dirname, '../../../debug_chat.log'), `\n=== [${new Date().toISOString()}] ===\n${msg}\n`);
+  } catch (err) {
+    console.error('Failed to write log:', err);
+  }
+}
+
 
 // Per-socket rate limiting: max 40 messages per 15 minutes
 const RATE_LIMIT_MAX = 40;
@@ -157,8 +168,10 @@ export const setupChatSocket = (io: Server) => {
 
       messageTimestamps.push(now);
       
+      writeLog(`Message received: "${message}" for user: ${userId}`);
       try {
         if (!genAI) {
+          writeLog("genAI object is missing on socket connection.");
           socket.emit('chat:debug', { step: '9_message_no_genai' });
           return;
         }
@@ -166,9 +179,14 @@ export const setupChatSocket = (io: Server) => {
         // Dynamically compile the latest context to capture newly uploaded files instantly
         socket.emit('chat:debug', { step: '9_message_dynamic_context_fetching' });
         const latestContext = await buildSystemInstructionContext(userId);
+        writeLog(`Compiled dynamic context:\n${latestContext}`);
 
         // Re-initialize chat model session with the latest instructions + existing history
         const modelName = await getWorkingModelName(genAI);
+        const systemInstruction = latestContext + STRICT_RULES;
+        writeLog(`Model selected: ${modelName}`);
+        writeLog(`System Instruction Context:\n${systemInstruction}`);
+
         const safetySettings = [
           { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
           { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -178,7 +196,7 @@ export const setupChatSocket = (io: Server) => {
 
         const model = genAI.getGenerativeModel({
           model: modelName,
-          systemInstruction: latestContext + STRICT_RULES,
+          systemInstruction,
           safetySettings
         });
 
@@ -190,6 +208,7 @@ export const setupChatSocket = (io: Server) => {
           safetySettings
         });
 
+        writeLog(`Chat history sent to Gemini:\n${JSON.stringify(chatHistory, null, 2)}`);
         socket.emit('chat:debug', { step: '9_message_sending_to_gemini' });
         chatHistory.push({ role: 'user', parts: [{ text: message }] });
         
@@ -210,12 +229,27 @@ export const setupChatSocket = (io: Server) => {
         socket.emit('chat:debug', { step: '9_message_gemini_stream_started' });
 
         let fullText = "";
+        let chunkIndex = 0;
         for await (const chunk of result.stream) {
-          const chunkText = chunk.text();
-          fullText += chunkText;
-          socket.emit('chat:response:chunk', { text: chunkText });
+          chunkIndex++;
+          let textChunk = "";
+          try {
+            textChunk = chunk.text();
+            writeLog(`[Stream] Chunk ${chunkIndex} text: "${textChunk}"`);
+          } catch (chunkErr: any) {
+            writeLog(`[Stream] Chunk ${chunkIndex} failed to extract text: ${chunkErr.message || chunkErr}`);
+            if (chunk.candidates && chunk.candidates.length > 0) {
+              const candidate = chunk.candidates[0];
+              writeLog(`[Stream] Candidate finishReason: ${candidate.finishReason}`);
+              writeLog(`[Stream] Candidate safetyRatings: ${JSON.stringify(candidate.safetyRatings)}`);
+            }
+            throw chunkErr;
+          }
+          fullText += textChunk;
+          socket.emit('chat:response:chunk', { text: textChunk });
         }
         
+        writeLog(`Completed streaming. fullText:\n${fullText}`);
         chatHistory.push({ role: 'model', parts: [{ text: fullText }] });
         
         if (userId && fullText) {
@@ -232,6 +266,8 @@ export const setupChatSocket = (io: Server) => {
         socket.emit('chat:debug', { step: '9_message_success' });
 
       } catch (error: any) {
+        writeLog(`[Socket.io] Error in chat:message: ${error.message || error}`);
+        if (error.stack) writeLog(`[Socket.io] Error Stack:\n${error.stack}`);
         console.error('[Socket.io] Chat Error:', error instanceof Error ? error.message : 'Unknown error');
         socket.emit('chat:debug', { step: '9_message_failed', error: error.message });
         
