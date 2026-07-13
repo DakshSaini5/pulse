@@ -182,7 +182,7 @@ export const setupChatSocket = (io: Server) => {
         writeLog(`Compiled dynamic context:\n${latestContext}`);
 
         // Re-initialize chat model session with the latest instructions + existing history
-        const modelName = await getWorkingModelName(genAI);
+        const modelName = 'gemini-1.5-flash';
         const systemInstruction = latestContext + STRICT_RULES;
         writeLog(`Model selected: ${modelName}`);
         writeLog(`System Instruction Context:\n${systemInstruction}`);
