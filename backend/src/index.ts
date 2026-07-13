@@ -66,7 +66,15 @@ app.use(cors({
     }
 
     // In production, strictly enforce allowedOrigins only — no wildcard subdomains
-    if (!origin || origin === 'null' || allowedOrigins.includes(origin)) {
+    const cleanOrigin = origin ? origin.replace(/\/$/, '') : '';
+    if (
+      !origin || 
+      origin === 'null' || 
+      allowedOrigins.includes(cleanOrigin) || 
+      cleanOrigin.startsWith('capacitor://') || 
+      cleanOrigin.startsWith('http://localhost') || 
+      cleanOrigin.startsWith('https://localhost')
+    ) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -170,7 +178,15 @@ const io = new SocketIOServer(httpServer, {
         return callback(null, true);
       }
       // Strictly enforce allowedOrigins for Socket.IO in production — no wildcard subdomains
-      if (!origin || origin === 'null' || allowedOrigins.includes(origin)) {
+      const cleanOrigin = origin ? origin.replace(/\/$/, '') : '';
+      if (
+        !origin || 
+        origin === 'null' || 
+        allowedOrigins.includes(cleanOrigin) || 
+        cleanOrigin.startsWith('capacitor://') || 
+        cleanOrigin.startsWith('http://localhost') || 
+        cleanOrigin.startsWith('https://localhost')
+      ) {
         callback(null, true);
       } else {
         callback(new Error('Socket.IO CORS rejected'));
