@@ -238,12 +238,11 @@ export const setupChatSocket = (io: Server) => {
             writeLog(`[Stream] Chunk ${chunkIndex} text: "${textChunk}"`);
           } catch (chunkErr: any) {
             writeLog(`[Stream] Chunk ${chunkIndex} failed to extract text: ${chunkErr.message || chunkErr}`);
-            if (chunk.candidates && chunk.candidates.length > 0) {
-              const candidate = chunk.candidates[0];
-              writeLog(`[Stream] Candidate finishReason: ${candidate.finishReason}`);
-              writeLog(`[Stream] Candidate safetyRatings: ${JSON.stringify(candidate.safetyRatings)}`);
-            }
             throw chunkErr;
+          }
+          if (chunk.candidates && chunk.candidates.length > 0) {
+            const candidate = chunk.candidates[0];
+            writeLog(`[Stream] Chunk ${chunkIndex} Candidate details: finishReason=${candidate.finishReason}, safetyRatings=${JSON.stringify(candidate.safetyRatings)}`);
           }
           fullText += textChunk;
           socket.emit('chat:response:chunk', { text: textChunk });
