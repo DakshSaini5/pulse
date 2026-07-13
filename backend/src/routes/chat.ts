@@ -32,4 +32,22 @@ router.delete('/history', authenticateToken, async (req: AuthenticatedRequest, r
   }
 });
 
+import fs from 'fs';
+import path from 'path';
+
+// GET /api/chat/debug-log
+router.get('/debug-log', async (req: express.Request, res: Response) => {
+  try {
+    const logPath = path.resolve(__dirname, '../../../debug_chat.log');
+    if (!fs.existsSync(logPath)) {
+      return res.status(404).send('Log file not found');
+    }
+    const content = fs.readFileSync(logPath, 'utf8');
+    res.setHeader('Content-Type', 'text/plain');
+    return res.send(content);
+  } catch (err: any) {
+    return res.status(500).send(err.message);
+  }
+});
+
 export default router;
