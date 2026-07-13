@@ -49,7 +49,7 @@ export const AIChatbox: React.FC = () => {
       const token = localStorage.getItem('pulse_token');
       const socket = io(url as any, {
         auth: { token },
-        transports: ['websocket', 'polling'] // Prefer websocket on mobile to bypass CORS issues
+        transports: ['websocket']
       });
       
       socket.on('connect', () => {

@@ -66,7 +66,7 @@ app.use(cors({
     }
 
     // In production, strictly enforce allowedOrigins only — no wildcard subdomains
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || origin === 'null' || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -170,7 +170,7 @@ const io = new SocketIOServer(httpServer, {
         return callback(null, true);
       }
       // Strictly enforce allowedOrigins for Socket.IO in production — no wildcard subdomains
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || origin === 'null' || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error('Socket.IO CORS rejected'));

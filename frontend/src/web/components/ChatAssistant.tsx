@@ -93,6 +93,7 @@ const ChatAssistant: React.FC = () => {
   const watchdogTimerRef = useRef<any>(null);
   const [pendingMessages, setPendingMessages] = useState<ChatMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   // Drag state for mobile web
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -254,18 +255,24 @@ const ChatAssistant: React.FC = () => {
       const url = import.meta.env.VITE_API_URL || undefined;
       const token = localStorage.getItem('pulse_token');
 
-      console.log('[ChatAssistant] Connecting socket via WebSockets with Polling fallback...');
+      console.log('[ChatAssistant] Connecting socket via WebSockets...');
       const socket = io(url as any, {
         auth: { token },
-        transports: ['websocket', 'polling'],
+        transports: ['websocket'],
         reconnection: true,
         reconnectionAttempts: 10,
         reconnectionDelay: 1000
       });
 
+      socket.on('connect_error', (err) => {
+        console.error('[ChatAssistant] Socket connection error:', err.message || err);
+        setConnectionError(err.message || String(err));
+      });
+
       socket.on('connect', () => {
         console.log('[ChatAssistant] Socket connected.');
         setIsConnected(true);
+        setConnectionError(null);
 
         // Load history only if we do not already have messages loaded in UI
         const loadHistory = async () => {
@@ -618,7 +625,7 @@ const ChatAssistant: React.FC = () => {
                 <h3 className="text-white font-medium text-sm">Pulse AI</h3>
                 <p className={`${isConnected ? 'text-green-400/80' : 'text-yellow-500/80'} text-xs flex items-center gap-1`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></span>
-                  {isConnected ? 'Online' : 'Connecting...'}
+                  {isConnected ? 'Online' : (connectionError ? `Error: ${connectionError}` : 'Connecting...')}
                 </p>
               </div>
             </div>

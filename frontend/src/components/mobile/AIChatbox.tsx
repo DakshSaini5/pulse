@@ -47,7 +47,7 @@ export function AIChatbox() {
 
     const newSocket = io(apiUrl, {
       auth: { token },
-      transports: ['websocket', 'polling'] // Support fallback
+      transports: ['websocket']
     })
 
     newSocket.on('connect', () => {
