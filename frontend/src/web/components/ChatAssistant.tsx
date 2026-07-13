@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, User, Bot, Loader2 } from 'lucide-react';
+import { MessageCircle, X, Send, User, Bot, Loader2, Trash2 } from 'lucide-react';
 import { PulseLogo } from './PulseLogo';
 import io, { Socket } from 'socket.io-client';
 import ReactMarkdown from 'react-markdown';
@@ -382,6 +382,22 @@ const ChatAssistant: React.FC = () => {
     };
   }, []);
 
+  const handleClearChat = async () => {
+    if (window.confirm("Are you sure you want to clear your chat history?")) {
+      try {
+        await chatAPI.clearHistory();
+        setMessages([]);
+        // Re-initialize socket connection to wipe out in-memory chatHistory on the backend
+        if (socketRef.current) {
+          socketRef.current.disconnect();
+          socketRef.current.connect();
+        }
+      } catch (err) {
+        console.error('[ChatAssistant] Failed to clear history:', err);
+      }
+    }
+  };
+
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     const queryText = input.trim();
@@ -606,12 +622,21 @@ const ChatAssistant: React.FC = () => {
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="text-gray-400 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
-            >
-              <X size={20} />
-            </button>
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={handleClearChat}
+                title="Clear Chat History"
+                className="text-gray-400 hover:text-red-400 transition-colors p-1.5 rounded-md hover:bg-white/10"
+              >
+                <Trash2 size={18} />
+              </button>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="text-gray-400 hover:text-white transition-colors p-1.5 rounded-md hover:bg-white/10"
+              >
+                <X size={20} />
+              </button>
+            </div>
           </div>
 
           {/* Messages Area */}
