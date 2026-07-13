@@ -3,16 +3,6 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 import { getWorkingModelName } from './gemini';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../db';
-import fs from 'fs';
-import path from 'path';
-
-function writeLog(msg: string) {
-  try {
-    fs.appendFileSync(path.resolve(__dirname, '../../../debug_chat.log'), `\n=== [${new Date().toISOString()}] ===\n${msg}\n`);
-  } catch (err) {
-    console.error('Failed to write log:', err);
-  }
-}
 
 
 // Per-socket rate limiting: max 40 messages per 15 minutes
@@ -168,10 +158,8 @@ export const setupChatSocket = (io: Server) => {
 
       messageTimestamps.push(now);
       
-      writeLog(`Message received: "${message}" for user: ${userId}`);
       try {
         if (!genAI) {
-          writeLog("genAI object is missing on socket connection.");
           socket.emit('chat:debug', { step: '9_message_no_genai' });
           return;
         }
@@ -179,13 +167,10 @@ export const setupChatSocket = (io: Server) => {
         // Dynamically compile the latest context to capture newly uploaded files instantly
         socket.emit('chat:debug', { step: '9_message_dynamic_context_fetching' });
         const latestContext = await buildSystemInstructionContext(userId);
-        writeLog(`Compiled dynamic context:\n${latestContext}`);
 
         // Re-initialize chat model session with the latest instructions + existing history
         const modelName = 'gemini-flash-latest';
         const systemInstruction = latestContext + STRICT_RULES;
-        writeLog(`Model selected: ${modelName}`);
-        writeLog(`System Instruction Context:\n${systemInstruction}`);
 
         const safetySettings = [
           { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -211,7 +196,6 @@ export const setupChatSocket = (io: Server) => {
           safetySettings
         });
 
-        writeLog(`Chat history sent to Gemini:\n${JSON.stringify(chatHistory, null, 2)}`);
         socket.emit('chat:debug', { step: '9_message_sending_to_gemini' });
         
         if (userId) {
@@ -231,26 +215,11 @@ export const setupChatSocket = (io: Server) => {
         socket.emit('chat:debug', { step: '9_message_gemini_stream_started' });
 
         let fullText = "";
-        let chunkIndex = 0;
         for await (const chunk of result.stream) {
-          chunkIndex++;
-          let textChunk = "";
-          try {
-            textChunk = chunk.text();
-            writeLog(`[Stream] Chunk ${chunkIndex} text: "${textChunk}"`);
-          } catch (chunkErr: any) {
-            writeLog(`[Stream] Chunk ${chunkIndex} failed to extract text: ${chunkErr.message || chunkErr}`);
-            throw chunkErr;
-          }
-          if (chunk.candidates && chunk.candidates.length > 0) {
-            const candidate = chunk.candidates[0];
-            writeLog(`[Stream] Chunk ${chunkIndex} Candidate details: finishReason=${candidate.finishReason}, safetyRatings=${JSON.stringify(candidate.safetyRatings)}`);
-          }
+          const textChunk = chunk.text();
           fullText += textChunk;
           socket.emit('chat:response:chunk', { text: textChunk });
         }
-        
-        writeLog(`Completed streaming. fullText:\n${fullText}`);
         
         if (userId && fullText) {
           prisma.aIChatMessage.create({
@@ -266,8 +235,6 @@ export const setupChatSocket = (io: Server) => {
         socket.emit('chat:debug', { step: '9_message_success' });
 
       } catch (error: any) {
-        writeLog(`[Socket.io] Error in chat:message: ${error.message || error}`);
-        if (error.stack) writeLog(`[Socket.io] Error Stack:\n${error.stack}`);
         console.error('[Socket.io] Chat Error:', error instanceof Error ? error.message : 'Unknown error');
         socket.emit('chat:debug', { step: '9_message_failed', error: error.message });
         
