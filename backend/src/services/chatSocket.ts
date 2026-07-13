@@ -182,7 +182,7 @@ export const setupChatSocket = (io: Server) => {
         writeLog(`Compiled dynamic context:\n${latestContext}`);
 
         // Re-initialize chat model session with the latest instructions + existing history
-        const modelName = 'gemini-1.5-flash';
+        const modelName = 'gemini-flash-latest';
         const systemInstruction = latestContext + STRICT_RULES;
         writeLog(`Model selected: ${modelName}`);
         writeLog(`System Instruction Context:\n${systemInstruction}`);
@@ -197,20 +197,22 @@ export const setupChatSocket = (io: Server) => {
         const model = genAI.getGenerativeModel({
           model: modelName,
           systemInstruction,
-          safetySettings
+          safetySettings,
+          generationConfig: {
+            maxOutputTokens: 2048,
+          }
         });
 
         chatSession = model.startChat({
           history: chatHistory,
           generationConfig: {
-            maxOutputTokens: 1000,
+            maxOutputTokens: 2048,
           },
           safetySettings
         });
 
         writeLog(`Chat history sent to Gemini:\n${JSON.stringify(chatHistory, null, 2)}`);
         socket.emit('chat:debug', { step: '9_message_sending_to_gemini' });
-        chatHistory.push({ role: 'user', parts: [{ text: message }] });
         
         if (userId) {
           prisma.aIChatMessage.create({
@@ -249,7 +251,6 @@ export const setupChatSocket = (io: Server) => {
         }
         
         writeLog(`Completed streaming. fullText:\n${fullText}`);
-        chatHistory.push({ role: 'model', parts: [{ text: fullText }] });
         
         if (userId && fullText) {
           prisma.aIChatMessage.create({
@@ -270,11 +271,6 @@ export const setupChatSocket = (io: Server) => {
         console.error('[Socket.io] Chat Error:', error instanceof Error ? error.message : 'Unknown error');
         socket.emit('chat:debug', { step: '9_message_failed', error: error.message });
         
-        // Remove the failed user message from history
-        if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
-          chatHistory.pop(); 
-        }
-
         socket.emit('chat:response', {
           text: `I'm sorry, an error occurred: ${error.message || error}. Please try again.`,
           isError: true
