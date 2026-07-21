@@ -177,7 +177,7 @@ export const Privacy: React.FC = () => {
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">5. HIPAA Compliance &amp; Your Rights</h3>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-            Pulse Healthcare strictly adheres to the Health Insurance Portability and Accountability Act (HIPAA). Our infrastructure undergoes rigorous third-party penetration testing. You maintain full ownership of your data at all times and have the right to access, correct, or export your data on request.
+            Pulse Healthcare strictly adheres to the Health Insurance Portability and Accountability Act (HIPAA). You maintain full ownership of your data at all times and have the right to access, correct, or export your data on request.
           </p>
         </div>
 
