@@ -29,6 +29,7 @@ import { Settings } from './pages/Settings';
 import { About } from './pages/About';
 import { Contact } from './pages/Contact';
 import { Privacy } from './pages/Privacy';
+import { DeleteAccount } from './pages/DeleteAccount';
 import { NotFound } from './pages/NotFound';
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,6 +51,8 @@ const ScrollToTop: React.FC = () => {
   return null;
 };
 
+import { LocalNotifications } from '@capacitor/local-notifications';
+
 // Handles Android hardware back button and splash screen
 const NativeHandler: React.FC = () => {
   const navigate = useNavigate();
@@ -61,6 +64,13 @@ const NativeHandler: React.FC = () => {
       try {
         await StatusBar.setStyle({ style: Style.Dark });
         await StatusBar.setBackgroundColor({ color: '#0B0F19' });
+        
+        // Request Notification permissions for Play Store requirements
+        const permStatus = await LocalNotifications.checkPermissions();
+        if (permStatus.display !== 'granted') {
+          await LocalNotifications.requestPermissions();
+        }
+
         await SplashScreen.hide({ fadeOutDuration: 300 });
       } catch (e) {
         // Silently ignore if plugins fail
@@ -143,6 +153,7 @@ export const App: React.FC = () => {
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/privacy" element={<Privacy />} />
+                <Route path="/delete-account" element={<DeleteAccount />} />
                 <Route path="/terms" element={<Terms />} />
 
                 {/* Guarded Dashboard Pages */}

@@ -489,7 +489,6 @@ export const Landing: React.FC = () => {
                     const success = await requestGPSLocation();
                     if (!success) {
                       toast.error("GPS access failed. Please select your location manually.");
-                      setIsLocationModalOpen(true);
                     }
                   }}
                   className="w-full sm:w-auto px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all"

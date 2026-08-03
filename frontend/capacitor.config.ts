@@ -18,6 +18,16 @@ const config: CapacitorConfig = {
       scopes: ['profile', 'email'],
       serverClientId: '367526945989-ebnif0f9q0s080kab2clgd42d10qqhok.apps.googleusercontent.com',
       forceCodeForRefreshToken: true
+    },
+    SplashScreen: {
+      launchShowDuration: 2000,
+      launchAutoHide: true,
+      androidSplashResourceName: 'splash',
+      androidScaleType: 'CENTER_CROP',
+      showSpinner: false,
+      splashFullScreen: true,
+      splashImmersive: true,
+      useDialog: false,
     }
   }
 };

@@ -3,7 +3,6 @@ import { getCityNameFromCoords } from '@core/utils/geolocation';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import { MapPin } from 'lucide-react';
-import toast from 'react-hot-toast';
 
 export interface LocationState {
   latitude: number;
@@ -21,7 +20,6 @@ interface LocationContextType extends LocationState {
 
 const LocationContext = createContext<LocationContextType | undefined>(undefined);
 
-// Default coordinates: Central Delhi
 const DEFAULT_LAT = 28.6139;
 const DEFAULT_LNG = 77.2090;
 const DEFAULT_LABEL = 'Delhi Area, Delhi';
@@ -35,151 +33,164 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     locationStatus: 'checking',
   });
 
+  // Controls the in-app disclosure popup
   const [showDisclosure, setShowDisclosure] = useState(false);
-  const [pendingGpsResolve, setPendingGpsResolve] = useState<{ resolve: (val: boolean) => void } | null>(null);
+  const [pendingResolve, setPendingResolve] = useState<((val: boolean) => void) | null>(null);
 
-  const executeActualGPSRequest = async (): Promise<boolean> => {
+  // ─────────────────────────────────────────────────────────
+  // Core GPS fetch — called ONLY after user accepts disclosure
+  // ─────────────────────────────────────────────────────────
+  const fetchGPS = async (): Promise<boolean> => {
     try {
       let lat: number;
       let lng: number;
 
       if (Capacitor.isNativePlatform()) {
-        const position = await Geolocation.getCurrentPosition({ enableHighAccuracy: true });
-        lat = position.coords.latitude;
-        lng = position.coords.longitude;
-      } else {
-        if (!navigator.geolocation) {
+        // Show Android OS "Allow location?" system dialog
+        const perm = await Geolocation.requestPermissions({ permissions: ['location'] });
+        const granted =
+          perm.location === 'granted' ||
+          (perm as any).coarseLocation === 'granted';
+
+        if (!granted) {
+          setState(prev => ({ ...prev, locationStatus: 'denied' }));
           return false;
         }
-        const position = await Promise.race([
-          new Promise<GeolocationPosition>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              enableHighAccuracy: true,
-              timeout: 5000,
-              maximumAge: 0,
-            });
-          }),
-          new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error('Location request timed out')), 5000)
-          )
-        ]);
-        lat = position.coords.latitude;
-        lng = position.coords.longitude;
+
+        const pos = await Geolocation.getCurrentPosition({
+          enableHighAccuracy: true,
+          timeout: 10000,
+        });
+        lat = pos.coords.latitude;
+        lng = pos.coords.longitude;
+      } else {
+        // Web browser
+        if (!navigator.geolocation) return false;
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+          })
+        );
+        lat = pos.coords.latitude;
+        lng = pos.coords.longitude;
       }
 
-      let resolvedLabel = 'GPS Location';
+      // Reverse geocode to city name
+      let label = 'GPS Location';
       try {
         const city = await getCityNameFromCoords(lat, lng);
-        if (city && city !== 'Unknown Location') {
-          resolvedLabel = city;
-        }
-      } catch (err) {
-        console.warn('Reverse geocoding failed:', err);
-      }
+        if (city && city !== 'Unknown Location') label = city;
+      } catch { /* non-critical */ }
 
       localStorage.setItem('pulse_latitude', lat.toString());
       localStorage.setItem('pulse_longitude', lng.toString());
       localStorage.setItem('pulse_location_source', 'gps');
-      localStorage.setItem('pulse_location_label', resolvedLabel);
-      localStorage.setItem('pulse_city_name', resolvedLabel);
+      localStorage.setItem('pulse_location_label', label);
+      localStorage.setItem('pulse_city_name', label);
+      localStorage.setItem('pulse_location_disclosure_accepted', 'true');
 
-      setState({
-        latitude: lat,
-        longitude: lng,
-        source: 'gps',
-        label: resolvedLabel,
-        locationStatus: 'granted',
-      });
-
+      setState({ latitude: lat, longitude: lng, source: 'gps', label, locationStatus: 'granted' });
       return true;
-    } catch (error: any) {
-      console.warn('GPS query failed:', error.message);
+    } catch (err: any) {
+      console.warn('GPS fetch failed:', err?.message);
+      setState(prev => ({ ...prev, locationStatus: 'denied' }));
       return false;
     }
   };
 
-  const triggerGPSQuery = async () => {
-    const accepted = localStorage.getItem('pulse_location_disclosure_accepted') === 'true';
-    if (Capacitor.isNativePlatform() && !accepted) {
-      setState(prev => ({
-        ...prev,
+  // ─────────────────────────────────────────────────────────
+  // Public method called when user taps "Use Live GPS"
+  // Shows disclosure first (if not accepted before), then GPS
+  // ─────────────────────────────────────────────────────────
+  const requestGPSLocation = (): Promise<boolean> => {
+    return new Promise<boolean>(resolve => {
+      const alreadyAccepted =
+        localStorage.getItem('pulse_location_disclosure_accepted') === 'true';
+
+      if (alreadyAccepted) {
+        // Already accepted before — go straight to GPS
+        fetchGPS().then(resolve);
+      } else {
+        // Show in-app disclosure popup first
+        setPendingResolve(() => resolve);
+        setShowDisclosure(true);
+      }
+    });
+  };
+
+  // ─────────────────────────────────────────────────────────
+  // Disclosure popup handlers
+  // ─────────────────────────────────────────────────────────
+  const handleAccept = async () => {
+    setShowDisclosure(false);
+    localStorage.setItem('pulse_location_disclosure_accepted', 'true');
+    const success = await fetchGPS();
+    pendingResolve?.(success);
+    setPendingResolve(null);
+  };
+
+  const handleDecline = () => {
+    setShowDisclosure(false);
+    pendingResolve?.(false);
+    setPendingResolve(null);
+    setState(prev => ({ ...prev, locationStatus: 'denied' }));
+  };
+
+  // ─────────────────────────────────────────────────────────
+  // On mount: restore saved location ONLY — never auto-GPS
+  // ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    const savedLat   = localStorage.getItem('pulse_latitude');
+    const savedLng   = localStorage.getItem('pulse_longitude');
+    const savedSrc   = localStorage.getItem('pulse_location_source');
+    const savedLabel = localStorage.getItem('pulse_location_label') ||
+                       localStorage.getItem('pulse_city_name');
+
+    if (savedLat && savedLng && savedSrc && savedLabel) {
+      setState({
+        latitude: parseFloat(savedLat),
+        longitude: parseFloat(savedLng),
+        source: savedSrc as any,
+        label: savedLabel,
+        locationStatus: savedSrc === 'gps' || savedSrc === 'manual' ? 'granted' : 'denied',
+      });
+
+      // Silently resolve stale label in background (no GPS re-request)
+      if (savedLabel === 'GPS Location' || savedLabel === 'Unknown Location') {
+        getCityNameFromCoords(parseFloat(savedLat), parseFloat(savedLng))
+          .then(city => {
+            if (city && city !== 'Unknown Location') {
+              localStorage.setItem('pulse_location_label', city);
+              localStorage.setItem('pulse_city_name', city);
+              setState(prev => ({ ...prev, label: city }));
+            }
+          })
+          .catch(() => {});
+      }
+    } else {
+      // No saved location — use default Delhi, wait for user to set one
+      setState({
         latitude: DEFAULT_LAT,
         longitude: DEFAULT_LNG,
         source: 'default',
         label: DEFAULT_LABEL,
         locationStatus: 'denied',
-      }));
-      return;
-    }
-    await executeActualGPSRequest();
-  };
-
-  // Load from localStorage or request GPS on mount
-  useEffect(() => {
-    const savedLat = localStorage.getItem('pulse_latitude');
-    const savedLng = localStorage.getItem('pulse_longitude');
-    const savedSource = localStorage.getItem('pulse_location_source');
-    const savedLabel = localStorage.getItem('pulse_location_label') || localStorage.getItem('pulse_city_name');
-
-    if (savedLat && savedLng && savedSource && savedLabel) {
-      setState({
-        latitude: parseFloat(savedLat),
-        longitude: parseFloat(savedLng),
-        source: savedSource as any,
-        label: savedLabel,
-        locationStatus: (savedSource === 'gps' || savedSource === 'manual') ? 'granted' : 'denied',
       });
-
-      if (savedLabel === 'GPS Location' || savedLabel === 'Unknown Location') {
-        const latitude = parseFloat(savedLat);
-        const longitude = parseFloat(savedLng);
-        getCityNameFromCoords(latitude, longitude).then((city) => {
-          if (city && city !== 'Unknown Location') {
-            localStorage.setItem('pulse_location_label', city);
-            localStorage.setItem('pulse_city_name', city);
-            setState((prev) => ({ ...prev, label: city }));
-          }
-        }).catch((err) => {
-          console.warn('Background reverse geocoding on mount failed:', err);
-        });
-      }
-
-      // Refresh live GPS dynamically in the background if the user previously used GPS
-      if (savedSource === 'gps') {
-        triggerGPSQuery();
-      }
-    } else {
-      triggerGPSQuery();
     }
   }, []);
 
+  // ─────────────────────────────────────────────────────────
+  // Manual location
+  // ─────────────────────────────────────────────────────────
   const setManualLocation = (lat: number, lng: number, label: string) => {
     localStorage.setItem('pulse_latitude', lat.toString());
     localStorage.setItem('pulse_longitude', lng.toString());
     localStorage.setItem('pulse_location_source', 'manual');
     localStorage.setItem('pulse_location_label', label);
     localStorage.setItem('pulse_city_name', label);
-
-    setState({
-      latitude: lat,
-      longitude: lng,
-      source: 'manual',
-      label,
-      locationStatus: 'granted',
-    });
-  };
-
-  const requestGPSLocation = (): Promise<boolean> => {
-    return new Promise<boolean>(async (resolve) => {
-      const accepted = localStorage.getItem('pulse_location_disclosure_accepted') === 'true';
-      if (Capacitor.isNativePlatform() && !accepted) {
-        setPendingGpsResolve({ resolve });
-        setShowDisclosure(true);
-      } else {
-        const success = await executeActualGPSRequest();
-        resolve(success);
-      }
-    });
+    setState({ latitude: lat, longitude: lng, source: 'manual', label, locationStatus: 'granted' });
   };
 
   const clearManualLocation = () => {
@@ -188,68 +199,45 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     localStorage.removeItem('pulse_location_source');
     localStorage.removeItem('pulse_location_label');
     localStorage.removeItem('pulse_city_name');
-
-    triggerGPSQuery();
-  };
-
-  const handleAcceptDisclosure = async () => {
-    localStorage.setItem('pulse_location_disclosure_accepted', 'true');
-    setShowDisclosure(false);
-    const success = await executeActualGPSRequest();
-    if (pendingGpsResolve) {
-      pendingGpsResolve.resolve(success);
-      setPendingGpsResolve(null);
-    }
-  };
-
-  const handleDeclineDisclosure = () => {
-    setShowDisclosure(false);
-    if (pendingGpsResolve) {
-      pendingGpsResolve.resolve(false);
-      setPendingGpsResolve(null);
-    }
-    toast.error('Location permission is required for auto-detection. Please enter your location manually.');
+    setState({ latitude: DEFAULT_LAT, longitude: DEFAULT_LNG, source: 'default', label: DEFAULT_LABEL, locationStatus: 'denied' });
   };
 
   return (
     <LocationContext.Provider value={{ ...state, setManualLocation, requestGPSLocation, clearManualLocation }}>
       {children}
+
+      {/* In-app location disclosure popup — shown before first GPS access */}
       {showDisclosure && (
-        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-sm w-full space-y-6 shadow-2xl animate-in zoom-in-95 duration-200 text-left">
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-5">
+            
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <MapPin className="w-6 h-6 animate-bounce" />
+              <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center shrink-0">
+                <MapPin className="w-6 h-6 text-red-500 animate-bounce" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Location Disclosure</h3>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400">Play Store Compliance Info</p>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Allow Location Access</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Required to find nearby hospitals</p>
               </div>
             </div>
-            
-            <div className="space-y-3">
-              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                Pulse collects location data to measure distance to nearby hospitals and enable the emergency panic feature, even when the app is in the background or not in use.
-              </p>
-              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                This coordinates data is sent to our servers to query nearest hospitals within your specified radius, but it is not stored or shared with any third party.
-              </p>
+
+            <div className="space-y-2 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              <p>Pulse uses your location to find the nearest hospitals, clinics, and emergency services around you.</p>
+              <p>Your location is <strong>never stored</strong> on our servers and is <strong>never shared</strong> with third parties.</p>
             </div>
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-3">
               <button
-                type="button"
-                onClick={handleDeclineDisclosure}
-                className="flex-1 py-3 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-95"
+                onClick={handleDecline}
+                className="flex-1 py-3 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-semibold rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-95"
               >
-                Decline
+                Not Now
               </button>
               <button
-                type="button"
-                onClick={handleAcceptDisclosure}
-                className="flex-1 py-3 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl shadow-md shadow-primary/20 transition-all active:scale-95"
+                onClick={handleAccept}
+                className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-2xl shadow-lg shadow-red-500/25 transition-all active:scale-95"
               >
-                Accept & Share
+                Allow Location
               </button>
             </div>
           </div>

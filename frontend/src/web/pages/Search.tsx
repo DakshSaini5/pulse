@@ -67,12 +67,7 @@ export const Search: React.FC = () => {
     setSheetHeight(diffs[0].height);
   };
 
-  // Trigger fresh GPS coordinates fetch on native app mount if consent exists
-  useEffect(() => {
-    if (isNativeApp) {
-      requestGPSLocation();
-    }
-  }, [isNativeApp]);
+
 
   // Autocomplete Dropdown State
   const [autocompleteResults, setAutocompleteResults] = useState<{
@@ -223,16 +218,51 @@ export const Search: React.FC = () => {
       navigate('/login');
       return;
     }
+    
+    // Optimistic UI Update
+    const isCurrentlySaved = savedIds.includes(id);
+    
+    // Update local state
+    if (isCurrentlySaved) {
+      setSavedIds(prev => prev.filter(savedId => savedId !== id));
+    } else {
+      setSavedIds(prev => [...prev, id]);
+    }
+
+    // Update global dashboard cache for instant home screen update
     try {
-      if (savedIds.includes(id)) {
+      const cached = localStorage.getItem('pulse_cached_counts');
+      if (cached) {
+        const counts = JSON.parse(cached);
+        counts.saved = isCurrentlySaved ? Math.max(0, counts.saved - 1) : counts.saved + 1;
+        localStorage.setItem('pulse_cached_counts', JSON.stringify(counts));
+      }
+    } catch(e) {}
+
+    try {
+      if (isCurrentlySaved) {
         await hospitalAPI.unsave(id);
-        setSavedIds(prev => prev.filter(savedId => savedId !== id));
       } else {
         await hospitalAPI.save(id);
-        setSavedIds(prev => [...prev, id]);
       }
     } catch (err) {
       console.error(err);
+      toast.error(isCurrentlySaved ? 'Failed to unsave' : 'Failed to save');
+      // Revert optimistic update on failure
+      if (isCurrentlySaved) {
+        setSavedIds(prev => [...prev, id]);
+      } else {
+        setSavedIds(prev => prev.filter(savedId => savedId !== id));
+      }
+      
+      try {
+        const cached = localStorage.getItem('pulse_cached_counts');
+        if (cached) {
+          const counts = JSON.parse(cached);
+          counts.saved = isCurrentlySaved ? counts.saved + 1 : Math.max(0, counts.saved - 1);
+          localStorage.setItem('pulse_cached_counts', JSON.stringify(counts));
+        }
+      } catch(e) {}
     }
   };
 
@@ -791,7 +821,6 @@ export const Search: React.FC = () => {
                 const success = await requestGPSLocation();
                 if (!success) {
                   toast.error("GPS access failed. Please select your location manually.");
-                  setIsLocationModalOpen(true);
                 }
               }}
               className="w-full sm:w-auto px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all"

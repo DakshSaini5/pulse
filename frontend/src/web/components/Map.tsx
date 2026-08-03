@@ -87,34 +87,21 @@ export const Map: React.FC<MapProps> = ({
     // Clear existing markers
     group.clearLayers();
 
-    // Leaflet marker icons hotfix
-    const defaultIcon = L.icon({
-      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowSize: [41, 41]
+    // Use inline SVG DivIcons so markers always render in Capacitor Android WebView
+    // (External CDN PNG URLs fail inside the Android WebView due to CSP / network restrictions)
+    const makePinIcon = (color: string, size = 28) => L.divIcon({
+      className: '',
+      iconAnchor: [size / 2, size],
+      popupAnchor: [0, -size],
+      html: `<svg width="${size}" height="${size * 1.4}" viewBox="0 0 30 42" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 0C7.268 0 1 6.268 1 14c0 10.5 14 28 14 28S29 24.5 29 14C29 6.268 22.732 0 15 0z" fill="${color}" stroke="white" stroke-width="1.5"/>
+        <circle cx="15" cy="14" r="5.5" fill="white" opacity="0.9"/>
+      </svg>`,
     });
 
-    const activeIcon = L.icon({
-      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
-      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowSize: [41, 41]
-    });
-
-    const userIcon = L.icon({
-      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
-      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowSize: [41, 41]
-    });
+    const defaultIcon = makePinIcon('#1E60D5');    // Blue hospital pin
+    const activeIcon = makePinIcon('#E53E3E', 32); // Larger red selected pin
+    const userIcon = makePinIcon('#16a34a');        // Green user location pin
 
     // Add user coordinate marker
     L.marker([userLat, userLng], { icon: userIcon })

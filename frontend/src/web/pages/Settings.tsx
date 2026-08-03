@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@core/context/AuthContext';
 import { useTheme } from '@core/context/ThemeContext';
 import { 
@@ -686,6 +687,23 @@ export const Settings: React.FC = () => {
                     className="w-4 h-4 rounded text-primary focus:ring-primary accent-primary mt-1"
                   />
                 </div>
+              </div>
+
+              {/* Delete Account Section */}
+              <div className="mt-8 pt-6 border-t border-red-200 dark:border-red-900/30">
+                <h3 className="font-bold text-sm text-red-600 dark:text-red-400 flex items-center gap-2 mb-2">
+                  <Trash2 className="w-4 h-4" /> Danger Zone
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                  Permanently delete your account, medical records, and AI chat history. This action cannot be undone.
+                </p>
+                <Link
+                  to="/delete-account"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 dark:text-red-400 dark:bg-red-500/10 dark:hover:bg-red-500/20 rounded-xl transition-colors border border-red-200 dark:border-red-900/50 w-full sm:w-auto"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Request Account Deletion
+                </Link>
               </div>
             </div>
           )}

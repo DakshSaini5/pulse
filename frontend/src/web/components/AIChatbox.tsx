@@ -45,11 +45,13 @@ export const AIChatbox: React.FC = () => {
   useEffect(() => {
     // Only connect when opened for the first time
     if (isOpen && !socketRef.current) {
-      const url = import.meta.env.VITE_API_URL || undefined;
+      let url = import.meta.env.VITE_API_URL || undefined;
+      if (!url || url === 'undefined' || url.startsWith('/')) {
+        url = 'https://pulse-production-f638.up.railway.app';
+      }
       const token = localStorage.getItem('pulse_token');
       const socket = io(url as any, {
-        auth: { token },
-        transports: ['websocket']
+        auth: { token }
       });
       
       socket.on('connect', () => {

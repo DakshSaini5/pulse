@@ -252,13 +252,15 @@ const ChatAssistant: React.FC = () => {
   // Socket initialization (Persistent Keep-Alive on Mount)
   useEffect(() => {
     if (!socketRef.current) {
-      const url = import.meta.env.VITE_API_URL || undefined;
+      let url = import.meta.env.VITE_API_URL || undefined;
+      if (!url || url === 'undefined' || url.startsWith('/')) {
+        url = 'https://pulse-production-f638.up.railway.app';
+      }
       const token = localStorage.getItem('pulse_token');
 
-      console.log('[ChatAssistant] Connecting socket via WebSockets...');
+      console.log('[ChatAssistant] Connecting socket to:', url);
       const socket = io(url as any, {
         auth: { token },
-        transports: ['websocket'],
         reconnection: true,
         reconnectionAttempts: 10,
         reconnectionDelay: 1000
@@ -266,7 +268,6 @@ const ChatAssistant: React.FC = () => {
 
       socket.on('connect_error', (err) => {
         console.error('[ChatAssistant] Socket connection error:', err.message || err);
-        setConnectionError(err.message || String(err));
       });
 
       socket.on('connect', () => {
