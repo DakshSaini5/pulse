@@ -12,7 +12,7 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="w-full bg-[#0F1E4A] text-white pt-12 pb-8 border-t border-[#142E86]">
+    <footer className="w-full bg-[#0F1E4A] text-white pt-10 sm:pt-12 pb-24 md:pb-8 border-t border-[#142E86]">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
         {/* Main 5-column grid on desktop, accordion on mobile */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-8 md:gap-8 pb-10">

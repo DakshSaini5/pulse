@@ -4,7 +4,7 @@ interface PulseLogoProps {
   size?: number;
   variant?: 'icon' | 'horizontal' | 'vertical';
   className?: string;
-  showTagline?: boolean;
+  showTagline?: boolean | 'always' | 'desktop';
   textColor?: 'dark' | 'white';
 }
 
@@ -54,7 +54,7 @@ export const PulseLogo: React.FC<PulseLogoProps> = ({
 
   if (variant === 'vertical') {
     return (
-      <div className={`flex flex-col items-center text-center gap-3 ${className}`}>
+      <div className={`flex flex-col items-center text-center gap-2 ${className}`}>
         <div className="hover:scale-105 transition-transform duration-200">
           {iconMarkup}
         </div>
@@ -62,8 +62,8 @@ export const PulseLogo: React.FC<PulseLogoProps> = ({
           <span className={`font-extrabold tracking-normal lowercase leading-none ${titleColorClass}`} style={{ fontSize: `${size * 0.65}px` }}>
             pulse
           </span>
-          {showTagline && (
-            <span className={`${taglineColorClass} font-semibold tracking-wider text-[11px] sm:text-xs mt-1.5 whitespace-nowrap uppercase`}>
+          {Boolean(showTagline) && (
+            <span className={`${taglineColorClass} font-semibold tracking-wider text-xs mt-1.5 whitespace-nowrap uppercase`}>
               No queue for your cure
             </span>
           )}
@@ -73,17 +73,23 @@ export const PulseLogo: React.FC<PulseLogoProps> = ({
   }
 
   // Horizontal variant (default)
+  const isAlwaysTagline = showTagline === 'always';
+  const showHorizontalTagline = Boolean(showTagline);
+
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
-      <div className="hover:scale-105 transition-transform duration-200">
+    <div className={`flex items-center gap-2.5 sm:gap-3 ${className}`}>
+      <div className="hover:scale-105 transition-transform duration-200 shrink-0">
         {iconMarkup}
       </div>
       <div className="flex flex-col justify-center text-left leading-none">
-        <span className={`font-extrabold tracking-normal lowercase ${titleColorClass}`} style={{ fontSize: `${size * 0.6}px`, lineHeight: 1 }}>
+        <span className={`font-extrabold tracking-normal lowercase ${titleColorClass}`} style={{ fontSize: `${Math.max(18, size * 0.6)}px`, lineHeight: 1 }}>
           pulse
         </span>
-        {showTagline && (
-          <span className={`${taglineColorClass} font-semibold tracking-wider uppercase mt-1.5`} style={{ fontSize: `${Math.max(11, size * 0.22)}px` }}>
+        {showHorizontalTagline && (
+          <span 
+            className={`${taglineColorClass} font-semibold tracking-wider uppercase mt-1 ${isAlwaysTagline ? 'inline-block' : 'hidden sm:inline-block'}`} 
+            style={{ fontSize: `${Math.max(10, size * 0.22)}px` }}
+          >
             No queue for your cure
           </span>
         )}
@@ -91,3 +97,5 @@ export const PulseLogo: React.FC<PulseLogoProps> = ({
     </div>
   );
 };
+
+export default PulseLogo;

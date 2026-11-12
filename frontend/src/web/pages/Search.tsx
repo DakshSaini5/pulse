@@ -5,7 +5,7 @@ import { Map } from '../components/Map';
 import { 
   Search as SearchIcon, MapPin, Star, AlertCircle, Heart, Phone,
   Activity, ArrowRight, ShieldCheck, HelpCircle, Layers, CheckSquare, Square, Globe,
-  ChevronUp, ChevronDown, Navigation
+  ChevronUp, ChevronDown, Navigation, List
 } from 'lucide-react';
 import { useAuth } from '@core/context/AuthContext';
 import { formatIndianPhoneNumber, getDialerHref } from '@core/utils/phoneFormatter';
@@ -74,6 +74,7 @@ export const Search: React.FC = () => {
 
 
   // Autocomplete Dropdown State
+  const [mobileTab, setMobileTab] = useState<'list' | 'map'>('list');
   const [autocompleteResults, setAutocompleteResults] = useState<{
     hospitals: Array<{ id: string; name: string }>;
     specialties: Array<{ name: string }>;
@@ -503,10 +504,38 @@ export const Search: React.FC = () => {
             </div>
           </form>
 
+          {/* Mobile view switcher between List and Map */}
+          <div className="lg:hidden flex items-center justify-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl max-w-xs mx-auto mb-4">
+            <button
+              type="button"
+              onClick={() => setMobileTab('list')}
+              className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                mobileTab === 'list'
+                  ? 'bg-white dark:bg-slate-900 text-primary shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              <List className="w-4 h-4" />
+              <span>List ({hospitals.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileTab('map')}
+              className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                mobileTab === 'map'
+                  ? 'bg-white dark:bg-slate-900 text-primary shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              <MapPin className="w-4 h-4" />
+              <span>Map view</span>
+            </button>
+          </div>
+
           {/* Main Map + List workspace */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
             {/* Left Side: Hospital List */}
-            <div className="lg:col-span-5 space-y-4 max-h-[600px] overflow-y-auto pr-2 text-left">
+            <div className={`lg:col-span-5 space-y-4 max-h-[600px] overflow-y-auto pr-1 sm:pr-2 text-left ${mobileTab === 'list' ? 'block' : 'hidden lg:block'}`}>
               {/* Active Specialty Filter Header */}
               {specialty && (
                 <div className="glass-panel border border-primary/20 bg-primary/5 p-4 rounded-2xl flex items-center justify-between animate-in slide-in-from-top duration-300">
@@ -772,7 +801,7 @@ export const Search: React.FC = () => {
             </div>
 
             {/* Right Side: Leaflet Map */}
-            <div className="lg:col-span-7 h-[600px] rounded-2xl overflow-hidden shadow-2xl relative border border-pulseBorder dark:border-slate-700">
+            <div className={`lg:col-span-7 h-[420px] sm:h-[600px] rounded-2xl overflow-hidden shadow-sm relative border border-pulseBorder dark:border-slate-700 ${mobileTab === 'map' ? 'block' : 'hidden lg:block'}`}>
               <Map
                 hospitals={hospitals.map(h => ({
                   id: h.id,

@@ -136,10 +136,10 @@ export const PublicLanding: React.FC = () => {
         {/* Large 56px Search Bar */}
         <form
           onSubmit={handleSearchSubmit}
-          className="mt-8 flex flex-col sm:flex-row items-stretch gap-2 bg-white dark:bg-slate-900 border border-[#E5E7EB] dark:border-slate-700 rounded-xl p-2 shadow-[0_1px_3px_rgba(0,0,0,0.06)] text-left"
+          className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch gap-2 bg-white dark:bg-slate-900 border border-[#E5E7EB] dark:border-slate-700 rounded-xl p-1.5 sm:p-2 shadow-[0_1px_3px_rgba(0,0,0,0.06)] text-left"
         >
           {/* Search Query Input */}
-          <div className="flex-1 flex items-center gap-2.5 px-3 min-h-[48px]">
+          <div className="flex-1 flex items-center gap-2 px-3 min-h-[44px] sm:min-h-[48px]">
             <Search className="w-5 h-5 text-[#1A3BAA] shrink-0" />
             <input
               type="text"
@@ -147,24 +147,26 @@ export const PublicLanding: React.FC = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search hospitals or specialties"
               aria-label="Search hospitals or specialties"
-              className="w-full bg-transparent text-base text-[#121414] dark:text-white placeholder-[#4B5563] focus:outline-none"
+              className="w-full bg-transparent text-sm sm:text-base text-[#121414] dark:text-white placeholder-[#4B5563] focus:outline-none"
             />
           </div>
 
           {/* City Picker Dropdown */}
-          <div className="relative border-t sm:border-t-0 sm:border-l border-[#E5E7EB] dark:border-slate-700 flex items-center min-h-[48px]">
+          <div className="relative border-t sm:border-t-0 sm:border-l border-[#E5E7EB] dark:border-slate-700 flex items-center min-h-[44px] sm:min-h-[48px]">
             <button
               type="button"
               onClick={() => setCityDropdownOpen(!cityDropdownOpen)}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#121414] dark:text-white hover:text-[#1A3BAA] transition-colors"
+              className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 px-3 py-2 text-sm font-medium text-[#121414] dark:text-white hover:text-[#1A3BAA] transition-colors"
             >
-              <MapPin className="w-4 h-4 text-[#1A3BAA] shrink-0" />
-              <span>{selectedCity}</span>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-[#1A3BAA] shrink-0" />
+                <span>{selectedCity}</span>
+              </div>
               <ChevronDown className="w-4 h-4 text-[#4B5563]" />
             </button>
 
             {cityDropdownOpen && (
-              <div className="absolute top-full right-0 sm:left-0 mt-2 w-36 bg-white dark:bg-slate-900 border border-[#E5E7EB] dark:border-slate-700 rounded-lg shadow-lg py-1 z-50">
+              <div className="absolute top-full left-0 right-0 sm:right-auto sm:left-0 mt-2 sm:w-36 bg-white dark:bg-slate-900 border border-[#E5E7EB] dark:border-slate-700 rounded-lg shadow-lg py-1 z-50">
                 {cities.map((city) => (
                   <button
                     key={city}
@@ -187,14 +189,14 @@ export const PublicLanding: React.FC = () => {
           {/* Search Button */}
           <button
             type="submit"
-            className="h-12 px-6 bg-[#1A3BAA] hover:bg-[#142E86] text-white font-semibold text-base rounded-lg transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
+            className="h-11 sm:h-12 px-6 bg-[#1A3BAA] hover:bg-[#142E86] text-white font-semibold text-sm sm:text-base rounded-lg transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
           >
             Search
           </button>
         </form>
 
         {/* 2. 4 SERVICE CARDS DIRECTLY UNDER SEARCH */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-10 text-left">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 mt-8 sm:mt-10 text-left">
           {serviceCards.map((card) => {
             const Icon = card.icon;
             return (
@@ -236,7 +238,7 @@ export const PublicLanding: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-4 lg:grid-cols-8 gap-3 sm:gap-4 text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 sm:gap-4 text-center">
             {specialties.map((spec) => {
               const Icon = spec.icon;
               return (
@@ -247,7 +249,7 @@ export const PublicLanding: React.FC = () => {
                     spec.isEmergency ? 'border-[#E7373A]' : 'border-[#E5E7EB] dark:border-slate-800'
                   }`}
                 >
-                  <div className={`w-11 h-11 rounded-full flex items-center justify-center ${
+                  <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center shrink-0 ${
                     spec.isEmergency ? 'bg-red-50 text-[#E7373A]' : 'bg-[#EEF2FC] text-[#1A3BAA]'
                   }`}>
                     <Icon className="w-5 h-5" />
@@ -261,7 +263,7 @@ export const PublicLanding: React.FC = () => {
           </div>
 
           {/* Emergency Notice Bar */}
-          <div className="mt-6 border border-[#E7373A] bg-red-50 dark:bg-red-950/20 text-[#C62828] dark:text-red-400 rounded-lg p-3 text-sm font-medium flex items-center justify-between gap-4">
+          <div className="mt-6 border border-[#E7373A] bg-red-50 dark:bg-red-950/20 text-[#C62828] dark:text-red-400 rounded-lg p-3 text-sm font-medium flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-5 h-5 shrink-0" />
               <span>Medical emergency? Call 112.</span>
@@ -270,7 +272,7 @@ export const PublicLanding: React.FC = () => {
               to="/search?emergency=true"
               className="text-xs sm:text-sm font-semibold underline whitespace-nowrap"
             >
-              View 24x7 Emergency Hospitals
+              View 24x7 Emergency Hospitals →
             </Link>
           </div>
         </div>

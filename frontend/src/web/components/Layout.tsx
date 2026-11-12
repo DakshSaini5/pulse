@@ -52,10 +52,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         className="sticky top-0 z-40 w-full bg-white dark:bg-slate-900 border-b border-[#E5E7EB] dark:border-slate-800"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <Link to="/" className="flex items-center">
-              <PulseLogo size={38} showTagline={true} />
+        <div className="max-w-[1200px] mx-auto px-3 sm:px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4 sm:gap-8 min-w-0">
+            <Link to="/" className="flex items-center shrink-0">
+              <PulseLogo size={34} showTagline={true} />
             </Link>
 
             {/* Desktop Navigation */}
@@ -101,21 +101,21 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             </nav>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             {user ? (
               <>
                 {/* Admin Page Switcher */}
                 {user.role === 'ADMIN' && (
                   <Link
                     to="/admin"
-                    className={`p-2 rounded-lg border flex items-center gap-1 text-xs font-semibold ${
+                    className={`p-1.5 sm:p-2 rounded-lg border flex items-center gap-1 text-xs font-semibold ${
                       isActive('/admin')
                         ? 'border-warning/30 bg-warning/10 text-warning'
                         : 'border-[#E5E7EB] dark:border-slate-700 hover:bg-slate-50 text-[#4B5563]'
                     }`}
                   >
                     <ShieldAlert className="w-4 h-4" />
-                    Admin
+                    <span className="hidden sm:inline">Admin</span>
                   </Link>
                 )}
 
@@ -174,16 +174,16 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 </div>
               </>
             ) : (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 sm:gap-3">
                 <Link
                   to="/login"
-                  className="text-sm font-medium text-[#1A3BAA] hover:underline px-2 py-2"
+                  className="hidden sm:inline-block text-sm font-medium text-[#1A3BAA] hover:underline px-2 py-1.5"
                 >
                   Sign in
                 </Link>
                 <Link
                   to="/register"
-                  className="h-10 px-4 rounded-lg text-sm font-semibold bg-[#1A3BAA] hover:bg-[#142E86] text-white transition-colors flex items-center justify-center whitespace-nowrap"
+                  className="h-8 sm:h-10 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-semibold bg-[#1A3BAA] hover:bg-[#142E86] text-white transition-colors flex items-center justify-center whitespace-nowrap"
                 >
                   Get started
                 </Link>
@@ -291,7 +291,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       )}
 
       {/* Main Content Area - max-w-[1200px], side padding 16px mobile, 24px desktop per brief */}
-      <main className="flex-1 w-full max-w-[1200px] mx-auto px-4 sm:px-6 py-6 sm:py-10 relative z-10">
+      <main className="flex-1 w-full max-w-[1200px] mx-auto px-4 sm:px-6 pt-4 pb-24 sm:pt-6 sm:pb-12 relative z-10">
         {children}
       </main>
 
