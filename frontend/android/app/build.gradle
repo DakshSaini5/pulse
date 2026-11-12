@@ -24,15 +24,15 @@ android {
         release {
             // Read from environment variables so the password is never stored in git.
             // When building locally, set these variables or Android Studio will prompt you.
-            def keystoreFile = System.getenv('PULSE_KEYSTORE_PATH') ?: project.findProperty('keystorePath') ?: ''
-            def keystorePass = System.getenv('PULSE_KEYSTORE_PASS') ?: project.findProperty('keystorePass') ?: ''
-            def keyAlias     = System.getenv('PULSE_KEY_ALIAS')     ?: project.findProperty('keyAlias')     ?: 'pulse'
-            def keyPass      = System.getenv('PULSE_KEY_PASS')      ?: project.findProperty('keyPass')      ?: keystorePass
-            if (keystoreFile) {
-                storeFile     file(keystoreFile)
-                storePassword keystorePass
-                keyAlias      keyAlias
-                keyPassword   keyPass
+            def ksFile = System.getenv('PULSE_KEYSTORE_PATH') ?: project.findProperty('keystorePath') ?: ''
+            def ksPass = System.getenv('PULSE_KEYSTORE_PASS') ?: project.findProperty('keystorePass') ?: ''
+            def kAlias = System.getenv('PULSE_KEY_ALIAS')     ?: project.findProperty('keyAlias')     ?: 'pulse'
+            def kPass  = System.getenv('PULSE_KEY_PASS')      ?: project.findProperty('keyPass')      ?: ksPass
+            if (ksFile) {
+                storeFile     file(ksFile)
+                storePassword ksPass
+                keyAlias      kAlias
+                keyPassword   kPass
             }
         }
     }
@@ -49,8 +49,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
     }
 }
 

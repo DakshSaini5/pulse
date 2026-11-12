@@ -4,19 +4,18 @@ import { useAuth } from '@core/context/AuthContext';
 import {
   Activity, Search, Heart, FileText, ClipboardList, TrendingUp,
   LogOut, LogIn, UserPlus, Menu, X, Bell, User as UserIcon, ShieldAlert, Settings,
-  Phone, KeyRound, MessageSquare, CheckCircle2, Bot
+  ArrowLeftRight, HelpCircle
 } from 'lucide-react';
 import ChatAssistant from './ChatAssistant';
-import AIChatbox from './AIChatbox';
 import { NotificationCenter } from './NotificationCenter';
 import { PulseLogo } from './PulseLogo';
-import { userAPI } from '@core/services/api';
+import { Footer } from './Footer';
 import toast from 'react-hot-toast';
 import { isNativeApp } from '@core/utils/platform';
 import MobileBottomNav from './MobileBottomNav';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, logout, refreshUser } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -38,191 +37,214 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     navigate('/');
   };
 
-  const navItems = [
-    { name: 'Discover Hospitals', path: '/search', icon: Search, guest: true },
-    { name: 'Hospital Compare', path: '/compare', icon: Activity, guest: true },
-    { name: 'Saved Care', path: '/saved', icon: Heart, guest: false },
-    { name: 'Prescription Center', path: '/prescriptions', icon: ClipboardList, guest: false },
-    { name: 'Report Analytics', path: '/reports', icon: FileText, guest: false },
-    { name: 'Health Trends', path: '/trends', icon: TrendingUp, guest: false },
+  // Nav per developer brief: Find Hospitals, Compare, Analyze Report, How it works
+  const publicNavItems = [
+    { name: 'Find Hospitals', path: '/search', icon: Search },
+    { name: 'Compare', path: '/compare', icon: ArrowLeftRight },
+    { name: 'Analyze Report', path: '/reports', icon: FileText },
+    { name: 'How it works', path: '/how-it-works', icon: HelpCircle },
   ];
 
-  const SCREEN_LABELS: Record<string, string> = {
-    '/': 'Landing',
-    '/search': 'Discover',
-    '/prescriptions': 'Records',
-    '/trends': 'Trends',
-    '/compare': 'Compare',
-  };
-
-  const [panicActive, setPanicActive] = useState(false);
-
   return (
-    <div className="min-h-screen bg-pulseBg dark:bg-[#181c1e] text-slate-800 dark:text-slate-100 flex flex-col relative selection:bg-primary selection:text-white transition-colors duration-300">
-      {/* Background visual graphics */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[radial-gradient(circle_at_center,rgba(239,68,68,0.06)_0%,transparent_70%)]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[radial-gradient(circle_at_center,rgba(239,68,68,0.03)_0%,transparent_70%)]" />
-      </div>
-
-      {/* Top Header with Safe Area Padding for Mobile Notches */}
+    <div className="min-h-screen bg-white dark:bg-[#181c1e] text-[#121414] dark:text-slate-100 flex flex-col relative selection:bg-primary selection:text-white transition-colors duration-200">
+      {/* Top Header - Sticky, white, 64px tall, 1px bottom border */}
       <header 
-        className="sticky top-0 z-40 w-full bg-white/90 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 backdrop-blur-md"
+        className="sticky top-0 z-40 w-full bg-white dark:bg-slate-900 border-b border-[#E5E7EB] dark:border-slate-800"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-8">
-          <Link to="/" className="flex items-center group">
-            <PulseLogo size={42} showTagline={true} />
-          </Link>
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-8">
+            <Link to="/" className="flex items-center">
+              <PulseLogo size={38} showTagline={true} />
+            </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-1">
-            {navItems.filter(item => item.guest || user).map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                aria-label={`Navigate to ${item.name}`}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${isActive(item.path)
-                    ? 'bg-primary/10 text-primary border border-primary/20'
-                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent'
-                  }`}
-              >
-                <item.icon className="w-4 h-4" aria-hidden="true" />
-                {item.name}
-              </Link>
-            ))}
-          </nav>
-        </div>
-
-        <div className="flex items-center gap-4">
-          {user ? (
-            <>
-              {/* Admin Page Switcher */}
-              {user.role === 'ADMIN' && (
+            {/* Desktop Navigation */}
+            <nav className="hidden lg:flex items-center gap-1">
+              {publicNavItems.map((item) => (
                 <Link
-                  to="/admin"
-                  className={`p-2 rounded-lg border flex items-center gap-1 text-xs font-semibold ${isActive('/admin')
-                      ? 'border-warning/30 bg-warning/10 text-warning'
-                      : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'
-                    }`}
+                  key={item.path}
+                  to={item.path}
+                  aria-label={`Navigate to ${item.name}`}
+                  className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isActive(item.path)
+                      ? 'text-[#1A3BAA] bg-[#EEF2FC] font-semibold'
+                      : 'text-[#4B5563] hover:text-[#121414] hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
                 >
-                  <ShieldAlert className="w-4 h-4" />
-                  Admin
+                  {item.name}
                 </Link>
+              ))}
+              {user && (
+                <>
+                  <Link
+                    to="/saved"
+                    className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive('/saved')
+                        ? 'text-[#1A3BAA] bg-[#EEF2FC] font-semibold'
+                        : 'text-[#4B5563] hover:text-[#121414] hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    Saved
+                  </Link>
+                  <Link
+                    to="/trends"
+                    className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive('/trends')
+                        ? 'text-[#1A3BAA] bg-[#EEF2FC] font-semibold'
+                        : 'text-[#4B5563] hover:text-[#121414] hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    Trends
+                  </Link>
+                </>
               )}
+            </nav>
+          </div>
 
-              {/* Notifications Button */}
-              <NotificationCenter />
-
-              {/* Profile card summary and dropdown */}
-              <div className="relative hidden sm:flex items-center gap-3 pl-4 border-l border-slate-200">
-                <button
-                  onClick={() => setProfileOpen(!profileOpen)}
-                  aria-label="Toggle user profile menu"
-                  aria-expanded={profileOpen}
-                  className="flex items-center gap-3 text-left focus:outline-none group"
-                >
-                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 text-primary font-extrabold text-sm group-hover:bg-primary/20 transition-colors">
-                    {user.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="hidden md:block">
-                    <p className="text-xs font-semibold text-slate-900 dark:text-white leading-3 group-hover:text-primary transition-colors">{user.name}</p>
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400">{user.email}</span>
-                  </div>
-                </button>
-
-                {profileOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-900 border border-pulseBorder dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-black/50 rounded-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="py-2">
-                      <Link
-                        to="/profile"
-                        onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary transition-colors"
-                      >
-                        <UserIcon className="w-4 h-4" />
-                        My Profile
-                      </Link>
-                      <Link
-                        to="/settings"
-                        onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary transition-colors"
-                      >
-                        <Settings className="w-4 h-4" />
-                        Settings
-                      </Link>
-                      <button
-                        onClick={() => {
-                          setProfileOpen(false);
-                          handleLogout();
-                        }}
-                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-danger hover:bg-danger/5 transition-colors"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        Log out
-                      </button>
-                    </div>
-                  </div>
+          <div className="flex items-center gap-4">
+            {user ? (
+              <>
+                {/* Admin Page Switcher */}
+                {user.role === 'ADMIN' && (
+                  <Link
+                    to="/admin"
+                    className={`p-2 rounded-lg border flex items-center gap-1 text-xs font-semibold ${
+                      isActive('/admin')
+                        ? 'border-warning/30 bg-warning/10 text-warning'
+                        : 'border-[#E5E7EB] dark:border-slate-700 hover:bg-slate-50 text-[#4B5563]'
+                    }`}
+                  >
+                    <ShieldAlert className="w-4 h-4" />
+                    Admin
+                  </Link>
                 )}
-              </div>
-            </>
-          ) : (
-            <div className="flex items-center gap-1 sm:gap-2">
-              <Link
-                to="/login"
-                className="px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium border border-pulseBorder dark:border-slate-700 hover:border-primary/50 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap tracking-tight"
-              >
-                <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                Sign In
-              </Link>
-              <Link
-                to="/register"
-                className="px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium bg-primary hover:bg-primary-hover text-white shadow-md sm:shadow-lg transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap tracking-tight"
-              >
-                <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                Join
-              </Link>
-            </div>
-          )}
 
-          {/* Mobile menu trigger - Only show on web */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 rounded-lg border border-pulseBorder dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
+                {/* Notifications Button */}
+                <NotificationCenter />
+
+                {/* Profile card summary and dropdown */}
+                <div className="relative hidden sm:flex items-center gap-3 pl-3 border-l border-[#E5E7EB] dark:border-slate-700">
+                  <button
+                    onClick={() => setProfileOpen(!profileOpen)}
+                    aria-label="Toggle user profile menu"
+                    aria-expanded={profileOpen}
+                    className="flex items-center gap-2.5 text-left focus:outline-none group cursor-pointer"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-[#EEF2FC] flex items-center justify-center border border-[#1A3BAA]/20 text-[#1A3BAA] font-bold text-sm">
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="hidden md:block">
+                      <p className="text-xs font-semibold text-[#121414] dark:text-white leading-tight">{user.name}</p>
+                      <span className="text-[11px] text-[#4B5563] dark:text-slate-400">{user.email}</span>
+                    </div>
+                  </button>
+
+                  {profileOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-900 border border-[#E5E7EB] dark:border-slate-700 shadow-ambient rounded-xl overflow-hidden z-50">
+                      <div className="py-2">
+                        <Link
+                          to="/profile"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-[#121414] dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-[#1A3BAA] transition-colors"
+                        >
+                          <UserIcon className="w-4 h-4" />
+                          My Profile
+                        </Link>
+                        <Link
+                          to="/settings"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-[#121414] dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-[#1A3BAA] transition-colors"
+                        >
+                          <Settings className="w-4 h-4" />
+                          Settings
+                        </Link>
+                        <button
+                          onClick={() => {
+                            setProfileOpen(false);
+                            handleLogout();
+                          }}
+                          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-[#C62828] hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Log out
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-3">
+                <Link
+                  to="/login"
+                  className="text-sm font-medium text-[#1A3BAA] hover:underline px-2 py-2"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  to="/register"
+                  className="h-10 px-4 rounded-lg text-sm font-semibold bg-[#1A3BAA] hover:bg-[#142E86] text-white transition-colors flex items-center justify-center whitespace-nowrap"
+                >
+                  Get started
+                </Link>
+              </div>
+            )}
+
+            {/* Mobile menu trigger - Only show on web */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle navigation menu"
+              className="lg:hidden p-2 rounded-lg border border-[#E5E7EB] dark:border-slate-700 bg-white dark:bg-slate-800 text-[#4B5563]"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden sticky top-[64px] z-30 w-full glass-panel rounded-none border-t-0 border-b border-pulseBorder dark:border-slate-800 p-4 animate-fade-in text-slate-600 dark:text-slate-300">
-          <nav className="flex flex-col gap-2">
-            {navItems.filter(item => item.guest || user).map((item) => (
+        <div className="lg:hidden sticky top-[64px] z-30 w-full bg-white dark:bg-slate-900 border-b border-[#E5E7EB] dark:border-slate-800 p-4 text-[#121414] dark:text-slate-300">
+          <nav className="flex flex-col gap-1.5">
+            {publicNavItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-3 transition-all ${isActive(item.path)
-                    ? 'bg-primary/20 text-primary'
+                className={`px-4 py-3 rounded-lg text-sm font-medium flex items-center gap-3 transition-colors ${
+                  isActive(item.path)
+                    ? 'bg-[#EEF2FC] text-[#1A3BAA] font-semibold'
                     : 'hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
+                }`}
               >
-                <item.icon className="w-5 h-5" />
+                <item.icon className="w-5 h-5 text-[#1A3BAA]" />
                 {item.name}
               </Link>
             ))}
 
-            {user && (
+            {user ? (
               <>
-                <div className="h-px bg-slate-200 dark:bg-slate-800 my-2 mx-4" />
+                <Link
+                  to="/saved"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-3 rounded-lg text-sm font-medium flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800"
+                >
+                  <Heart className="w-5 h-5 text-[#1A3BAA]" />
+                  Saved Hospitals
+                </Link>
+                <Link
+                  to="/trends"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-3 rounded-lg text-sm font-medium flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800"
+                >
+                  <TrendingUp className="w-5 h-5 text-[#1A3BAA]" />
+                  Health Trends
+                </Link>
+                <div className="h-px bg-[#E5E7EB] dark:bg-slate-800 my-2 mx-4" />
                 <Link
                   to="/profile"
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-3 transition-all ${isActive('/profile') ? 'bg-primary/20 text-primary' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
+                  className="px-4 py-3 rounded-lg text-sm font-medium flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
                   <UserIcon className="w-5 h-5" />
                   My Profile
@@ -230,8 +252,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 <Link
                   to="/settings"
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-3 transition-all ${isActive('/settings') ? 'bg-primary/20 text-primary' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
+                  className="px-4 py-3 rounded-lg text-sm font-medium flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
                   <Settings className="w-5 h-5" />
                   Settings
@@ -241,48 +262,45 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                     setMobileMenuOpen(false);
                     handleLogout();
                   }}
-                  className="px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-3 transition-all text-danger hover:bg-danger/10 w-full text-left"
+                  className="px-4 py-3 rounded-lg text-sm font-medium flex items-center gap-3 text-[#C62828] hover:bg-red-50 dark:hover:bg-red-950/20 w-full text-left"
                 >
                   <LogOut className="w-5 h-5" />
                   Log out
                 </button>
               </>
+            ) : (
+              <div className="pt-3 border-t border-[#E5E7EB] dark:border-slate-800 flex flex-col gap-2">
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full py-2.5 text-center text-sm font-medium text-[#1A3BAA] border border-[#1A3BAA] rounded-lg"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  to="/register"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full py-2.5 text-center text-sm font-semibold text-white bg-[#1A3BAA] rounded-lg"
+                >
+                  Get started
+                </Link>
+              </div>
             )}
           </nav>
         </div>
       )}
 
-      {/* Main Content Area */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+      {/* Main Content Area - max-w-[1200px], side padding 16px mobile, 24px desktop per brief */}
+      <main className="flex-1 w-full max-w-[1200px] mx-auto px-4 sm:px-6 py-6 sm:py-10 relative z-10">
         {children}
       </main>
 
-      {/* Footer - Only show on web */}
-      <footer 
-        className="w-full glass-panel rounded-none border-b-0 border-x-0 border-pulseBorder dark:border-slate-800 mt-auto pt-8 pb-6 text-center md:text-left"
-        style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Full Footer on every page */}
+      <Footer />
 
-          {/* Medical Disclaimer */}
-          <div className="mb-8 p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed max-w-4xl">
-            <span className="font-bold text-slate-700 dark:text-slate-300">Disclaimer:</span> The Pulse platform is intended for informational and educational purposes only. It does not provide medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition. Do not disregard professional medical advice or delay in seeking it because of information provided by this platform.
-          </div>
+      {/* Mobile Bottom Tab Bar (below 768px) */}
+      <MobileBottomNav />
 
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 border-t border-slate-200 dark:border-slate-800 pt-6">
-            <div className="flex flex-col md:flex-row items-center gap-4">
-              <PulseLogo size={42} showTagline={true} />
-              <span className="text-xs text-slate-500 dark:text-slate-400 md:pl-4 md:border-l md:border-slate-200 dark:md:border-slate-800">© 2026. All rights reserved.</span>
-            </div>
-            <div className="flex flex-wrap justify-center gap-6 text-xs text-slate-500 dark:text-slate-400">
-              <Link to="/about" className="hover:text-slate-900 dark:hover:text-white transition-colors">About Us</Link>
-              <Link to="/contact" className="hover:text-slate-900 dark:hover:text-white transition-colors">Contact</Link>
-              <Link to="/privacy" className="hover:text-slate-900 dark:hover:text-white transition-colors">Privacy Policy</Link>
-            </div>
-          </div>
-        </div>
-      </footer>
-      
       {/* Floating AI Chat Assistant */}
       {user && <ChatAssistant />}
 
@@ -296,22 +314,22 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               </div>
               <div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">Privacy & Data Safety</h3>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400">Play Store Onboarding Compliance</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Play Store Onboarding Compliance</p>
               </div>
             </div>
             
-            <div className="space-y-4 text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-semibold">
+            <div className="space-y-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
               <p>
-                To provide intelligent clinical assistance, Pulse securely handles specific types of health data:
+                To provide clinical assistance, Pulse securely handles specific types of health data:
               </p>
               <div className="space-y-3 pl-1">
                 <div className="flex items-start gap-2">
                   <span className="shrink-0 mt-0.5">📍</span>
-                  <p><strong className="text-slate-900 dark:text-white">Location Access:</strong> Calculates transit distances to emergency rooms and nearby CGHS facilities.</p>
+                  <p><strong className="text-slate-900 dark:text-white">Location Access:</strong> Calculates transit distances to emergency rooms and nearby facilities.</p>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="shrink-0 mt-0.5">📄</span>
-                  <p><strong className="text-slate-900 dark:text-white">Health Documents:</strong> Uploaded prescriptions and reports are structured privately via Google Gemini AI.</p>
+                  <p><strong className="text-slate-900 dark:text-white">Health Documents:</strong> Uploaded prescriptions and reports are structured privately.</p>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="shrink-0 mt-0.5">💬</span>
@@ -322,8 +340,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   <p><strong className="text-slate-900 dark:text-white">Data Control:</strong> You are in full control. Delete your uploads or your account at any time in settings.</p>
                 </div>
               </div>
-              <p className="text-[10px] text-slate-500 mt-2">
-                By clicking Accept, you agree to our <Link to="/privacy" onClick={() => setShowPrivacyModal(false)} className="text-primary underline">Privacy Policy</Link>.
+              <p className="text-sm text-slate-500 mt-2">
+                By clicking Accept, you agree to our <Link to="/privacy" onClick={() => setShowPrivacyModal(false)} className="text-[#1A3BAA] underline">Privacy Policy</Link>.
               </p>
             </div>
 
@@ -333,14 +351,14 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 onClick={() => {
                   toast.error("You must accept the privacy policy to use the app.");
                 }}
-                className="flex-1 py-3 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-95"
+                className="flex-1 py-3 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-sm font-semibold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-95"
               >
                 Decline
               </button>
               <button
                 type="button"
                 onClick={handleAcceptPrivacy}
-                className="flex-1 py-3 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl shadow-md shadow-primary/20 transition-all active:scale-95"
+                className="flex-1 py-3 bg-[#1A3BAA] hover:bg-[#142E86] text-white text-sm font-semibold rounded-xl shadow-sm transition-all active:scale-95"
               >
                 Accept & Continue
               </button>
@@ -350,4 +368,4 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       )}
     </div>
   );
-};;
+};

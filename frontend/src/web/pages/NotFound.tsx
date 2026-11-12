@@ -1,50 +1,46 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ShieldAlert, ArrowLeft, Home } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { ArrowLeft, Home, Search } from 'lucide-react';
 import { PulseLogo } from '@web/components/PulseLogo';
 
 export const NotFound: React.FC = () => {
   const navigate = useNavigate();
 
+  useEffect(() => {
+    document.title = 'Page not found | Pulse';
+  }, []);
+
   return (
-    <div className="min-h-[75vh] flex items-center justify-center px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Background gradients for premium glassmorphic effect */}
-      <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-rose-500/10 rounded-full blur-[100px] pointer-events-none" />
-
-      <div className="max-w-md w-full space-y-6 text-center bg-white/70 dark:bg-slate-900/70 border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-md rounded-3xl p-8 sm:p-10 shadow-ambient relative">
-        <div className="flex flex-col items-center space-y-4">
-          <PulseLogo size={54} variant="vertical" showTagline={true} />
+    <div className="min-h-[70vh] flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12 bg-surface dark:bg-slate-950">
+      <div className="max-w-md w-full space-y-6 text-center bg-white dark:bg-slate-900 border border-pulseBorder dark:border-slate-800 rounded-2xl p-8 sm:p-10 shadow-sm">
+        <div className="flex flex-col items-center space-y-3">
+          <PulseLogo size={48} variant="vertical" showTagline={false} />
           
-          <div className="w-16 h-16 bg-danger/10 text-danger rounded-full flex items-center justify-center border border-danger/20 animate-pulse mt-4">
-            <ShieldAlert className="w-8 h-8" />
-          </div>
-
-          <div className="space-y-2 mt-4">
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-50">404</h1>
-            <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">Page Not Found</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
-              The page you are looking for does not exist, has been removed, or is temporarily unavailable.
+          <div className="pt-2">
+            <span className="text-4xl font-extrabold text-primary">404</span>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white mt-1">Page not found</h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400 max-w-xs mx-auto mt-2">
+              The page you are looking for does not exist, was moved, or the link may be mistyped.
             </p>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 pt-6">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-1.5"
+        <div className="flex flex-col sm:flex-row gap-3 pt-4">
+          <Link
+            to="/search"
+            className="flex-1 py-2.5 px-4 rounded-xl border border-pulseBorder dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Go Back
-          </button>
+            <Search className="w-4 h-4" />
+            Find hospitals
+          </Link>
           
-          <button
-            onClick={() => navigate('/')}
-            className="flex-1 py-3 px-4 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all flex items-center justify-center gap-1.5"
+          <Link
+            to="/"
+            className="flex-1 py-2.5 px-4 rounded-xl bg-primary hover:bg-primary-hover text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2"
           >
             <Home className="w-4 h-4" />
-            Go Home
-          </button>
+            Back to Home
+          </Link>
         </div>
       </div>
     </div>

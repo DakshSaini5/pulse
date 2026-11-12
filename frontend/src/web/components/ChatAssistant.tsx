@@ -599,7 +599,7 @@ const ChatAssistant: React.FC = () => {
       {!isOpen && !isKeyboardActive && (
         <div
           ref={fabRef}
-          className="flex items-center gap-2 pointer-events-auto cursor-grab active:cursor-grabbing bg-blue-600 hover:bg-blue-700 text-white rounded-full py-1.5 pl-1.5 pr-4 shadow-xl border border-blue-500/30 transition-transform hover:scale-105 active:scale-95 shrink-0"
+          className="flex items-center gap-2 pointer-events-auto cursor-grab active:cursor-grabbing bg-primary hover:bg-primary-hover text-white rounded-full py-2 pl-2 pr-4 shadow-md transition-transform hover:scale-105 active:scale-95 shrink-0"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
@@ -608,24 +608,24 @@ const ChatAssistant: React.FC = () => {
           <div className="size-8 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm">
             <PulseLogo variant="icon" size={20} />
           </div>
-          <span className="font-bold text-xs tracking-wide whitespace-nowrap">Pulse AI</span>
+          <span className="font-semibold text-xs tracking-wide whitespace-nowrap">Pulse Assistant</span>
         </div>
       )}
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="w-full sm:w-[400px] h-[450px] sm:h-[500px] max-h-[80vh] flex flex-col bg-[#0B0F19]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-blue-900/20 overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300 pointer-events-auto transition-all">
+        <div className="w-full sm:w-[400px] h-[450px] sm:h-[500px] max-h-[80vh] flex flex-col bg-slate-900 border border-slate-700 rounded-2xl shadow-xl overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300 pointer-events-auto transition-all">
 
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/5">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 bg-slate-950">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-full bg-white border border-white/10 flex items-center justify-center shadow-inner">
+              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-inner">
                 <PulseLogo variant="icon" size={20} />
               </div>
               <div>
-                <h3 className="text-white font-medium text-sm">Pulse AI</h3>
-                <p className={`${isConnected ? 'text-green-400/80' : 'text-yellow-500/80'} text-xs flex items-center gap-1`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></span>
+                <h3 className="text-white font-semibold text-sm">Pulse Health Assistant</h3>
+                <p className={`${isConnected ? 'text-emerald-400' : 'text-amber-400'} text-xs flex items-center gap-1`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
                   {isConnected ? 'Online' : (connectionError ? `Error: ${connectionError}` : 'Connecting...')}
                 </p>
               </div>
@@ -634,13 +634,13 @@ const ChatAssistant: React.FC = () => {
               <button
                 onClick={handleClearChat}
                 title="Clear Chat History"
-                className="text-gray-400 hover:text-red-400 transition-colors p-1.5 rounded-md hover:bg-white/10"
+                className="text-slate-400 hover:text-red-400 transition-colors p-1.5 rounded-md hover:bg-slate-800"
               >
                 <Trash2 size={18} />
               </button>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-gray-400 hover:text-white transition-colors p-1.5 rounded-md hover:bg-white/10"
+                className="text-slate-400 hover:text-white transition-colors p-1.5 rounded-md hover:bg-slate-800"
               >
                 <X size={20} />
               </button>
@@ -733,26 +733,26 @@ const ChatAssistant: React.FC = () => {
           </div>
 
           {/* Input Area */}
-          <div className="p-3 bg-black/20 border-t border-white/5">
+          <div className="p-3 bg-slate-950 border-t border-slate-800">
             <form onSubmit={handleSend} className="relative flex items-center">
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 disabled={isTyping || activeStreamIdRef.current !== null}
-                placeholder={isTyping || activeStreamIdRef.current !== null ? "AI is responding..." : "Ask about your health..."}
-                className="w-full bg-white/5 border border-white/10 text-white placeholder:text-gray-500 rounded-full py-2.5 pl-4 pr-12 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all text-sm disabled:opacity-50"
+                placeholder={isTyping || activeStreamIdRef.current !== null ? "Thinking..." : "Ask a health question..."}
+                className="w-full bg-slate-900 border border-slate-700 text-white placeholder:text-slate-500 rounded-full py-2.5 pl-4 pr-12 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm disabled:opacity-50"
               />
               <button
                 type="submit"
                 disabled={!input.trim() || isTyping || activeStreamIdRef.current !== null}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 bg-blue-600 hover:bg-blue-500 disabled:bg-white/5 disabled:text-gray-500 text-white rounded-full transition-colors"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 bg-primary hover:bg-primary-hover disabled:bg-slate-800 disabled:text-slate-600 text-white rounded-full transition-colors"
               >
-                <Send size={16} />
+                <Send size={15} />
               </button>
             </form>
-            <div className="mt-2 text-[10px] text-center text-gray-500 leading-tight">
-              I am an AI and can make mistakes. Always consult with your doctor before making medical decisions.
+            <div className="mt-2 text-xs text-center text-slate-400 leading-tight">
+              Pulse Assistant provides health information, not medical advice. Consult your doctor for medical decisions.
             </div>
           </div>
 

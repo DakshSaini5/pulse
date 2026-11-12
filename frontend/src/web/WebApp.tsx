@@ -31,6 +31,12 @@ import { Contact } from './pages/Contact';
 import { Privacy } from './pages/Privacy';
 import { DeleteAccount } from './pages/DeleteAccount';
 import { NotFound } from './pages/NotFound';
+import { FAQ } from './pages/FAQ';
+import { Sitemap } from './pages/Sitemap';
+import { Disclaimer } from './pages/Disclaimer';
+import { HowItWorks } from './pages/HowItWorks';
+import { PulsePlus } from './pages/PulsePlus';
+import { MedicalTerms } from './pages/MedicalTerms';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -146,15 +152,25 @@ export const App: React.FC = () => {
                 <Route path="/" element={<Landing />} />
                 <Route path="/search" element={<Search />} />
                 <Route path="/hospitals/:id" element={<HospitalDetail />} />
+                <Route path="/hospital/:id" element={<HospitalDetail />} />
                 <Route path="/compare" element={<Comparison />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/forgot" element={<Forgot />} />
+                <Route path="/reports" element={<ReportCenter />} />
+                <Route path="/analyze" element={<ReportCenter />} />
+                <Route path="/medical-terms" element={<MedicalTerms />} />
+                <Route path="/how-it-works" element={<HowItWorks />} />
+                <Route path="/faq" element={<FAQ />} />
+                <Route path="/pulse-plus" element={<PulsePlus />} />
+                <Route path="/sitemap" element={<Sitemap />} />
+                <Route path="/disclaimer" element={<Disclaimer />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/privacy" element={<Privacy />} />
-                <Route path="/delete-account" element={<DeleteAccount />} />
                 <Route path="/terms" element={<Terms />} />
+                <Route path="/delete-account" element={<DeleteAccount />} />
+                <Route path="/dashboard" element={<Navigate to="/saved" replace />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/forgot" element={<Forgot />} />
 
                 {/* Guarded Dashboard Pages */}
                 <Route 
@@ -170,14 +186,6 @@ export const App: React.FC = () => {
                   element={
                     <ProtectedRoute>
                       <PrescriptionCenter />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/reports" 
-                  element={
-                    <ProtectedRoute>
-                      <ReportCenter />
                     </ProtectedRoute>
                   } 
                 />

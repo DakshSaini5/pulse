@@ -1,13 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@core/context/AuthContext';
 import { GoogleLogin } from '@react-oauth/google';
 import { Capacitor } from '@capacitor/core';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
-import { LogIn, Mail, Lock, ShieldAlert, CheckCircle, Phone, MessageSquare, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { LogIn, Mail, Lock, ShieldAlert, Eye, EyeOff } from 'lucide-react';
 import { PulseLogo } from '@web/components/PulseLogo';
-import { authAPI } from '@core/services/api';
-import toast from 'react-hot-toast';
 
 export const Login: React.FC = () => {
   const { login, googleLogin } = useAuth();
@@ -18,7 +16,8 @@ export const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    document.title = 'Sign in | Pulse';
     if (Capacitor.isNativePlatform()) {
       GoogleAuth.initialize({
         clientId: '367526945989-ebnif0f9q0s080kab2clgd42d10qqhok.apps.googleusercontent.com',
@@ -74,91 +73,26 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-6 bg-white border border-slate-200 dark:border-slate-700 rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-ambient relative overflow-hidden dark:bg-slate-900">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] pointer-events-none" />
-
-        <div className="flex flex-col items-center space-y-2">
-          <PulseLogo size={54} variant="vertical" showTagline={true} />
-          <p className="text-xs text-slate-500 dark:text-slate-400 pt-2">Unlock custom health scanning and provider mappings</p>
+    <div className="min-h-[75vh] flex items-center justify-center py-10 px-4 sm:px-6 lg:px-8 bg-surface dark:bg-slate-950">
+      <div className="max-w-md w-full space-y-6 bg-white dark:bg-slate-900 border border-pulseBorder dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-sm">
+        
+        <div className="flex flex-col items-center text-center space-y-2">
+          <PulseLogo size={48} variant="vertical" showTagline={false} />
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white pt-2">Sign in to Pulse</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Sign in to save your reports and compare hospitals.
+          </p>
         </div>
 
         {error && (
-          <div className="p-3 bg-danger/10 border border-danger/20 rounded-xl text-xs text-danger flex items-start gap-2 animate-shake">
+          <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-xl text-sm text-red-700 dark:text-red-400 flex items-start gap-2">
             <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
 
-        {/* Standard Password Login Form */}
-        <form className="space-y-5" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div className="space-y-1 text-left">
-              <label htmlFor="identifier" className="text-xs font-semibold text-slate-500 dark:text-slate-400">Email Address or Mobile Number</label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500 dark:text-slate-400">
-                  <Mail className="w-4 h-4" />
-                </span>
-                <input
-                  id="identifier"
-                  type="text"
-                  required
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 glass-input text-base font-medium"
-                  placeholder="name@example.com or +919999999999"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1 text-left">
-              <div className="flex justify-between items-center">
-                <label htmlFor="password" className="text-xs font-semibold text-slate-500 dark:text-slate-400">Password</label>
-                <Link to="/forgot" className="text-[10px] text-primary hover:underline font-semibold">Forgot Password?</Link>
-              </div>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500 dark:text-slate-400">
-                  <Lock className="w-4 h-4" />
-                </span>
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-10 py-3 glass-input text-base font-medium"
-                  placeholder="••••••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 focus:outline-none"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <LogIn className="w-4 h-4" />
-            {loading ? 'Authenticating Session...' : 'Sign In with Password'}
-          </button>
-        </form>
-
-        {/* Quick Demo Logins block */}
-        <div className="space-y-3 pt-2">
-          <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-pulseBorder dark:border-slate-700"></div>
-            <span className="flex-shrink mx-4 text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">OR CONTINUE WITH</span>
-            <div className="flex-grow border-t border-pulseBorder dark:border-slate-700"></div>
-          </div>
-
+        {/* Google Sign-in placed at top */}
+        <div className="space-y-3">
           <div className="flex justify-center w-full">
             {!Capacitor.isNativePlatform() ? (
               <GoogleLogin
@@ -167,7 +101,8 @@ export const Login: React.FC = () => {
                 useOneTap
                 theme="outline"
                 size="large"
-                shape="pill"
+                shape="rectangular"
+                width="100%"
                 text="continue_with"
               />
             ) : (
@@ -175,7 +110,7 @@ export const Login: React.FC = () => {
                 type="button"
                 onClick={handleNativeGoogleLogin}
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-slate-200 dark:border-slate-700 rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors font-medium text-slate-700 dark:text-slate-200 disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-pulseBorder dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors font-medium text-sm text-slate-700 dark:text-slate-200 disabled:opacity-50"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -187,15 +122,95 @@ export const Login: React.FC = () => {
               </button>
             )}
           </div>
+
+          <div className="relative flex py-2 items-center">
+            <div className="flex-grow border-t border-pulseBorder dark:border-slate-800"></div>
+            <span className="flex-shrink mx-4 text-xs text-slate-400 font-semibold uppercase tracking-wider">or sign in with email</span>
+            <div className="flex-grow border-t border-pulseBorder dark:border-slate-800"></div>
+          </div>
         </div>
 
-        <div className="text-center pt-2">
-          <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-2">
-            By continuing, you agree to our <Link to="/privacy" className="underline hover:text-slate-500 dark:hover:text-slate-400">Privacy Policy</Link>.
-          </p>
+        {/* Standard Password Login Form */}
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-1 text-left">
+            <label htmlFor="identifier" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Email or Mobile Number
+            </label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none">
+                <Mail className="w-4 h-4" />
+              </span>
+              <input
+                id="identifier"
+                type="text"
+                required
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-pulseBorder dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                placeholder="name@example.com or 10-digit number"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1 text-left">
+            <div className="flex justify-between items-center">
+              <label htmlFor="password" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Password
+              </label>
+              <Link to="/forgot" className="text-xs text-primary hover:underline font-medium">
+                Forgot password?
+              </Link>
+            </div>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none">
+                <Lock className="w-4 h-4" />
+              </span>
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-10 pr-10 py-3 rounded-xl border border-pulseBorder dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                placeholder="••••••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 rounded-xl bg-primary hover:bg-primary-hover text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <LogIn className="w-4 h-4" />
+            {loading ? 'Signing in...' : 'Sign in'}
+          </button>
+        </form>
+
+        <div className="text-center pt-2 space-y-2 border-t border-pulseBorder dark:border-slate-800">
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Don't have a login?{' '}
-            <Link to="/register" className="text-primary hover:underline font-bold">Create Free Account</Link>
+            By continuing, you agree to our{' '}
+            <Link to="/privacy" className="underline hover:text-slate-800 dark:hover:text-slate-200">
+              Privacy Policy
+            </Link>{' '}
+            and{' '}
+            <Link to="/terms" className="underline hover:text-slate-800 dark:hover:text-slate-200">
+              Terms
+            </Link>.
+          </p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Don't have an account?{' '}
+            <Link to="/register" className="text-primary hover:underline font-semibold">
+              Sign up
+            </Link>
           </p>
         </div>
       </div>

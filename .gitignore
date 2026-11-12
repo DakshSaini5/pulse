@@ -46,6 +46,10 @@ backend/scratch_*
 backend/test-keys.*
 *.timestamp-*
 
+# Keystores & Signing Keys
+*.keystore
+*.jks
+
 # Service Accounts
 firebase-service-account.json
 

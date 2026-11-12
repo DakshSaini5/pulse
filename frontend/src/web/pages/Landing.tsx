@@ -17,6 +17,8 @@ import toast from 'react-hot-toast';
 import { Capacitor } from '@capacitor/core';
 import { isNativeApp, useKeyboardActive } from '@core/utils/platform';
 
+import { PublicLanding } from './PublicLanding';
+
 const toTitleCase = (str: string): string => {
   if (!str) return '';
   return str
@@ -591,52 +593,5 @@ export const Landing: React.FC = () => {
   // ==========================================
   // PUBLIC HERO VIEW (Not Logged In)
   // ==========================================
-  return (
-    <>
-
-      <section className="relative pt-16 pb-20 sm:pt-24 sm:pb-32 px-4 md:px-10 text-center">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent pointer-events-none" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-teal-500/5 via-transparent to-transparent pointer-events-none" />
-
-        <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-primary text-[9px] sm:text-[10px] font-bold uppercase tracking-wider border border-slate-200 dark:border-slate-700 animate-pulse">
-            <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
-            Pulse Intelligent Healthcare Platform
-          </div>
-
-          <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
-            No Queue, <br />
-            <span className="text-primary">For Your Cure.</span>
-          </h1>
-
-          <p className="text-base sm:text-lg md:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto font-light leading-relaxed">
-            An AI-powered navigation assistant that simplifies complex medical files, tracks your core trends, and recommends highly suited hospitals in plain English.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-2 sm:pt-4">
-            <Link
-              to="/register"
-              className="w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-4 rounded-xl bg-primary hover:bg-primary-hover text-slate-900 dark:text-white font-bold text-sm sm:text-lg shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all flex items-center justify-center gap-2 sm:gap-3 group"
-            >
-              Start Analyzing Free
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <Link
-              to="/search"
-              className="w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-4 rounded-xl glass-panel bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 font-bold text-sm sm:text-lg text-slate-900 dark:text-white transition-all flex items-center justify-center gap-2 sm:gap-3"
-            >
-              <Play className="w-4 h-4 sm:w-5 sm:h-5 text-primary fill-primary" />
-              Discover Hospitals Map
-            </Link>
-          </div>
-
-          <div className="mt-12 pt-8 border-t border-slate-200/50 dark:border-slate-800/50">
-            <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium">
-              Disclaimer: This app is not a medical device and does not diagnose, treat, or prevent any condition.
-            </p>
-          </div>
-        </div>
-      </section>
-    </>
-  );
+  return <PublicLanding />;
 };

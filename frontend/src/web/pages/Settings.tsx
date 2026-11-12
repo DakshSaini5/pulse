@@ -633,7 +633,7 @@ export const Settings: React.FC = () => {
           {activeTab === 'privacy' && (
             <div className="glass-panel p-6 sm:p-8 space-y-6 bg-white dark:bg-slate-900 border border-pulseBorder dark:border-slate-800">
               <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2 border-b border-pulseBorder dark:border-slate-800 pb-3">
-                <Shield className="w-5 h-5 text-primary" /> HIPAA & Medical Data Privacy
+                <Shield className="w-5 h-5 text-primary" /> DPDPA &amp; Medical Data Privacy
               </h2>
 
               <div className="space-y-4">
@@ -641,7 +641,7 @@ export const Settings: React.FC = () => {
                   <div className="pr-4">
                     <div className="flex items-center gap-2">
                       <h3 className="font-bold text-sm text-slate-900 dark:text-white">Auto-purge Uploaded PDFs</h3>
-                      <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-black px-2 py-0.5 rounded uppercase">HIPAA Compliant</span>
+                      <span className="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.5 rounded uppercase">DPDPA Compliant</span>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Automatically delete raw PDF prescription files from our servers after finishing AI text extraction. (Recommended)</p>
                   </div>

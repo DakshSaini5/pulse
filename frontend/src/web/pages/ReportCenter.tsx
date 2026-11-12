@@ -74,6 +74,34 @@ export const ReportCenter: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [activeReport, setActiveReport] = useState<MedicalReport | null>(null);
+  const [consentGiven, setConsentGiven] = useState(false);
+
+  const SAMPLE_REPORT: MedicalReport = {
+    id: 'sample-report',
+    reportType: 'Complete Blood Count (CBC)',
+    status: 'COMPLETED',
+    reportDate: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    fileUrl: '',
+    ocrResult: {
+      rawText: "Hemoglobin (Hb): 8.2 g/dL (Reference: 12.0 - 16.0)\nPlatelet Count: 88,000 /uL (Reference: 150,000 - 450,000)\nWBC Count: 6,400 /uL (Reference: 4,000 - 11,000)",
+      verifiedData: "Hemoglobin is below standard reference range. Platelet count indicates mild thrombocytopenia. White blood cell count is normal.",
+    },
+    values: [
+      { id: 'v1', key: 'Hemoglobin (Hb)', value: 8.2, unit: 'g/dL', referenceRange: '12.0 - 16.0', isAbnormal: true, category: 'Complete Blood Count (CBC)', description: 'Low red blood cell oxygen carrying protein' },
+      { id: 'v2', key: 'Platelet Count', value: 88000, unit: '/uL', referenceRange: '150,000 - 450,000', isAbnormal: true, category: 'Complete Blood Count (CBC)', description: 'Low blood clotting cell count' },
+      { id: 'v3', key: 'WBC Count', value: 6400, unit: '/uL', referenceRange: '4,000 - 11,000', isAbnormal: false, category: 'Complete Blood Count (CBC)', description: 'Normal immune cell count' }
+    ],
+    summary: {
+      healthSummary: "Hemoglobin is below standard reference range. Platelet count indicates mild thrombocytopenia. White blood cell count is normal.",
+      normalFindingsCount: 1,
+      abnormalFindingsCount: 2,
+      overallStatus: "ATTENTION_REQUIRED"
+    },
+    specialists: [
+      { specialtyName: 'General Medicine', reason: 'Comprehensive clinical evaluation', confidenceScore: 0.95, recommendedHospitalsJson: '[]' }
+    ]
+  };
   
   // Verification dual-pane states
   const [rawText, setRawText] = useState('');
@@ -88,7 +116,9 @@ export const ReportCenter: React.FC = () => {
 
   const fetchReports = async (userLat = lat, userLng = lng) => {
     if (!user) {
-      navigate('/login');
+      setReports([SAMPLE_REPORT]);
+      selectReport(SAMPLE_REPORT, userLat, userLng);
+      setLoading(false);
       return;
     }
     setLoading(true);
@@ -191,6 +221,15 @@ export const ReportCenter: React.FC = () => {
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      navigate('/login?redirect=/reports');
+      toast.error('Please sign in to upload and save your personal reports.');
+      return;
+    }
+    if (!consentGiven) {
+      toast.error('Please agree to processing before uploading your report.');
+      return;
+    }
     if (selectedFiles.length === 0) return;
     setUploading(true);
     try {
@@ -290,25 +329,27 @@ export const ReportCenter: React.FC = () => {
       {showAiModal && <AIModalDisclaimer onAcknowledge={handleAcknowledgeAi} />}
       
       <div className="text-left space-y-2">
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-          <FileText className="text-primary w-8 h-8 animate-pulse" />
-          Medical Report Analytics & Simplifier
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#121414] dark:text-white flex items-center gap-2">
+          <FileText className="text-[#1A3BAA] w-7 h-7" />
+          Understand a report
         </h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500">Scan blood panels, thyroid sheets or general lab reports. Review extraction parameters, verify indexes, and receive expert specialist suggestions.</p>
+        <p className="text-sm text-[#4B5563] dark:text-slate-400">
+          Upload blood panels, thyroid tests or general laboratory reports to get them explained in plain English.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left column: upload & history listing */}
         <div className="lg:col-span-4 space-y-6">
           {/* Upload card */}
-          <div className="glass-panel rounded-3xl p-6 border border-slate-200 dark:border-slate-700 bg-gradient-to-b from-slate-50 to-slate-100/50 dark:from-slate-800 dark:to-slate-900/50 space-y-4">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-              <UploadCloud className="w-4 h-4 text-primary" />
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-[#E5E7EB] dark:border-slate-800 shadow-[0_1px_3px_rgba(0,0,0,0.06)] space-y-4">
+            <h3 className="text-sm font-bold text-[#121414] dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+              <UploadCloud className="w-4 h-4 text-[#1A3BAA]" />
               Upload Medical Report File
             </h3>
 
             <form onSubmit={handleUploadSubmit} className="space-y-4">
-              <div className="border border-dashed border-slate-200 dark:border-slate-700 hover:border-primary/50 transition-colors rounded-2xl p-6 text-center bg-white dark:bg-slate-900/[0.005] cursor-pointer relative">
+              <div className="border border-dashed border-[#E5E7EB] dark:border-slate-700 hover:border-[#1A3BAA] transition-colors rounded-xl p-6 text-center bg-[#F5F7FA] dark:bg-slate-800/50 cursor-pointer relative">
                 <input
                   type="file"
                   accept="image/*,application/pdf"
@@ -316,28 +357,44 @@ export const ReportCenter: React.FC = () => {
                   multiple
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
-                <UploadCloud className="w-8 h-8 text-slate-500 dark:text-slate-400 dark:text-slate-500 mx-auto mb-2" />
-                <span className="text-xs text-slate-600 dark:text-slate-300 block font-semibold">
+                <UploadCloud className="w-8 h-8 text-[#1A3BAA] mx-auto mb-2" />
+                <span className="text-sm text-[#121414] dark:text-slate-200 block font-semibold">
                   Select or drag lab report sheet(s)
                 </span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500 mt-1 block">Supports PNG, JPG, PDF up to 5MB</span>
+                <span className="text-xs text-[#4B5563] dark:text-slate-400 mt-1 block">Supports PNG, JPG, PDF up to 5MB</span>
+              </div>
+
+              {/* Unticked consent checkbox & privacy note per developer brief */}
+              <div className="space-y-2 pt-1 text-left">
+                <label className="flex items-start gap-2.5 text-xs text-[#4B5563] dark:text-slate-400 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={consentGiven}
+                    onChange={(e) => setConsentGiven(e.target.checked)}
+                    className="mt-0.5 rounded border-[#E5E7EB] text-[#1A3BAA] focus:ring-[#1A3BAA]"
+                  />
+                  <span>I agree to Pulse processing this report to explain it to me.</span>
+                </label>
+                <p className="text-xs text-[#4B5563] dark:text-slate-400 font-medium pl-6">
+                  Your report is private to your account.
+                </p>
               </div>
 
               {selectedFiles.length > 0 && (
                 <div className="space-y-2 mt-3 text-left">
-                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Selected Files ({selectedFiles.length})</label>
+                  <label className="text-xs font-bold text-[#4B5563] uppercase tracking-wider block">Selected Files ({selectedFiles.length})</label>
                   <div className="space-y-1.5 max-h-[150px] overflow-y-auto pr-1">
                     {selectedFiles.map((file, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/70 shadow-sm text-xs text-slate-700 animate-fadeIn">
+                      <div key={idx} className="flex items-center justify-between p-2.5 rounded-lg border border-[#E5E7EB] dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm text-xs text-slate-700 dark:text-slate-300">
                         <div className="flex items-center gap-2 min-w-0">
-                          <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <FileText className="w-3.5 h-3.5 text-[#1A3BAA] shrink-0" />
                           <span className="truncate font-medium max-w-[180px]">{file.name}</span>
-                          <span className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-500 font-light">({(file.size / 1024).toFixed(1)} KB)</span>
+                          <span className="text-xs text-[#4B5563]">({(file.size / 1024).toFixed(1)} KB)</span>
                         </div>
                         <button
                           type="button"
                           onClick={() => handleRemoveFile(idx)}
-                          className="text-slate-400 dark:text-slate-500 hover:text-danger hover:bg-slate-100 dark:bg-slate-700 p-1 rounded-lg transition-colors shrink-0 flex items-center justify-center"
+                          className="text-[#4B5563] hover:text-[#C62828] hover:bg-slate-100 p-1 rounded transition-colors shrink-0 flex items-center justify-center"
                           title="Remove File"
                         >
                           <span className="text-base leading-none font-bold">&times;</span>
@@ -348,15 +405,13 @@ export const ReportCenter: React.FC = () => {
                 </div>
               )}
 
-              {selectedFiles.length > 0 && (
-                <button
-                  type="submit"
-                  disabled={uploading}
-                  className="w-full py-3 bg-primary hover:bg-primary-hover text-slate-900 dark:text-white text-xs font-bold rounded-xl shadow-lg shadow-primary/20 transition-all"
-                >
-                  {uploading ? 'Extracting OCR Text...' : `Start Scan & OCR (${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''})`}
-                </button>
-              )}
+              <button
+                type="submit"
+                disabled={uploading}
+                className="w-full h-11 bg-[#1A3BAA] hover:bg-[#142E86] text-white text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+              >
+                {uploading ? 'Processing report...' : selectedFiles.length > 0 ? `Explain Report (${selectedFiles.length})` : 'Select File to Explain'}
+              </button>
             </form>
           </div>
 
@@ -568,42 +623,45 @@ export const ReportCenter: React.FC = () => {
                   <MedicalDisclaimer />
                   
                   {/* Summary Box */}
-                  <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700 space-y-4 relative overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100/50 dark:from-slate-800 dark:to-slate-900/50">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-[radial-gradient(circle_at_center,rgba(37,99,235,0.1)_0%,transparent_70%)] pointer-events-none" />
-                    
-                    <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
+                  <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-[#E5E7EB] dark:border-slate-800 shadow-[0_1px_3px_rgba(0,0,0,0.06)] space-y-4">
+                    <div className="flex justify-between items-center pb-3 border-b border-[#E5E7EB] dark:border-slate-800">
                       <div>
-                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Report Snapshot: {activeReport.reportType}</h2>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500">Recorded: {new Date(activeReport.reportDate).toLocaleDateString()}</span>
+                        <h2 className="text-lg font-bold text-[#121414] dark:text-white">Report Snapshot: {activeReport.reportType}</h2>
+                        <span className="text-xs text-[#4B5563] dark:text-slate-400">Recorded: {new Date(activeReport.reportDate).toLocaleDateString()}</span>
                       </div>
-                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border uppercase tracking-wider ${
+                      <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border uppercase tracking-wider ${
                         activeReport.summary?.overallStatus === 'STABLE'
-                          ? 'bg-success/15 border-success/25 text-success'
-                          : 'bg-danger/15 border-danger/25 text-danger'
+                          ? 'bg-[#EEF2FC] border-[#1A3BAA]/30 text-[#1A3BAA]'
+                          : 'bg-red-50 border-red-200 text-[#C62828]'
                       }`}>
                         Status: {activeReport.summary?.overallStatus || 'STABLE'}
                       </span>
                     </div>
 
                     {activeReport.summary && (
-                      <div className="space-y-3">
-                        <p className="text-xs text-slate-600 dark:text-slate-300 font-light leading-relaxed">
+                      <div className="space-y-4">
+                        <p className="text-sm text-[#121414] dark:text-slate-200 leading-[1.6]">
                           {activeReport.summary.healthSummary}
                         </p>
                         
                         <div className="grid grid-cols-2 gap-4 max-w-sm">
-                          <div className="p-3 bg-success/10 border border-success/15 rounded-xl">
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500 block font-bold uppercase">Normal Findings</span>
-                            <span className="text-2xl font-extrabold text-success mt-1 block">
+                          <div className="p-3 bg-[#F5F7FA] border border-[#E5E7EB] rounded-lg">
+                            <span className="text-xs text-[#4B5563] block font-semibold uppercase">Normal Findings</span>
+                            <span className="text-2xl font-extrabold text-[#12805C] mt-1 block">
                               {activeReport.summary.normalFindingsCount}
                             </span>
                           </div>
-                          <div className="p-3 bg-danger/10 border border-danger/15 rounded-xl">
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500 block font-bold uppercase">Abnormal Findings</span>
-                            <span className="text-2xl font-extrabold text-danger mt-1 block">
+                          <div className="p-3 bg-red-50 border border-red-100 rounded-lg">
+                            <span className="text-xs text-[#C62828] block font-semibold uppercase">Abnormal Findings</span>
+                            <span className="text-2xl font-extrabold text-[#C62828] mt-1 block">
                               {activeReport.summary.abnormalFindingsCount}
                             </span>
                           </div>
+                        </div>
+
+                        {/* Safety note under every report explanation per brief */}
+                        <div className="p-3 bg-[#F5F7FA] dark:bg-slate-800/40 border border-[#E5E7EB] dark:border-slate-800 rounded-lg text-xs text-[#4B5563] dark:text-slate-400">
+                          This explains your report in simple words. It is not medical advice. Discuss results with your doctor.
                         </div>
                       </div>
                     )}

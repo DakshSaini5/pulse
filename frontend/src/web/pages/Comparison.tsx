@@ -1,259 +1,360 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { hospitalAPI, Hospital } from '@core/services/api';
 import { getInitialLocation } from '@core/utils/geolocation';
 import { 
   ArrowLeft, Star, Clock, AlertCircle, ShieldCheck, 
-  MapPin, HelpCircle, Phone, Globe, Layers 
+  MapPin, Phone, Globe, Layers, Plus, Check, ArrowRight
 } from 'lucide-react';
-import { Capacitor } from '@capacitor/core';
 import { getHospitalDisplayName } from '@core/utils/utils';
-import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 export const Comparison: React.FC = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [nearbyHospitals, setNearbyHospitals] = useState<Hospital[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [lat, setLat] = useState<number | undefined>(undefined);
   const [lng, setLng] = useState<number | undefined>(undefined);
 
-  const fetchHospitals = async () => {
-    const idsStr = searchParams.get('ids');
-    if (!idsStr) {
-      setLoading(false);
-      return;
+  useEffect(() => {
+    document.title = 'Compare hospitals | Pulse';
+  }, []);
+
+  const idsStr = searchParams.get('ids') || '';
+  const currentIds = idsStr ? idsStr.split(',').filter(Boolean) : [];
+
+  // Fetch comparison data or fallback list
+  useEffect(() => {
+    const loadHospitals = async () => {
+      setLoading(true);
+      try {
+        if (currentIds.length > 0) {
+          const data = await hospitalAPI.compare(currentIds, lat, lng);
+          setHospitals(data);
+        } else {
+          setHospitals([]);
+        }
+
+        // Always fetch a selection of hospitals for the "Add to compare" list
+        const nearby = await hospitalAPI.search('', '', 25, lat || 12.9716, lng || 77.5946);
+        setNearbyHospitals(nearby);
+      } catch (err) {
+        console.error('Error fetching hospitals for comparison:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadHospitals();
+  }, [idsStr, lat, lng]);
+
+  // Geolocation
+  useEffect(() => {
+    getInitialLocation()
+      .then((res) => {
+        setLat(res.latitude);
+        setLng(res.longitude);
+      })
+      .catch((err) => {
+        console.warn('Geolocation fallback to Bengaluru:', err);
+      });
+  }, []);
+
+  const handleToggleCompare = (id: string) => {
+    let newIds = [...currentIds];
+    if (newIds.includes(id)) {
+      newIds = newIds.filter((cid) => cid !== id);
+    } else {
+      if (newIds.length >= 3) {
+        toast.error('You can compare a maximum of 3 hospitals at a time.');
+        return;
+      }
+      newIds.push(id);
     }
-    const ids = idsStr.split(',');
-    setLoading(true);
-    try {
-      const data = await hospitalAPI.compare(ids, lat, lng);
-      setHospitals(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+
+    if (newIds.length > 0) {
+      setSearchParams({ ids: newIds.join(',') });
+    } else {
+      setSearchParams({});
     }
   };
 
-  // Get browser coordinates on mount
-  useEffect(() => {
-    const loadLocation = () => {
-      getInitialLocation()
-        .then((res) => {
-          setLat(res.latitude);
-          setLng(res.longitude);
-        })
-        .catch(err => {
-          console.warn('Geolocation failed:', err);
-        });
-    };
-
-    loadLocation();
-
-    if (navigator.permissions && navigator.permissions.query) {
-      navigator.permissions.query({ name: 'geolocation' })
-        .then((status) => {
-          status.onchange = () => {
-            if (status.state === 'granted') {
-              loadLocation();
-            }
-          };
-        })
-        .catch(err => console.log('Permissions API query not supported:', err));
-    }
-  }, []);
-
-  // Fetch comparison data when parameters or coordinates change
-  useEffect(() => {
-    fetchHospitals();
-  }, [searchParams, lat, lng]);
-
-  if (loading) {
-    return (
-      <div className="space-y-6 max-w-6xl mx-auto py-12 animate-pulse text-left">
-        <div className="h-8 bg-slate-800 rounded w-1/4" />
-        <div className="h-96 bg-slate-800 rounded-3xl" />
-      </div>
-    );
-  }
-
-  if (hospitals.length === 0) {
-    return (
-      <div className="glass-panel rounded-3xl p-12 text-center max-w-md mx-auto my-12 border border-slate-200 dark:border-slate-700">
-        <AlertCircle className="w-12 h-12 text-warning mx-auto mb-4" />
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">No Hospitals Selected</h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 mt-2">Please select hospitals to compare from the Discovery Map screen first.</p>
-        <Link to="/search" className="mt-6 px-4 py-2 bg-primary text-slate-900 dark:text-white rounded-xl text-xs font-semibold inline-block">Back to Maps</Link>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-16 text-left">
-      <Link to="/search" className="inline-flex items-center gap-1 text-slate-500 dark:text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:text-white transition-colors text-xs font-semibold">
-        <ArrowLeft className="w-4 h-4" />
-        Back to Discovery Maps
-      </Link>
+    <div className="max-w-[1200px] mx-auto space-y-8 pb-16 text-left">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <Link
+            to="/search"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1A3BAA] hover:underline mb-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Find more hospitals
+          </Link>
+          <h1 className="text-[28px] sm:text-[36px] font-bold text-[#121414] dark:text-white leading-[1.2] tracking-[-0.02em]">
+            Compare hospitals
+          </h1>
+          <p className="text-sm sm:text-base text-[#4B5563] dark:text-slate-400 mt-1">
+            Pick 2 or 3 hospitals to compare. Tap &quot;Add to compare&quot; on any hospital below.
+          </p>
+        </div>
 
-      <div className="space-y-2">
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-          <Layers className="text-primary w-8 h-8 animate-bounce" />
-          Side-by-Side Provider Comparison
-        </h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium">Review ratings, department costs, and active availability options between your choices.</p>
+        {currentIds.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setSearchParams({})}
+            className="px-3.5 py-2 border border-[#E5E7EB] dark:border-slate-700 text-sm font-medium text-[#4B5563] rounded-lg hover:bg-slate-50 transition-colors"
+          >
+            Clear selection ({currentIds.length})
+          </button>
+        )}
       </div>
 
-      <div className="overflow-x-auto rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl glass-panel bg-white dark:bg-slate-900/[0.01]">
-        <table className="w-full text-left text-xs border-collapse">
-          <thead>
-            <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-              <th className="p-5 font-bold text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wider w-1/4">Comparison Metric</th>
-              {hospitals.map(h => (
-                <th key={h.id} className="p-5 font-extrabold text-slate-900 dark:text-white text-sm w-1/4">
-                  {getHospitalDisplayName(h.name, h.address)}
+      {loading ? (
+        <div className="space-y-4 py-8 animate-pulse">
+          <div className="h-6 bg-slate-200 dark:bg-slate-800 rounded w-1/4" />
+          <div className="h-64 bg-slate-100 dark:bg-slate-800 rounded-xl" />
+        </div>
+      ) : hospitals.length > 0 ? (
+        /* Side-by-side Table */
+        <div className="overflow-x-auto rounded-xl border border-[#E5E7EB] dark:border-slate-800 shadow-[0_1px_3px_rgba(0,0,0,0.06)] bg-white dark:bg-slate-900">
+          <table className="w-full text-left text-sm border-collapse">
+            <thead>
+              <tr className="border-b border-[#E5E7EB] dark:border-slate-800 bg-[#F5F7FA] dark:bg-slate-800/60">
+                <th className="p-4 sm:p-5 font-bold text-[#121414] dark:text-white uppercase tracking-wider w-1/4 text-xs">
+                  Feature
                 </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/5 text-slate-600 dark:text-slate-300">
-            {/* Recommendation Match Score */}
-            <tr>
-              <td className="p-5 font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500">Match Compatibility</td>
-              {hospitals.map(h => (
-                <td key={h.id} className="p-5">
-                  <span className="inline-block px-3 py-1 bg-primary/10 border border-primary/20 text-primary rounded-full font-bold">
-                    {h.recommendationScore}% Score
-                  </span>
+                {hospitals.map((h) => (
+                  <th key={h.id} className="p-4 sm:p-5 font-bold text-[#121414] dark:text-white text-base w-1/4 align-top">
+                    <div className="space-y-1">
+                      <div>{getHospitalDisplayName(h.name, h.address)}</div>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleCompare(h.id)}
+                        className="text-xs text-[#C62828] hover:underline font-normal"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#E5E7EB] dark:divide-slate-800 text-[#121414] dark:text-slate-200">
+              {/* Rating */}
+              <tr>
+                <td className="p-4 sm:p-5 font-semibold text-[#4B5563] dark:text-slate-400">
+                  Rating
                 </td>
-              ))}
-            </tr>
+                {hospitals.map((h) => (
+                  <td key={h.id} className="p-4 sm:p-5">
+                    <div className="flex items-center gap-1 font-bold text-[#B45309]">
+                      <Star className="w-4 h-4 fill-[#B45309] text-[#B45309]" />
+                      <span>{h.rating.toFixed(1)} / 5.0</span>
+                    </div>
+                  </td>
+                ))}
+              </tr>
 
-            {/* Ratings */}
-            <tr>
-              <td className="p-5 font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500">Patient Rating</td>
-              {hospitals.map(h => (
-                <td key={h.id} className="p-5">
-                  <div className="flex items-center gap-1 font-bold text-warning">
-                    <Star className="w-4 h-4 fill-warning text-warning" />
-                    {h.rating.toFixed(1)} / 5.0
-                  </div>
+              {/* 24x7 Emergency status */}
+              <tr>
+                <td className="p-4 sm:p-5 font-semibold text-[#4B5563] dark:text-slate-400">
+                  24x7 Emergency
                 </td>
-              ))}
-            </tr>
+                {hospitals.map((h) => (
+                  <td key={h.id} className="p-4 sm:p-5">
+                    {h.emergencyAvailable ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-[#12805C] border border-[#12805C]/30">
+                        Available
+                      </span>
+                    ) : (
+                      <span className="text-xs text-[#4B5563]">
+                        Not listed
+                      </span>
+                    )}
+                  </td>
+                ))}
+              </tr>
 
-            {/* Emergency status */}
-            <tr>
-              <td className="p-5 font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500">24/7 ER Room</td>
-              {hospitals.map(h => (
-                <td key={h.id} className="p-5">
-                  {h.emergencyAvailable ? (
-                    <span className="text-[10px] bg-danger/10 border border-danger/20 text-danger px-2.5 py-0.5 rounded-full font-bold uppercase">
-                      Yes — Active
+              {/* Distance */}
+              <tr>
+                <td className="p-4 sm:p-5 font-semibold text-[#4B5563] dark:text-slate-400">
+                  Distance
+                </td>
+                {hospitals.map((h) => (
+                  <td key={h.id} className="p-4 sm:p-5 font-medium">
+                    {h.distance ? `${h.distance.toFixed(1)} km` : 'Contact for location'}
+                  </td>
+                ))}
+              </tr>
+
+              {/* Operating Hours */}
+              <tr>
+                <td className="p-4 sm:p-5 font-semibold text-[#4B5563] dark:text-slate-400">
+                  Working Hours
+                </td>
+                {hospitals.map((h) => (
+                  <td key={h.id} className="p-4 sm:p-5">
+                    <div className="flex items-center gap-1.5 text-xs sm:text-sm text-[#4B5563] dark:text-slate-300">
+                      <Clock className="w-4 h-4 text-[#1A3BAA] shrink-0" />
+                      <span>{h.workingHours || 'Mon-Sun: 24 Hours'}</span>
+                    </div>
+                  </td>
+                ))}
+              </tr>
+
+              {/* Specialties */}
+              <tr>
+                <td className="p-4 sm:p-5 font-semibold text-[#4B5563] dark:text-slate-400">
+                  Departments
+                </td>
+                {hospitals.map((h) => (
+                  <td key={h.id} className="p-4 sm:p-5">
+                    <div className="flex flex-wrap gap-1.5">
+                      {h.specialties && h.specialties.length > 0 ? (
+                        h.specialties.map((s, idx) => (
+                          <span
+                            key={idx}
+                            className="text-xs bg-[#F5F7FA] dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 text-[#121414] dark:text-slate-300 px-2 py-0.5 rounded"
+                          >
+                            {s.specialty.name}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-[#4B5563]">General Care</span>
+                      )}
+                    </div>
+                  </td>
+                ))}
+              </tr>
+
+              {/* Phone */}
+              <tr>
+                <td className="p-4 sm:p-5 font-semibold text-[#4B5563] dark:text-slate-400">
+                  Phone
+                </td>
+                {hospitals.map((h) => (
+                  <td key={h.id} className="p-4 sm:p-5">
+                    {h.phone ? (
+                      <div>
+                        <a href={`tel:${h.phone}`} className="text-[#1A3BAA] font-semibold hover:underline">
+                          {h.phone}
+                        </a>
+                        <p className="text-[12px] text-[#4B5563] mt-0.5">
+                          Call to confirm before visiting.
+                        </p>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-[#4B5563]">Check website</span>
+                    )}
+                  </td>
+                ))}
+              </tr>
+
+              {/* Action buttons */}
+              <tr>
+                <td className="p-4 sm:p-5 font-semibold text-[#4B5563] dark:text-slate-400">
+                  Details
+                </td>
+                {hospitals.map((h) => (
+                  <td key={h.id} className="p-4 sm:p-5">
+                    <Link
+                      to={`/hospitals/${h.id}`}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1A3BAA] hover:bg-[#142E86] text-white text-xs font-semibold rounded-lg transition-colors"
+                    >
+                      <span>View details</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+
+      {/* "Add to compare" section from nearby hospitals */}
+      <div className="space-y-4 pt-4">
+        <div className="border-b border-[#E5E7EB] dark:border-slate-800 pb-3">
+          <h2 className="text-xl font-bold text-[#121414] dark:text-white">
+            {hospitals.length === 0 ? 'Pick hospitals to compare' : 'Add another hospital to compare'}
+          </h2>
+          <p className="text-sm text-[#4B5563] dark:text-slate-400 mt-1">
+            {hospitals.length === 0
+              ? 'Click "Add to compare" on any hospital below to see side-by-side details.'
+              : `You have selected ${hospitals.length} of 3 hospitals.`}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {nearbyHospitals.slice(0, 9).map((hosp) => {
+            const isAdded = currentIds.includes(hosp.id);
+            return (
+              <div
+                key={hosp.id}
+                className="bg-white dark:bg-slate-900 border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col justify-between"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-bold text-[#121414] dark:text-white text-base">
+                      {getHospitalDisplayName(hosp.name, hosp.address)}
+                    </h3>
+                    <span className="flex items-center gap-1 text-xs font-semibold text-[#B45309]">
+                      <Star className="w-3.5 h-3.5 fill-[#B45309]" />
+                      {hosp.rating.toFixed(1)}
                     </span>
-                  ) : (
-                    <span className="text-[10px] bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-500 px-2.5 py-0.5 rounded-full font-bold uppercase">
-                      Not Available
+                  </div>
+                  <p className="text-xs text-[#4B5563] dark:text-slate-400 flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-[#1A3BAA] shrink-0" />
+                    <span className="truncate">{hosp.address}</span>
+                  </p>
+                  {hosp.emergencyAvailable && (
+                    <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-[#12805C] border border-[#12805C]/20">
+                      24x7 Emergency
                     </span>
                   )}
-                </td>
-              ))}
-            </tr>
+                </div>
 
-            {/* Operating Hours */}
-            <tr>
-              <td className="p-5 font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500">Working Hours</td>
-              {hospitals.map(h => (
-                <td key={h.id} className="p-5">
-                  <div className="flex items-center gap-1.5 mt-1 font-medium">
-                    <Clock className="w-4 h-4 text-slate-500 dark:text-slate-400 dark:text-slate-500" />
-                    {h.workingHours}
-                  </div>
-                </td>
-              ))}
-            </tr>
-
-            {/* Specialities Available */}
-            <tr>
-              <td className="p-5 font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500">Key Departments</td>
-              {hospitals.map(h => (
-                <td key={h.id} className="p-5">
-                  <div className="flex flex-wrap gap-1">
-                    {h.specialties?.map((s, idx) => (
-                      <span key={idx} className="text-[9px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-md font-semibold">
-                        {s.specialty.name}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-              ))}
-            </tr>
-
-            {/* Average Consult Cost */}
-            <tr>
-              <td className="p-5 font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500">Consult Costs</td>
-              {hospitals.map(h => {
-                const costs = h.specialties?.map(s => s.averageCost).filter(c => c > 0) || [];
-                
-                if (costs.length === 0) {
-                  return (
-                    <td key={h.id} className="p-5 text-slate-500 dark:text-slate-400 text-xs italic">
-                      <a href={`https://www.google.com/search?q=${encodeURIComponent(h.name + " consult fees")}`} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors hover:underline">
-                        Contact Hospital
-                      </a>
-                    </td>
-                  );
-                }
-
-                const minCost = Math.min(...costs);
-                const maxCost = Math.max(...costs);
-
-                return (
-                  <td key={h.id} className="p-5 font-bold text-slate-900 dark:text-white">
-                    ₹{minCost} {minCost !== maxCost ? `- ₹${maxCost}` : ''}
-                  </td>
-                );
-              })}
-            </tr>
-
-            {/* Address */}
-            <tr>
-              <td className="p-5 font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500">Geographic Address</td>
-              {hospitals.map(h => (
-                <td key={h.id} className="p-5 text-slate-500 dark:text-slate-400 dark:text-slate-500 font-light">
-                  <div className="flex items-start gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 dark:text-slate-500 mt-0.5 shrink-0" />
-                    {h.address}
-                  </div>
-                </td>
-              ))}
-            </tr>
-
-            {/* Action buttons */}
-            <tr>
-              <td className="p-5 font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-500">Direct Actions</td>
-              {hospitals.map(h => (
-                <td key={h.id} className="p-5">
-                  <Link
-                    to={`/hospitals/${h.id}`}
-                    className="px-4 py-2 bg-primary hover:bg-primary-hover text-slate-900 dark:text-white text-[10px] font-bold rounded-xl block text-center shadow shadow-primary/10 transition-colors"
+                <div className="pt-4 mt-2 border-t border-[#E5E7EB] dark:border-slate-800 flex items-center justify-between">
+                  <span className="text-xs font-medium text-[#4B5563]">
+                    {hosp.distance ? `${hosp.distance.toFixed(1)} km away` : 'Bengaluru'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleCompare(hosp.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors ${
+                      isAdded
+                        ? 'bg-[#EEF2FC] text-[#1A3BAA] border border-[#1A3BAA]'
+                        : 'bg-[#1A3BAA] hover:bg-[#142E86] text-white'
+                    }`}
                   >
-                    View Clinic Profile
-                  </Link>
-                </td>
-              ))}
-            </tr>
-          </tbody>
-        </table>
+                    {isAdded ? (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        Added
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-3.5 h-3.5" />
+                        Add to compare
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl">
-        <strong className="text-[10px] font-bold text-slate-900 dark:text-white block mb-1">Hospital/Clinic Comparison Disclaimer</strong>
-        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
-          Information is based on publicly available data. Users should contact the hospital/clinic directly for the latest and most accurate details.
-        </p>
+      {/* Safety Notice */}
+      <div className="p-4 bg-[#F5F7FA] dark:bg-slate-800/40 border border-[#E5E7EB] dark:border-slate-800 rounded-xl text-xs sm:text-sm text-[#4B5563] dark:text-slate-400 leading-[1.5]">
+        <strong>Note:</strong> Hospital information is gathered from public registrations and verified directories. Operating schedules may change without notice. Please call the hospital directly to confirm doctor availability before visiting.
       </div>
     </div>
   );
 };
+
+export default Comparison;

@@ -20,9 +20,9 @@ interface LocationContextType extends LocationState {
 
 const LocationContext = createContext<LocationContextType | undefined>(undefined);
 
-const DEFAULT_LAT = 28.6139;
-const DEFAULT_LNG = 77.2090;
-const DEFAULT_LABEL = 'Delhi Area, Delhi';
+const DEFAULT_LAT = 12.9716;
+const DEFAULT_LNG = 77.5946;
+const DEFAULT_LABEL = 'Bengaluru';
 
 export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<LocationState>({

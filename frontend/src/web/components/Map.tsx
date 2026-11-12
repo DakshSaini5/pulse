@@ -99,8 +99,8 @@ export const Map: React.FC<MapProps> = ({
       </svg>`,
     });
 
-    const defaultIcon = makePinIcon('#1E60D5');    // Blue hospital pin
-    const activeIcon = makePinIcon('#E53E3E', 32); // Larger red selected pin
+    const defaultIcon = makePinIcon('#1A3BAA');    // Pulse Blue hospital pin
+    const activeIcon = makePinIcon('#E7373A', 32); // Pulse Red selected pin
     const userIcon = makePinIcon('#16a34a');        // Green user location pin
 
     // Add user coordinate marker

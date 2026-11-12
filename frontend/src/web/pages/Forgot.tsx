@@ -128,13 +128,12 @@ export const Forgot: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-6 bg-white border border-slate-200 dark:border-slate-700 rounded-3xl p-8 sm:p-10 shadow-ambient relative overflow-hidden dark:bg-slate-900">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] pointer-events-none" />
-
+    <div className="min-h-[70vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-surface dark:bg-slate-950">
+      <div className="max-w-md w-full space-y-6 bg-white border border-pulseBorder dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-sm dark:bg-slate-900">
         <div className="flex flex-col items-center space-y-2">
-          <PulseLogo size={54} variant="vertical" showTagline={true} />
-          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 pt-2">Password Recovery</h2>
+          <PulseLogo size={48} variant="vertical" showTagline={false} />
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white pt-2">Password Recovery</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Reset your account password</p>
         </div>
 
         {error && (
@@ -159,7 +158,7 @@ export const Forgot: React.FC = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 glass-input text-xs font-medium"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-pulseBorder dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                   placeholder="name@example.com"
                 />
               </div>
@@ -168,10 +167,10 @@ export const Forgot: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 rounded-xl bg-primary hover:bg-primary-hover text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <MessageSquare className="w-4 h-4" />
-              {loading ? 'Sending Verification Code...' : 'Send Recovery OTP'}
+              {loading ? 'Sending code...' : 'Send recovery code'}
             </button>
           </form>
         )}
