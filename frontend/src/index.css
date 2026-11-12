@@ -33,6 +33,22 @@
   line-height: 1rem !important;
 }
 
+/* Logo Tagline - Proportional scaling directly under the logo wordmark */
+.logo-tagline {
+  font-size: 8.5px !important;
+  line-height: 1 !important;
+  letter-spacing: 0.04em !important;
+  margin-top: 3px;
+}
+@media (min-width: 640px) {
+  .logo-tagline {
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+    letter-spacing: 0.06em !important;
+    margin-top: 4px;
+  }
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

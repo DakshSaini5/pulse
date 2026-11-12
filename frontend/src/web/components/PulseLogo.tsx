@@ -63,7 +63,7 @@ export const PulseLogo: React.FC<PulseLogoProps> = ({
             pulse
           </span>
           {Boolean(showTagline) && (
-            <span className={`${taglineColorClass} font-semibold tracking-wider text-xs mt-1.5 whitespace-nowrap uppercase`}>
+            <span className={`logo-tagline ${taglineColorClass} font-semibold uppercase whitespace-nowrap block mt-1.5`}>
               No queue for your cure
             </span>
           )}
@@ -73,11 +73,8 @@ export const PulseLogo: React.FC<PulseLogoProps> = ({
   }
 
   // Horizontal variant (default)
-  const isAlwaysTagline = showTagline === 'always';
-  const showHorizontalTagline = Boolean(showTagline);
-
   return (
-    <div className={`flex items-center gap-2.5 sm:gap-3 ${className}`}>
+    <div className={`flex items-center gap-2 sm:gap-2.5 ${className}`}>
       <div className="hover:scale-105 transition-transform duration-200 shrink-0">
         {iconMarkup}
       </div>
@@ -85,10 +82,9 @@ export const PulseLogo: React.FC<PulseLogoProps> = ({
         <span className={`font-extrabold tracking-normal lowercase ${titleColorClass}`} style={{ fontSize: `${Math.max(18, size * 0.6)}px`, lineHeight: 1 }}>
           pulse
         </span>
-        {showHorizontalTagline && (
+        {Boolean(showTagline) && (
           <span 
-            className={`${taglineColorClass} font-semibold tracking-wider uppercase mt-1 ${isAlwaysTagline ? 'inline-block' : 'hidden sm:inline-block'}`} 
-            style={{ fontSize: `${Math.max(10, size * 0.22)}px` }}
+            className={`logo-tagline ${taglineColorClass} font-semibold uppercase whitespace-nowrap block`}
           >
             No queue for your cure
           </span>
