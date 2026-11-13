@@ -14,6 +14,7 @@ export const Sitemap: React.FC = () => {
         { name: 'Find hospitals', path: '/search', desc: 'Search hospitals by distance, city, and specialty.' },
         { name: 'Compare hospitals', path: '/compare', desc: 'Side-by-side comparison of hospital facilities and emergency care.' },
         { name: 'Understand a report', path: '/reports', desc: 'Upload and decode laboratory tests and blood reports in plain English.' },
+        { name: 'Understand a prescription', path: '/prescriptions', desc: 'Upload and clarify clinic prescriptions, dosages, and drug interactions.' },
         { name: 'Explain a medical term', path: '/medical-terms', desc: 'Simple explanations for prescription words and medical terminology.' },
         { name: 'Pulse Plus (Waitlist)', path: '/pulse-plus', desc: 'Direct appointment booking and family health records (coming soon).' },
       ],

@@ -5,10 +5,10 @@ import { getInitialLocation } from '@core/utils/geolocation';
 import { 
   FileText, UploadCloud, CheckCircle, AlertTriangle, 
   HelpCircle, Sparkles, Plus, Trash2, Edit, Save, 
-  ArrowRight, ShieldCheck, Heart, User, MapPin, Gauge
+  ArrowRight, ShieldCheck, Heart, User, MapPin, Gauge, ClipboardList
 } from 'lucide-react';
 import { useAuth } from '@core/context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { MedicalDisclaimer, AIModalDisclaimer } from '../components/MedicalDisclaimer';
 import toast from 'react-hot-toast'; // BUG-07 FIX
 
@@ -331,10 +331,28 @@ export const ReportCenter: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 pb-16 text-left">
+    <div className="space-y-6 pb-16 text-left">
       {showAiModal && <AIModalDisclaimer onAcknowledge={handleAcknowledgeAi} />}
       
-      <div className="text-left space-y-2">
+      {/* Document Type Switcher: Lab reports vs Prescriptions */}
+      <div className="flex items-center gap-2 border-b border-[#E5E7EB] dark:border-slate-800 pb-3">
+        <Link
+          to="/reports"
+          className="px-4 py-2 rounded-lg text-sm font-semibold bg-[#1A3BAA] text-white flex items-center gap-2 shadow-sm"
+        >
+          <FileText className="w-4 h-4" />
+          <span>Lab reports</span>
+        </Link>
+        <Link
+          to="/prescriptions"
+          className="px-4 py-2 rounded-lg text-sm font-medium text-[#4B5563] dark:text-slate-400 hover:text-[#121414] dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+        >
+          <ClipboardList className="w-4 h-4" />
+          <span>Prescriptions</span>
+        </Link>
+      </div>
+
+      <div className="text-left space-y-1.5">
         <h1 className="text-2xl sm:text-3xl font-bold text-[#121414] dark:text-white flex items-center gap-2">
           <FileText className="text-[#1A3BAA] w-7 h-7" />
           Understand a report

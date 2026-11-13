@@ -13,6 +13,7 @@ const staticRoutes = [
   { path: '/search', priority: '0.9', changefreq: 'daily' },
   { path: '/compare', priority: '0.8', changefreq: 'weekly' },
   { path: '/reports', priority: '0.8', changefreq: 'weekly' },
+  { path: '/prescriptions', priority: '0.8', changefreq: 'weekly' },
   { path: '/medical-terms', priority: '0.7', changefreq: 'monthly' },
   { path: '/how-it-works', priority: '0.7', changefreq: 'monthly' },
   { path: '/pulse-plus', priority: '0.6', changefreq: 'monthly' },
@@ -67,3 +68,4 @@ ${allUrls.map(u => `  <url>
 const outputPath = path.resolve(__dirname, '../public/sitemap.xml');
 fs.writeFileSync(outputPath, xmlContent, 'utf8');
 console.log(`✅ Generated sitemap.xml with ${allUrls.length} URLs and lastmod=${today}`);
+

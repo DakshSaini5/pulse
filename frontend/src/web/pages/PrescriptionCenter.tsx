@@ -1,17 +1,52 @@
 import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
 import { prescriptionAPI, Prescription } from '@core/services/api';
-import { 
-  ClipboardList, UploadCloud, CheckCircle, AlertTriangle, 
-  HelpCircle, Sparkles, Plus, Trash2, Edit, Save, FileText,
-  Activity, ShieldCheck
+import {
+  ClipboardList, UploadCloud, FileText, CheckCircle2,
+  AlertTriangle, Plus, Trash2, ArrowRight, ShieldCheck,
+  Activity, Info
 } from 'lucide-react';
 import { useAuth } from '@core/context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { MedicalDisclaimer, AIModalDisclaimer } from '../components/MedicalDisclaimer';
 import toast from 'react-hot-toast';
-import { Capacitor } from '@capacitor/core';
 
+const SAMPLE_PRESCRIPTION: Prescription = {
+  id: 'sample-prescription',
+  fileUrl: '',
+  status: 'COMPLETED',
+  createdAt: new Date().toISOString(),
+  ocrResult: {
+    rawText: "Rx\n1. Tab. Paracetamol 650mg - 1 tablet three times daily after meals for 3 days.\n2. Cap. Amoxicillin 500mg - 1 capsule twice daily after food for 5 days.\n3. Tab. Cetirizine 10mg - 1 tablet at night before sleeping for 5 days.",
+    verifiedData: "Paracetamol 650mg, Amoxicillin 500mg, Cetirizine 10mg prescribed for acute respiratory infection with fever.",
+  },
+  prescriptionAnalysis: [
+    {
+      medicineName: 'Paracetamol 650mg',
+      dosage: '650mg',
+      instructions: '1 tablet 3 times daily after meals for 3 days',
+      simplifiedExplanation: 'Common fever reducer and pain reliever. Take with water after eating.',
+      sideEffects: 'Mild nausea or stomach discomfort if taken on an empty stomach. Do not exceed 4,000mg per day.',
+      drugInteractions: 'Avoid combining with other cold medications that already contain paracetamol/acetaminophen.',
+    },
+    {
+      medicineName: 'Amoxicillin 500mg',
+      dosage: '500mg',
+      instructions: '1 capsule twice daily after meals for 5 days',
+      simplifiedExplanation: 'Penicillin-class antibiotic used to treat bacterial throat, ear, or chest infections. Complete the full 5-day course.',
+      sideEffects: 'Mild stomach upset, soft stools, or allergic rash.',
+      drugInteractions: 'May reduce the effectiveness of oral contraceptives. Inform your doctor if you take blood thinners.',
+    },
+    {
+      medicineName: 'Cetirizine 10mg',
+      dosage: '10mg',
+      instructions: '1 tablet at night before sleeping for 5 days',
+      simplifiedExplanation: 'Antihistamine that relieves runny nose, sneezing, itchy throat, and watery eyes.',
+      sideEffects: 'Drowsiness, dry mouth, mild tiredness.',
+      drugInteractions: 'Avoid alcohol and sedatives as they amplify drowsiness.',
+    },
+  ],
+};
 
 const parseMedicinesFromRawText = (text: string): Array<{ name: string; dosage: string; instructions: string }> => {
   if (!text) return [{ name: '', dosage: '', instructions: '' }];
@@ -23,14 +58,12 @@ const parseMedicinesFromRawText = (text: string): Array<{ name: string; dosage: 
     const trimmed = line.trim();
     if (!trimmed) continue;
     
-    // Matches: [Optional bullet/number] [Name] [Dosage - e.g. 500mg or 20 mg] [Instructions]
     const match = trimmed.match(/^(?:[\-\*\d\.]+\s*)?([A-Za-z0-9\s\-\/]+?)\s+(\d+(?:\.\d+)?\s*(?:mg|g|mcg|ml|tab|caps?|units?|tbs))\b\s*(.*)$/i);
     if (match) {
       const name = match[1].trim();
       const dosage = match[2].trim();
       const instructions = match[3].trim();
       
-      // Exclude header words
       if (name && !/^(prescription|rx|patient|date|doctor|clinic|hospital|name|age|gender|sex)$/i.test(name)) {
         found.push({ name, dosage, instructions });
       }
@@ -47,6 +80,12 @@ export const PrescriptionCenter: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    document.title = 'Understand a prescription | Pulse';
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', 'Upload handwritten or clinic doctor prescriptions. Clarify medicine dosages, timing, and check for unsafe drug interactions in plain English.');
+  }, []);
+
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -54,30 +93,39 @@ export const PrescriptionCenter: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [activePrescription, setActivePrescription] = useState<Prescription | null>(null);
+  const [consentGiven, setConsentGiven] = useState(false);
   
-  // Verification dual-pane states
+  // Dual-pane verification states
   const [rawText, setRawText] = useState('');
   const [medicineFields, setMedicineFields] = useState<Array<{ name: string; dosage: string; instructions: string }>>([]);
   const [verifying, setVerifying] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
   const [hasAcknowledgedAi, setHasAcknowledgedAi] = useState(false);
   const [checkingInteractions, setCheckingInteractions] = useState(false);
-  const [interactionResult, setInteractionResult] = useState<{ interactions: string, severity: string, checked: number } | null>(null);
+  const [interactionResult, setInteractionResult] = useState<{ interactions: string; severity: string; checked: number } | null>(null);
 
   const fetchPrescriptions = async () => {
     if (!user) {
-      navigate('/login');
+      setPrescriptions([SAMPLE_PRESCRIPTION]);
+      selectPrescription(SAMPLE_PRESCRIPTION);
+      setLoading(false);
       return;
     }
+
     setLoading(true);
     try {
       const data = await prescriptionAPI.getAll();
-      setPrescriptions(data);
-      if (data.length > 0) {
-        setActivePrescription(data[0]);
+      const list = Array.isArray(data) ? data : [];
+      setPrescriptions(list);
+      if (list.length > 0) {
+        selectPrescription(list[0]);
+      } else {
+        // Fallback to sample for preview
+        selectPrescription(SAMPLE_PRESCRIPTION);
       }
     } catch (err) {
       console.error(err);
+      selectPrescription(SAMPLE_PRESCRIPTION);
     } finally {
       setLoading(false);
     }
@@ -85,13 +133,13 @@ export const PrescriptionCenter: React.FC = () => {
 
   useEffect(() => {
     fetchPrescriptions();
-  }, []);
+  }, [user]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
       setSelectedFiles(prev => [...prev, ...filesArray]);
-      e.target.value = ''; // Reset native input value
+      e.target.value = '';
     }
   };
 
@@ -99,14 +147,19 @@ export const PrescriptionCenter: React.FC = () => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== idx));
   };
 
-  // BUG-20 FIX: Delete prescription from history
   const handleDeletePrescription = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (id === 'sample-prescription') {
+      toast.error('The sample prescription demonstration cannot be deleted.');
+      return;
+    }
     if (!window.confirm('Delete this prescription record? This cannot be undone.')) return;
     try {
       await prescriptionAPI.delete(id);
       setPrescriptions(prev => prev.filter(p => p.id !== id));
-      if (activePrescription?.id === id) setActivePrescription(null);
+      if (activePrescription?.id === id) {
+        setActivePrescription(prescriptions[0] || SAMPLE_PRESCRIPTION);
+      }
       toast.success('Prescription deleted.');
     } catch (err) {
       toast.error('Failed to delete prescription.');
@@ -115,7 +168,17 @@ export const PrescriptionCenter: React.FC = () => {
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      navigate('/login?redirect=/prescriptions');
+      toast.error('Please sign in to upload and save your prescriptions.');
+      return;
+    }
+    if (!consentGiven) {
+      toast.error('Please agree to processing before uploading your prescription.');
+      return;
+    }
     if (selectedFiles.length === 0) return;
+
     setUploading(true);
     try {
       let lastRes: Prescription | null = null;
@@ -140,26 +203,16 @@ export const PrescriptionCenter: React.FC = () => {
         lastRes = res;
       }
 
-      setPrescriptions(prev => [...uploadedList, ...prev]);
+      setPrescriptions(prev => [...uploadedList, ...prev.filter(p => p.id !== 'sample-prescription')]);
 
       if (lastRes) {
-        setActivePrescription(lastRes);
-        const rawOcrText = lastRes.ocrResult?.rawText || '';
-        setRawText(rawOcrText);
-        if (lastRes.prescriptionAnalysis && lastRes.prescriptionAnalysis.length > 0) {
-          setMedicineFields(lastRes.prescriptionAnalysis.map(med => ({
-            name: med.medicineName,
-            dosage: med.dosage,
-            instructions: med.instructions
-          })));
-        } else {
-          setMedicineFields(parseMedicinesFromRawText(rawOcrText));
-        }
+        selectPrescription(lastRes);
       }
       setSelectedFiles([]);
+      toast.success('Prescription uploaded and scanned successfully.');
     } catch (err) {
       console.error(err);
-      toast.error('OCR extraction failed. Please try a clearer image or a higher-quality PDF.'); // BUG-07 FIX
+      toast.error('OCR extraction failed. Please try a clearer photo or a higher-quality PDF.');
     } finally {
       setUploading(false);
     }
@@ -173,7 +226,7 @@ export const PrescriptionCenter: React.FC = () => {
     setMedicineFields(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const handleFieldChange = (idx: number, key: "name" | "dosage" | "instructions", val: string) => {
+  const handleFieldChange = (idx: number, key: 'name' | 'dosage' | 'instructions', val: string) => {
     setMedicineFields(prev => {
       const copy = [...prev];
       copy[idx][key] = val;
@@ -197,20 +250,23 @@ export const PrescriptionCenter: React.FC = () => {
 
   const handleVerifySubmit = async () => {
     if (!activePrescription) return;
+    if (activePrescription.id === 'sample-prescription') {
+      toast.success('Sample prescription updated in preview.');
+      return;
+    }
     setVerifying(true);
     try {
       const payload = {
         rawText,
-        medicines: medicineFields
+        medicines: medicineFields,
       };
       const res = await prescriptionAPI.verify(activePrescription.id, payload);
-      
-      // Update local listing
       setPrescriptions(prev => prev.map(p => p.id === res.id ? res : p));
       setActivePrescription(res);
+      toast.success('Analysis updated.');
     } catch (err: any) {
       console.error(err);
-      toast.error(err.response?.data?.message || 'AI Engine failed to parse the prescription. Please try again.');
+      toast.error(err.response?.data?.message || 'AI engine failed to parse the prescription. Please try again.');
     } finally {
       setVerifying(false);
     }
@@ -220,11 +276,11 @@ export const PrescriptionCenter: React.FC = () => {
     setActivePrescription(pres);
     const rawOcrText = pres.ocrResult?.rawText || '';
     setRawText(rawOcrText);
-    if (pres.prescriptionAnalysis.length > 0) {
+    if (pres.prescriptionAnalysis && pres.prescriptionAnalysis.length > 0) {
       setMedicineFields(pres.prescriptionAnalysis.map(med => ({
         name: med.medicineName,
         dosage: med.dosage,
-        instructions: med.instructions
+        instructions: med.instructions,
       })));
     } else {
       setMedicineFields(parseMedicinesFromRawText(rawOcrText));
@@ -232,43 +288,70 @@ export const PrescriptionCenter: React.FC = () => {
   };
 
   const handleCheckInteractions = async () => {
+    if (!user) {
+      setInteractionResult({
+        interactions: 'No adverse interactions detected between Paracetamol, Amoxicillin, and Cetirizine. Take Cetirizine at bedtime to minimize daytime drowsiness.',
+        severity: 'LOW',
+        checked: 3,
+      });
+      return;
+    }
     setCheckingInteractions(true);
     try {
       const res = await prescriptionAPI.checkInteractions();
       setInteractionResult({ interactions: res.interactions, severity: res.severity, checked: res.medicinesChecked });
     } catch (err) {
       console.error(err);
-      alert('Failed to check interactions.');
+      toast.error('Failed to check interactions.');
     } finally {
       setCheckingInteractions(false);
     }
   };
 
-
   return (
-    <div className="space-y-8 pb-16 text-left">
+    <div className="space-y-6 pb-16 text-left">
       {showAiModal && <AIModalDisclaimer onAcknowledge={handleAcknowledgeAi} />}
-      
-      <div className="text-left space-y-2">
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-          <ClipboardList className="text-primary w-8 h-8 animate-pulse" />
-          Prescription scanner & Analyzer
+
+      {/* Top Document Switcher: Lab reports vs Prescriptions */}
+      <div className="flex items-center gap-2 border-b border-[#E5E7EB] dark:border-slate-800 pb-3">
+        <Link
+          to="/reports"
+          className="px-4 py-2 rounded-lg text-sm font-medium text-[#4B5563] dark:text-slate-400 hover:text-[#121414] dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+        >
+          <FileText className="w-4 h-4" />
+          <span>Lab reports</span>
+        </Link>
+        <Link
+          to="/prescriptions"
+          className="px-4 py-2 rounded-lg text-sm font-semibold bg-[#1A3BAA] text-white flex items-center gap-2 shadow-sm"
+        >
+          <ClipboardList className="w-4 h-4" />
+          <span>Prescriptions</span>
+        </Link>
+      </div>
+
+      <div className="text-left space-y-1.5">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#121414] dark:text-white flex items-center gap-2">
+          <ClipboardList className="text-[#1A3BAA] w-7 h-7" />
+          Understand a prescription
         </h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500">Scan handwritten or digital clinic prescriptions. Verify extracted keywords, and let Pulse AI clarify dosages in plain English.</p>
+        <p className="text-sm text-[#4B5563] dark:text-slate-400">
+          Upload handwritten or digital clinic prescriptions. Clarify medicine dosages, timing, and check for unsafe drug interactions in plain English.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Side: Listing & File Upload */}
+        {/* Left Column: Upload & History Listing */}
         <div className="lg:col-span-4 space-y-6">
-          {/* Upload panel */}
-          <div className="glass-panel rounded-3xl p-6 border border-slate-200 dark:border-slate-700 bg-gradient-to-b from-slate-50 to-slate-100/50 dark:from-slate-800 dark:to-slate-900/50 space-y-4">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-              <UploadCloud className="w-4 h-4 text-primary" />
-              Upload Prescription File
+          {/* Upload Card */}
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-[#E5E7EB] dark:border-slate-800 shadow-[0_1px_3px_rgba(0,0,0,0.06)] space-y-4">
+            <h3 className="text-sm font-bold text-[#121414] dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+              <UploadCloud className="w-4 h-4 text-[#1A3BAA]" />
+              Upload prescription
             </h3>
 
             <form onSubmit={handleUploadSubmit} className="space-y-4">
-              <div className="border border-dashed border-slate-200 dark:border-slate-700 hover:border-primary/50 transition-colors rounded-2xl p-6 text-center bg-white dark:bg-slate-900/[0.005] cursor-pointer relative">
+              <div className="border border-dashed border-[#E5E7EB] dark:border-slate-700 hover:border-[#1A3BAA] transition-colors rounded-xl p-6 text-center bg-[#F5F7FA] dark:bg-slate-800/50 cursor-pointer relative">
                 <input
                   type="file"
                   accept="image/*,application/pdf"
@@ -276,29 +359,45 @@ export const PrescriptionCenter: React.FC = () => {
                   multiple
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
-                <UploadCloud className="w-8 h-8 text-slate-500 dark:text-slate-400 dark:text-slate-500 mx-auto mb-2" />
-                <span className="text-xs text-slate-600 dark:text-slate-300 block font-semibold">
-                  Select or drag prescription file(s)
+                <UploadCloud className="w-8 h-8 text-[#1A3BAA] mx-auto mb-2" />
+                <span className="text-sm text-[#121414] dark:text-slate-200 block font-semibold">
+                  Select or drag prescription file
                 </span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500 mt-1 block">Supports PNG, JPG, PDF up to 5MB</span>
+                <span className="text-xs text-[#4B5563] dark:text-slate-400 mt-1 block">Supports PNG, JPG, PDF up to 5MB</span>
+              </div>
+
+              {/* Consent Checkbox */}
+              <div className="space-y-2 pt-1 text-left">
+                <label className="flex items-start gap-2.5 text-xs text-[#4B5563] dark:text-slate-400 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={consentGiven}
+                    onChange={(e) => setConsentGiven(e.target.checked)}
+                    className="mt-0.5 rounded border-[#E5E7EB] text-[#1A3BAA] focus:ring-[#1A3BAA]"
+                  />
+                  <span>I agree to Pulse processing this prescription to explain it to me.</span>
+                </label>
+                <p className="text-xs text-[#4B5563] dark:text-slate-400 font-medium pl-6">
+                  Your prescription is private to your account.
+                </p>
               </div>
 
               {selectedFiles.length > 0 && (
                 <div className="space-y-2 mt-3 text-left">
-                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Selected Files ({selectedFiles.length})</label>
+                  <label className="text-xs font-bold text-[#4B5563] uppercase tracking-wider block">Selected files ({selectedFiles.length})</label>
                   <div className="space-y-1.5 max-h-[150px] overflow-y-auto pr-1">
                     {selectedFiles.map((file, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/70 shadow-sm text-xs text-slate-700 animate-fadeIn">
+                      <div key={idx} className="flex items-center justify-between p-2.5 rounded-lg border border-[#E5E7EB] dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm text-xs text-slate-700 dark:text-slate-300">
                         <div className="flex items-center gap-2 min-w-0">
-                          <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <FileText className="w-3.5 h-3.5 text-[#1A3BAA] shrink-0" />
                           <span className="truncate font-medium max-w-[180px]">{file.name}</span>
-                          <span className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-500 font-light">({(file.size / 1024).toFixed(1)} KB)</span>
+                          <span className="text-xs text-[#4B5563]">({(file.size / 1024).toFixed(1)} KB)</span>
                         </div>
                         <button
                           type="button"
                           onClick={() => handleRemoveFile(idx)}
-                          className="text-slate-400 dark:text-slate-500 hover:text-danger hover:bg-slate-100 dark:bg-slate-700 p-1 rounded-lg transition-colors shrink-0 flex items-center justify-center"
-                          title="Remove File"
+                          className="text-[#4B5563] hover:text-[#C62828] hover:bg-slate-100 p-1 rounded transition-colors shrink-0 flex items-center justify-center"
+                          title="Remove file"
                         >
                           <span className="text-base leading-none font-bold">&times;</span>
                         </button>
@@ -308,63 +407,64 @@ export const PrescriptionCenter: React.FC = () => {
                 </div>
               )}
 
-              {selectedFiles.length > 0 && (
-                <button
-                  type="submit"
-                  disabled={uploading}
-                  className="w-full py-3 bg-primary hover:bg-primary-hover text-slate-900 dark:text-white text-xs font-bold rounded-xl shadow-lg shadow-primary/20 transition-all"
-                >
-                  {uploading ? 'Extracting OCR Text...' : `Start Scan & OCR (${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''})`}
-                </button>
-              )}
+              <button
+                type="submit"
+                disabled={uploading}
+                className="w-full h-11 bg-[#1A3BAA] hover:bg-[#142E86] text-white text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+              >
+                {uploading ? 'Processing prescription...' : selectedFiles.length > 0 ? `Explain prescription (${selectedFiles.length})` : 'Select file to explain'}
+              </button>
             </form>
           </div>
 
-          {/* Historical Scans */}
-          <div className="glass-panel rounded-3xl p-6 border border-slate-200 dark:border-slate-700 space-y-4">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Scanned Document History</h3>
+          {/* Past Prescription Scans */}
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-[#E5E7EB] dark:border-slate-800 shadow-[0_1px_3px_rgba(0,0,0,0.06)] space-y-4">
+            <h3 className="text-sm font-bold text-[#121414] dark:text-white uppercase tracking-wider">Past prescription scans</h3>
 
             {loading ? (
               <div className="space-y-3">
-                <div className="h-10 bg-slate-800 rounded animate-pulse" />
-                <div className="h-10 bg-slate-800 rounded animate-pulse" />
+                <div className="h-10 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
+                <div className="h-10 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
               </div>
             ) : prescriptions.length === 0 ? (
-              <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 text-center py-4">No prescriptions scanned yet.</p>
+              <p className="text-sm text-[#4B5563] dark:text-slate-400 text-center py-4">No prescriptions scanned yet.</p>
             ) : (
               <div className="space-y-2">
                 {prescriptions.map(pres => (
                   <div
                     key={pres.id}
                     onClick={() => selectPrescription(pres)}
-                    className={`w-full p-3 rounded-xl border text-left flex items-center justify-between text-xs transition-all cursor-pointer ${
+                    className={`w-full p-3 rounded-lg border text-left flex items-center justify-between text-sm transition-all cursor-pointer ${
                       activePrescription?.id === pres.id
-                        ? 'border-primary bg-primary/10 text-slate-900 dark:text-white font-bold'
-                        : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        ? 'border-[#1A3BAA] bg-[#EEF2FC] text-[#121414] font-semibold'
+                        : 'border-[#E5E7EB] dark:border-slate-800 bg-white dark:bg-slate-900 text-[#4B5563] hover:border-slate-300'
                     }`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <FileText className="w-4 h-4 text-primary shrink-0" />
+                      <ClipboardList className="w-4 h-4 text-[#1A3BAA] shrink-0" />
                       <div>
-                        <span className="block truncate max-w-[140px] text-xs font-semibold">
-                          {pres.prescriptionAnalysis && pres.prescriptionAnalysis.length > 0 
+                        <span className="block truncate max-w-[150px] text-sm font-semibold">
+                          {pres.id === 'sample-prescription'
+                            ? 'Sample prescription (demo)'
+                            : pres.prescriptionAnalysis && pres.prescriptionAnalysis.length > 0
                             ? pres.prescriptionAnalysis.map(m => m.medicineName).join(', ')
                             : `Scan #${pres.id.slice(0, 8)}`}
                         </span>
-                        <span className="text-[9px] text-slate-500 dark:text-slate-400 block leading-none mt-1">Status: {pres.status}</span>
+                        <span className="text-xs text-[#4B5563] block leading-none mt-1">Status: {pres.status}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400">{new Date(pres.createdAt).toLocaleDateString()}</span>
-                      {/* BUG-20 FIX: Delete button */}
-                      <button
-                        type="button"
-                        onClick={(e) => handleDeletePrescription(pres.id, e)}
-                        className="p-1 rounded-lg text-slate-400 hover:text-danger hover:bg-danger/10 transition-all"
-                        title="Delete prescription"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs text-[#4B5563]">{new Date(pres.createdAt).toLocaleDateString()}</span>
+                      {pres.id !== 'sample-prescription' && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeletePrescription(pres.id, e)}
+                          className="p-1 rounded text-[#4B5563] hover:text-[#C62828] hover:bg-red-50 transition-all"
+                          title="Delete prescription"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -372,121 +472,135 @@ export const PrescriptionCenter: React.FC = () => {
             )}
           </div>
 
-          {/* AI Drug Interaction Checker Widget */}
-          <div className="glass-panel rounded-3xl p-6 border border-slate-200 dark:border-slate-700 space-y-4 bg-gradient-to-b from-primary/5 to-transparent">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-              <Activity className="w-4 h-4 text-primary" />
-              Global Drug Interaction Check
+          {/* AI Drug-Drug Interaction Checker Widget */}
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-[#E5E7EB] dark:border-slate-800 shadow-[0_1px_3px_rgba(0,0,0,0.06)] space-y-3">
+            <h3 className="text-sm font-bold text-[#121414] dark:text-white uppercase tracking-wider flex items-center gap-2">
+              <Activity className="w-4 h-4 text-[#1A3BAA]" />
+              Drug interaction checker
             </h3>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400">
-              Cross-reference all active medications across all your uploaded prescriptions to detect any dangerous overlapping side effects or interactions.
+            <p className="text-xs text-[#4B5563] dark:text-slate-400">
+              Cross-reference all active medications across your prescriptions to detect potential overlapping side effects or interactions.
             </p>
-            
+
             {interactionResult ? (
-              <div className={`p-4 rounded-xl border ${interactionResult.severity === 'HIGH' ? 'bg-danger/10 border-danger/20 text-danger' : interactionResult.severity === 'MODERATE' ? 'bg-warning/10 border-warning/20 text-warning' : 'bg-success/10 border-success/20 text-success'}`}>
+              <div className={`p-4 rounded-lg border text-left ${
+                interactionResult.severity === 'HIGH'
+                  ? 'bg-red-50 border-red-200 text-[#C62828]'
+                  : interactionResult.severity === 'MODERATE'
+                  ? 'bg-amber-50 border-amber-200 text-[#B45309]'
+                  : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              }`}>
                 <p className="text-xs font-bold mb-1">Severity: {interactionResult.severity}</p>
-                <p className="text-[10px] leading-relaxed">{interactionResult.interactions}</p>
-                <p className="text-[9px] mt-2 opacity-70">Analyzed {interactionResult.checked} active medications.</p>
-                <button onClick={() => setInteractionResult(null)} className="text-[9px] mt-2 underline hover:opacity-80">Reset</button>
+                <p className="text-xs leading-relaxed">{interactionResult.interactions}</p>
+                <p className="text-[11px] mt-2 opacity-80">Analyzed {interactionResult.checked} active medications.</p>
+                <button
+                  type="button"
+                  onClick={() => setInteractionResult(null)}
+                  className="text-xs font-semibold mt-2 underline cursor-pointer"
+                >
+                  Reset checker
+                </button>
               </div>
             ) : (
               <button
+                type="button"
                 onClick={handleCheckInteractions}
-                disabled={checkingInteractions || prescriptions.length === 0}
-                className="w-full py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 text-xs font-bold rounded-xl shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+                disabled={checkingInteractions}
+                className="w-full h-11 bg-[#1A3BAA] hover:bg-[#142E86] text-white text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
               >
-                {checkingInteractions ? <Sparkles className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-                {checkingInteractions ? 'Checking with AI...' : 'Run Interaction Scan'}
+                <ShieldCheck className="w-4 h-4" />
+                <span>{checkingInteractions ? 'Checking interactions...' : 'Run interaction check'}</span>
               </button>
             )}
           </div>
-
         </div>
 
-        {/* Right Side: Active Workspace */}
+        {/* Right Column: Active Workspace */}
         <div className="lg:col-span-8 space-y-6">
           {activePrescription ? (
             <>
-              {/* Dual-Pane Editor for Verification */}
               {activePrescription.status === 'PENDING' || activePrescription.status === 'OCR_COMPLETED' ? (
-                <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700 space-y-6">
-                  <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
+                /* Dual-Pane Editor for Verification */
+                <div className="bg-white dark:bg-slate-900 rounded-xl p-5 sm:p-6 border border-[#E5E7EB] dark:border-slate-800 shadow-[0_1px_3px_rgba(0,0,0,0.06)] space-y-6">
+                  <div className="flex justify-between items-center pb-3 border-b border-[#E5E7EB] dark:border-slate-800">
                     <div>
-                      <h2 className="text-lg font-bold text-slate-900 dark:text-white">Dual-Pane Verification</h2>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500">Review raw extracted scanned text on the left, and fill/correct medicine details on the right.</p>
+                      <h2 className="text-lg font-bold text-[#121414] dark:text-white">Verify prescription details</h2>
+                      <p className="text-xs text-[#4B5563] dark:text-slate-400">Review raw extracted scanned text on the left, and confirm medicine details on the right.</p>
                     </div>
-                    <span className="text-[10px] bg-warning/15 border border-warning/25 text-warning px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                      Verify OCR Draft
+                    <span className="text-xs bg-amber-50 border border-amber-200 text-[#B45309] px-2.5 py-1 rounded-full font-semibold">
+                      Verify draft
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Left Pane: Raw Text */}
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Raw Scanned OCR Output</label>
+                      <label className="text-xs font-bold text-[#4B5563] uppercase tracking-wider block">Raw scanned text</label>
                       <textarea
                         value={rawText}
                         onChange={(e) => setRawText(e.target.value)}
                         rows={12}
-                        className="w-full p-4 rounded-2xl glass-input text-xs font-mono leading-relaxed text-slate-600 dark:text-slate-300"
-                        placeholder="OCR text output goes here..."
+                        className="w-full p-3.5 rounded-lg border border-[#E5E7EB] dark:border-slate-700 bg-[#F5F7FA] dark:bg-slate-800 text-sm leading-relaxed text-[#121414] dark:text-slate-200 font-mono"
+                        placeholder="Extracted prescription text..."
                       />
                     </div>
 
-                    {/* Right Pane: Structured Fields Verification */}
-                    <div className="space-y-4">
+                    {/* Right Pane: Medicine Form Fields */}
+                    <div className="space-y-3">
                       <div className="flex justify-between items-center">
-                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wider">Medicine Form Fields</label>
+                        <label className="text-xs font-bold text-[#4B5563] uppercase tracking-wider">Extracted medicines</label>
                         <button
+                          type="button"
                           onClick={handleAddField}
-                          className="text-[10px] font-bold text-primary flex items-center gap-1 hover:underline"
+                          className="text-xs font-semibold text-[#1A3BAA] flex items-center gap-1 hover:underline"
                         >
                           <Plus className="w-3.5 h-3.5" />
-                          Add Drug Row
+                          <span>Add medicine row</span>
                         </button>
                       </div>
 
-                      <div className="space-y-4 max-h-[250px] overflow-y-auto pr-2">
+                      <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
                         {medicineFields.map((field, idx) => (
-                          <div key={idx} className="p-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900/[0.01] space-y-2 relative">
+                          <div key={idx} className="p-3 border border-[#E5E7EB] dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 space-y-2 relative">
                             <button
+                              type="button"
                               onClick={() => handleRemoveField(idx)}
-                              className="absolute top-2 right-2 text-slate-500 dark:text-slate-400 dark:text-slate-500 hover:text-danger p-1"
-                              title="Delete Row"
+                              className="absolute top-2 right-2 text-[#4B5563] hover:text-[#C62828] p-1 rounded"
+                              title="Delete row"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
 
-                            <div className="space-y-2 text-[10px] font-medium">
+                            <div className="space-y-2 text-xs">
                               <div>
-                                <label className="text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase block mb-1">Medicine Name</label>
+                                <label className="text-[#4B5563] block mb-1 font-medium">Medicine name</label>
                                 <input
                                   type="text"
                                   value={field.name}
                                   onChange={(e) => handleFieldChange(idx, 'name', e.target.value)}
-                                  placeholder="Medicine Name"
-                                  className="w-full p-2 rounded-lg glass-input text-xs text-slate-900 dark:text-white"
+                                  placeholder="e.g. Paracetamol"
+                                  className="w-full h-10 px-3 rounded-lg border border-[#E5E7EB] dark:border-slate-700 text-sm"
                                 />
                               </div>
                               <div className="grid grid-cols-2 gap-2">
                                 <div>
-                                  <label className="text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase block mb-1">Dosage</label>
+                                  <label className="text-[#4B5563] block mb-1 font-medium">Dosage</label>
                                   <input
                                     type="text"
                                     value={field.dosage}
                                     onChange={(e) => handleFieldChange(idx, 'dosage', e.target.value)}
-                                    placeholder="Dosage"
-                                    className="w-full p-2 rounded-lg glass-input text-xs text-slate-900 dark:text-white"
+                                    placeholder="e.g. 650mg"
+                                    className="w-full h-10 px-3 rounded-lg border border-[#E5E7EB] dark:border-slate-700 text-sm tabular-nums"
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase block mb-1">Instructions / Freq</label>
+                                  <label className="text-[#4B5563] block mb-1 font-medium">Instructions</label>
                                   <input
                                     type="text"
                                     value={field.instructions}
                                     onChange={(e) => handleFieldChange(idx, 'instructions', e.target.value)}
-                                    placeholder="Instructions"
-                                    className="w-full p-2 rounded-lg glass-input text-xs text-slate-900 dark:text-white"
+                                    placeholder="e.g. After meals"
+                                    className="w-full h-10 px-3 rounded-lg border border-[#E5E7EB] dark:border-slate-700 text-sm"
                                   />
                                 </div>
                               </div>
@@ -497,84 +611,82 @@ export const PrescriptionCenter: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-200 dark:border-slate-700 flex justify-end">
+                  <div className="pt-4 border-t border-[#E5E7EB] dark:border-slate-800 flex justify-end">
                     <button
+                      type="button"
                       onClick={initiateVerifySubmit}
                       disabled={verifying}
-                      className="px-6 py-3 bg-primary hover:bg-primary-hover text-slate-900 dark:text-white text-xs font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center gap-1.5"
+                      className="h-11 px-6 bg-[#1A3BAA] hover:bg-[#142E86] text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-60"
                     >
-                      <Sparkles className="w-4 h-4 animate-spin" />
-                      {verifying ? 'Running Pulse AI analysis...' : 'Submit & Analyze with Pulse AI'}
+                      <span>{verifying ? 'Running Pulse analysis...' : 'Confirm and explain in plain English'}</span>
                     </button>
                   </div>
                 </div>
               ) : (
-                /* Pulse AI Structured Results display */
+                /* Structured Results Display */
                 <div className="space-y-6">
+                  {/* Medical Disclaimer Banner */}
                   <MedicalDisclaimer />
-                  {/* Results cards */}
-                  <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700 space-y-6 relative overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100/50 dark:from-slate-800 dark:to-slate-900/50">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-[radial-gradient(circle_at_center,rgba(37,99,235,0.1)_0%,transparent_70%)] pointer-events-none" />
-                    
-                    <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
+
+                  <div className="bg-white dark:bg-slate-900 rounded-xl p-5 sm:p-6 border border-[#E5E7EB] dark:border-slate-800 shadow-[0_1px_3px_rgba(0,0,0,0.06)] space-y-6">
+                    <div className="flex justify-between items-center pb-3 border-b border-[#E5E7EB] dark:border-slate-800">
                       <div>
-                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Prescription Analysis</h2>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500">Scan ID: {activePrescription.id.slice(0, 8)}</span>
+                        <h2 className="text-lg font-bold text-[#121414] dark:text-white">Prescription analysis</h2>
+                        <span className="text-xs text-[#4B5563]">
+                          {activePrescription.id === 'sample-prescription' ? 'Sample demonstration' : `Scan ID: ${activePrescription.id.slice(0, 8)}`}
+                        </span>
                       </div>
-                      {activePrescription.prescriptionAnalysis.length > 0 ? (
-                        <span className="text-[10px] bg-success/15 border border-success/25 text-success px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                          Analyzed Successfully
-                        </span>
-                      ) : (
-                        <span className="text-[10px] bg-warning/15 border border-warning/25 text-warning px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                          Warning: No Meds Found
-                        </span>
-                      )}
+                      <span className="text-xs bg-emerald-50 border border-emerald-200 text-emerald-800 px-3 py-1 rounded-full font-semibold flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Analyzed</span>
+                      </span>
                     </div>
 
                     {activePrescription.prescriptionAnalysis.length === 0 ? (
-                      <div className="p-8 text-center bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl max-w-lg mx-auto space-y-3 animate-fadeIn">
-                        <HelpCircle className="w-10 h-10 text-slate-400 dark:text-slate-500 mx-auto" />
-                        <h4 className="font-extrabold text-slate-800 dark:text-slate-100 text-sm">No Medicines Extracted</h4>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 leading-relaxed font-light">
-                          This document does not seem to contain recognizable medication dosages, or it may be an imaging report (such as an Ultrasound, X-Ray, or Lab panel).
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 leading-relaxed font-light">
-                          If this is a medicine prescription, you can upload a clearer photo, or verify manually by writing your drugs in the form editor!
+                      <div className="p-8 text-center bg-[#F5F7FA] dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-xl max-w-lg mx-auto space-y-2">
+                        <Info className="w-8 h-8 text-[#1A3BAA] mx-auto" />
+                        <h4 className="font-bold text-[#121414] dark:text-white text-base">No medicines recognized</h4>
+                        <p className="text-sm text-[#4B5563] dark:text-slate-400">
+                          This document may be an ultrasound, radiology report, or lab panel rather than a prescription.
                         </p>
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {activePrescription.prescriptionAnalysis.map((med, index) => (
-                          <div key={index} className="p-5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl flex flex-col justify-between space-y-4">
+                          <div
+                            key={index}
+                            className="p-5 bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-xl flex flex-col justify-between space-y-4"
+                          >
                             <div className="space-y-3">
                               <div className="flex justify-between items-start gap-4">
                                 <div>
-                                  <h4 className="font-extrabold text-slate-900 dark:text-white text-sm">{med.medicineName}</h4>
-                                  <span className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-wider">Dosage: {med.dosage}</span>
+                                  <h4 className="font-bold text-[#121414] dark:text-white text-base">{med.medicineName}</h4>
+                                  <span className="text-xs font-semibold text-[#1A3BAA] block mt-0.5 tabular-nums">
+                                    Dosage: {med.dosage}
+                                  </span>
                                 </div>
                               </div>
 
-                              <div className="space-y-2 text-[11px]">
+                              <div className="space-y-2 text-sm">
                                 <div>
-                                  <span className="text-[9px] text-primary font-bold uppercase block tracking-wider">Dosing Instructions</span>
-                                  <p className="text-slate-700 mt-0.5 leading-normal">{med.instructions}</p>
+                                  <span className="text-xs font-bold text-[#4B5563] uppercase tracking-wider block">Timing & instructions</span>
+                                  <p className="text-[#121414] dark:text-slate-200 mt-0.5 leading-normal">{med.instructions}</p>
                                 </div>
 
                                 <div>
-                                  <span className="text-[9px] text-slate-500 dark:text-slate-400 dark:text-slate-500 font-bold uppercase block tracking-wider">Simplified Definition</span>
-                                  <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 mt-0.5 leading-normal font-light">{med.simplifiedExplanation}</p>
+                                  <span className="text-xs font-bold text-[#4B5563] uppercase tracking-wider block">Plain-English explanation</span>
+                                  <p className="text-[#4B5563] dark:text-slate-400 mt-0.5 leading-normal">{med.simplifiedExplanation}</p>
                                 </div>
                               </div>
                             </div>
 
-                            <div className="space-y-2 pt-3 border-t border-slate-200 dark:border-slate-700">
-                              <div className="p-2 bg-warning/5 border border-warning/15 rounded-xl text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500">
-                                <strong className="text-warning block mb-0.5">⚠️ Side Effects:</strong>
+                            <div className="space-y-2 pt-3 border-t border-[#E5E7EB] dark:border-slate-700">
+                              <div className="p-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 text-xs text-[#B45309] rounded-lg">
+                                <strong className="block mb-0.5">Common side effects:</strong>
                                 {med.sideEffects}
                               </div>
-                              <div className="p-2 bg-danger/5 border border-danger/15 rounded-xl text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-500">
-                                <strong className="text-danger block mb-0.5">🚫 Drug Interactions:</strong>
+                              <div className="p-2.5 bg-red-50 dark:bg-red-950/20 border border-red-200 text-xs text-[#C62828] rounded-lg">
+                                <strong className="block mb-0.5">Important interaction warnings:</strong>
                                 {med.drugInteractions}
                               </div>
                             </div>
@@ -587,10 +699,10 @@ export const PrescriptionCenter: React.FC = () => {
               )}
             </>
           ) : (
-            <div className="glass-panel rounded-3xl p-16 border border-slate-200 dark:border-slate-700 text-center text-slate-500 dark:text-slate-400 dark:text-slate-500 flex flex-col items-center justify-center min-h-[400px]">
-              <ClipboardList className="w-12 h-12 text-slate-600 dark:text-slate-300 mb-3 animate-pulse" />
-              <p className="text-sm font-semibold">No active scan workspace open.</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 mt-1">Please upload a prescription image to start, or select a past scan from the history board.</p>
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-12 border border-[#E5E7EB] dark:border-slate-800 text-center text-[#4B5563] flex flex-col items-center justify-center min-h-[350px]">
+              <ClipboardList className="w-10 h-10 text-[#1A3BAA] mb-3" />
+              <p className="text-base font-semibold text-[#121414] dark:text-white">No active prescription selected</p>
+              <p className="text-sm text-[#4B5563] mt-1">Upload a prescription image or select a scan from your history.</p>
             </div>
           )}
         </div>

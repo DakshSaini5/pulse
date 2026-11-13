@@ -110,20 +110,53 @@ router.get('/', generalLimiter, async (req: AuthenticatedRequest, res: Response)
     const querySpecialty = query ? findMappedSpecialty(query as string) : null;
 
     if (targetSpecialty) {
-      andConditions.push({
-        specialties: {
-          some: {
-            specialty: {
-              name: { equals: targetSpecialty, mode: 'insensitive' }
+      const specialtyKeywords: { [key: string]: string[] } = {
+        'Cardiology': ['cardio', 'heart', 'cardiac', 'ecg'],
+        'Orthopedics': ['ortho', 'bone', 'joint', 'spine', 'fracture'],
+        'Pediatrics': ['child', 'pediatric', 'paedia', 'pedia', 'baby', 'infant'],
+        'Gynecology': ['women', 'maternity', 'gynae', 'gyneco', 'obstet', 'mother'],
+        'Eye Care': ['eye', 'vision', 'ophthal', 'drishti', 'netra', 'cataract', 'optician'],
+        'Dental': ['dental', 'dentist', 'tooth', 'teeth', 'smile', 'oral'],
+        'Neurology': ['neuro', 'brain'],
+        'Dermatology': ['skin', 'derma'],
+        'ENT': ['ent', 'ear', 'nose', 'throat'],
+      };
+
+      const kws = specialtyKeywords[targetSpecialty] || [];
+      const specConditions: any[] = [
+        {
+          specialties: {
+            some: {
+              specialty: {
+                name: { equals: targetSpecialty, mode: 'insensitive' }
+              }
             }
           }
         }
-      });
+      ];
+
+      for (const kw of kws) {
+        specConditions.push({
+          name: { contains: kw, mode: 'insensitive' }
+        });
+      }
+
+      andConditions.push({ OR: specConditions });
+
+      if (query) {
+        andConditions.push({
+          OR: [
+            { name: { contains: query as string, mode: 'insensitive' } },
+            { address: { contains: query as string, mode: 'insensitive' } }
+          ]
+        });
+      }
     } else if (query) {
       if (querySpecialty) {
         andConditions.push({
           OR: [
             { name: { contains: query as string, mode: 'insensitive' } },
+            { address: { contains: query as string, mode: 'insensitive' } },
             {
               specialties: {
                 some: {
@@ -137,7 +170,10 @@ router.get('/', generalLimiter, async (req: AuthenticatedRequest, res: Response)
         });
       } else {
         andConditions.push({
-          name: { contains: query as string, mode: 'insensitive' }
+          OR: [
+            { name: { contains: query as string, mode: 'insensitive' } },
+            { address: { contains: query as string, mode: 'insensitive' } }
+          ]
         });
       }
     }

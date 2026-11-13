@@ -4,7 +4,7 @@ import {
   Search, ArrowRight, Heart, Activity, FileText, BookOpen,
   ChevronDown, ShieldCheck, Lock, CheckCircle2, MapPin, AlertCircle,
   Stethoscope, Bone, Baby, Brain, Eye, Sparkles, AlertTriangle,
-  HeartPulse, ArrowLeftRight, Star, Phone, CheckSquare
+  HeartPulse, ArrowLeftRight, Star, Phone, CheckSquare, ClipboardList
 } from 'lucide-react';
 import { PulseLogo } from '../components/PulseLogo';
 
@@ -43,6 +43,12 @@ export const PublicLanding: React.FC = () => {
       desc: 'Upload a report and get it explained simply.',
       path: '/reports',
       icon: FileText,
+    },
+    {
+      title: 'Understand a prescription',
+      desc: 'Clarify dosages, timing and check drug interactions.',
+      path: '/prescriptions',
+      icon: ClipboardList,
     },
     {
       title: 'Explain a medical term',
@@ -277,8 +283,8 @@ export const PublicLanding: React.FC = () => {
           </div>
         </div>
 
-        {/* 2. 4 SERVICE CARDS DIRECTLY UNDER SEARCH & PREVIEW */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 mt-8 sm:mt-10 text-left">
+        {/* 2. 5 SERVICE CARDS DIRECTLY UNDER SEARCH & PREVIEW */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5 sm:gap-4 mt-8 sm:mt-10 text-left">
           {serviceCards.map((card) => {
             const Icon = card.icon;
             return (

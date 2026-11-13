@@ -15,3 +15,4 @@ export const usePageMeta = (title: string, description?: string) => {
     }
   }, [title, description]);
 };
+

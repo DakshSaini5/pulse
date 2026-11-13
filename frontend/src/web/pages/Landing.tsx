@@ -12,7 +12,7 @@ import {
   Map, Play, Sparkles, Heart, Activity as ActivityIcon,
   ShieldAlert, AlertTriangle, Stethoscope, Syringe,
   TestTube, Bone, Brain, Eye, Baby, MapPin, HeartPulse,
-  BookOpen, ArrowLeftRight
+  BookOpen, ArrowLeftRight, ClipboardList
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Capacitor } from '@capacitor/core';
@@ -446,8 +446,8 @@ export const Landing: React.FC = () => {
                 )}
               </div>
 
-              {/* 4 Feature Cards (Matching Brief) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 text-left">
+              {/* 5 Feature Cards (Matching Brief) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5 sm:gap-4 text-left">
                 {[
                   {
                     title: 'Find hospitals',
@@ -466,6 +466,12 @@ export const Landing: React.FC = () => {
                     desc: 'Upload a report and get it explained simply.',
                     path: '/reports',
                     icon: FileText,
+                  },
+                  {
+                    title: 'Understand a prescription',
+                    desc: 'Clarify dosages, timing and check drug interactions.',
+                    path: '/prescriptions',
+                    icon: ClipboardList,
                   },
                   {
                     title: 'Explain a medical term',

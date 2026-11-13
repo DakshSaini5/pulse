@@ -156,6 +156,7 @@ export const App: React.FC = () => {
                 <Route path="/compare" element={<Comparison />} />
                 <Route path="/reports" element={<ReportCenter />} />
                 <Route path="/analyze" element={<Navigate to="/reports" replace />} />
+                <Route path="/prescriptions" element={<PrescriptionCenter />} />
                 <Route path="/medical-terms" element={<MedicalTerms />} />
                 <Route path="/how-it-works" element={<HowItWorks />} />
                 <Route path="/faq" element={<FAQ />} />
@@ -181,14 +182,7 @@ export const App: React.FC = () => {
                     </ProtectedRoute>
                   } 
                 />
-                <Route 
-                  path="/prescriptions" 
-                  element={
-                    <ProtectedRoute>
-                      <PrescriptionCenter />
-                    </ProtectedRoute>
-                  } 
-                />
+
                 <Route 
                   path="/trends" 
                   element={

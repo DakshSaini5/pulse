@@ -17,6 +17,11 @@ export const MobileBottomNav: React.FC = () => {
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
+    if (path === '/reports') {
+      return location.pathname.startsWith('/reports') || 
+             location.pathname.startsWith('/prescriptions') || 
+             location.pathname.startsWith('/analyze');
+    }
     return location.pathname.startsWith(path);
   };
 
