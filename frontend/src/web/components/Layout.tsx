@@ -37,14 +37,14 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     navigate('/');
   };
 
-  // Nav per developer brief: Find hospitals, Compare hospitals, Understand a report, Understand a prescription, Explain a medical term, How it works
+  // Nav per developer brief: Find hospitals, Compare hospitals, Understand a report, Prescriptions, Medical terms, How it works
   const publicNavItems = [
-    { name: 'Find hospitals', shortName: 'Find hospitals', path: '/search', icon: Search },
-    { name: 'Compare hospitals', shortName: 'Compare', path: '/compare', icon: ArrowLeftRight },
-    { name: 'Understand a report', shortName: 'Lab reports', path: '/reports', icon: FileText },
-    { name: 'Understand a prescription', shortName: 'Prescriptions', path: '/prescriptions', icon: ClipboardList },
-    { name: 'Explain a medical term', shortName: 'Medical terms', path: '/medical-terms', icon: HelpCircle },
-    { name: 'How it works', shortName: 'How it works', path: '/how-it-works', icon: Activity },
+    { name: 'Find hospitals', path: '/search', icon: Search },
+    { name: 'Compare hospitals', path: '/compare', icon: ArrowLeftRight },
+    { name: 'Understand a report', path: '/reports', icon: FileText },
+    { name: 'Prescriptions', path: '/prescriptions', icon: ClipboardList },
+    { name: 'Medical terms', path: '/medical-terms', icon: HelpCircle },
+    { name: 'How it works', path: '/how-it-works', icon: Activity },
   ];
 
   return (
@@ -54,34 +54,33 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         className="sticky top-0 z-40 w-full bg-white dark:bg-slate-900 border-b border-[#E5E7EB] dark:border-slate-800 shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <div className="max-w-[1400px] mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
-          <div className="flex items-center gap-3 sm:gap-6 min-w-0">
+        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-3 sm:gap-6">
+          <div className="flex items-center gap-4 sm:gap-6 shrink-0">
             <Link to="/" className="flex items-center shrink-0">
               <PulseLogo size={32} showTagline={true} />
             </Link>
 
-            {/* Desktop Navigation - Responsive labels to prevent multi-line wrapping on laptops */}
-            <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 min-w-0 overflow-hidden">
+            {/* Desktop Navigation - Clean, unclipped layout */}
+            <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 shrink-0">
               {publicNavItems.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
                   aria-label={`Navigate to ${item.name}`}
-                  className={`px-2.5 xl:px-3 py-1.5 rounded-lg text-xs xl:text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
+                  className={`px-3 py-1.5 rounded-lg text-xs xl:text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
                     isActive(item.path)
                       ? 'text-[#1A3BAA] bg-[#EEF2FC] font-semibold'
                       : 'text-[#4B5563] hover:text-[#121414] hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <span className="hidden 2xl:inline">{item.name}</span>
-                  <span className="2xl:hidden">{item.shortName}</span>
+                  {item.name}
                 </Link>
               ))}
               {user && (
                 <>
                   <Link
                     to="/saved"
-                    className={`px-2.5 xl:px-3 py-1.5 rounded-lg text-xs xl:text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
+                    className={`px-3 py-1.5 rounded-lg text-xs xl:text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
                       isActive('/saved')
                         ? 'text-[#1A3BAA] bg-[#EEF2FC] font-semibold'
                         : 'text-[#4B5563] hover:text-[#121414] hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -91,7 +90,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   </Link>
                   <Link
                     to="/trends"
-                    className={`px-2.5 xl:px-3 py-1.5 rounded-lg text-xs xl:text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
+                    className={`px-3 py-1.5 rounded-lg text-xs xl:text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
                       isActive('/trends')
                         ? 'text-[#1A3BAA] bg-[#EEF2FC] font-semibold'
                         : 'text-[#4B5563] hover:text-[#121414] hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -136,7 +135,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                     <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#EEF2FC] flex items-center justify-center border border-[#1A3BAA]/20 text-[#1A3BAA] font-bold text-xs sm:text-sm shrink-0">
                       {user.name.charAt(0).toUpperCase()}
                     </div>
-                    <div className="hidden 2xl:block max-w-[120px]">
+                    <div className="hidden xl:block max-w-[140px]">
                       <p className="text-xs font-semibold text-[#121414] dark:text-white leading-tight truncate">{user.name}</p>
                     </div>
                   </button>
@@ -148,6 +147,22 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                         <p className="text-xs text-[#4B5563] dark:text-slate-400 truncate">{user.email}</p>
                       </div>
                       <div className="py-1.5">
+                        <Link
+                          to="/saved"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#121414] dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-[#1A3BAA] transition-colors"
+                        >
+                          <Heart className="w-4 h-4 text-[#1A3BAA]" />
+                          Saved Hospitals
+                        </Link>
+                        <Link
+                          to="/trends"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#121414] dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-[#1A3BAA] transition-colors"
+                        >
+                          <TrendingUp className="w-4 h-4 text-[#1A3BAA]" />
+                          Health Trends
+                        </Link>
                         <Link
                           to="/profile"
                           onClick={() => setProfileOpen(false)}
