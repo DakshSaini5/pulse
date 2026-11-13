@@ -39,48 +39,49 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   // Nav per developer brief: Find hospitals, Compare hospitals, Understand a report, Understand a prescription, Explain a medical term, How it works
   const publicNavItems = [
-    { name: 'Find hospitals', path: '/search', icon: Search },
-    { name: 'Compare hospitals', path: '/compare', icon: ArrowLeftRight },
-    { name: 'Understand a report', path: '/reports', icon: FileText },
-    { name: 'Understand a prescription', path: '/prescriptions', icon: ClipboardList },
-    { name: 'Explain a medical term', path: '/medical-terms', icon: HelpCircle },
-    { name: 'How it works', path: '/how-it-works', icon: Activity },
+    { name: 'Find hospitals', shortName: 'Find hospitals', path: '/search', icon: Search },
+    { name: 'Compare hospitals', shortName: 'Compare', path: '/compare', icon: ArrowLeftRight },
+    { name: 'Understand a report', shortName: 'Lab reports', path: '/reports', icon: FileText },
+    { name: 'Understand a prescription', shortName: 'Prescriptions', path: '/prescriptions', icon: ClipboardList },
+    { name: 'Explain a medical term', shortName: 'Medical terms', path: '/medical-terms', icon: HelpCircle },
+    { name: 'How it works', shortName: 'How it works', path: '/how-it-works', icon: Activity },
   ];
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#181c1e] text-[#121414] dark:text-slate-100 flex flex-col relative selection:bg-primary selection:text-white transition-colors duration-200">
       {/* Top Header - Sticky, white, 64px tall, 1px bottom border */}
       <header 
-        className="sticky top-0 z-40 w-full bg-white dark:bg-slate-900 border-b border-[#E5E7EB] dark:border-slate-800"
+        className="sticky top-0 z-40 w-full bg-white dark:bg-slate-900 border-b border-[#E5E7EB] dark:border-slate-800 shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <div className="max-w-[1200px] mx-auto px-3 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4 sm:gap-8 min-w-0">
+        <div className="max-w-[1400px] mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-3 sm:gap-6 min-w-0">
             <Link to="/" className="flex items-center shrink-0">
-              <PulseLogo size={34} showTagline={true} />
+              <PulseLogo size={32} showTagline={true} />
             </Link>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-1">
+            {/* Desktop Navigation - Responsive labels to prevent multi-line wrapping on laptops */}
+            <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 min-w-0 overflow-hidden">
               {publicNavItems.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
                   aria-label={`Navigate to ${item.name}`}
-                  className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-2.5 xl:px-3 py-1.5 rounded-lg text-xs xl:text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
                     isActive(item.path)
                       ? 'text-[#1A3BAA] bg-[#EEF2FC] font-semibold'
                       : 'text-[#4B5563] hover:text-[#121414] hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
-                  {item.name}
+                  <span className="hidden 2xl:inline">{item.name}</span>
+                  <span className="2xl:hidden">{item.shortName}</span>
                 </Link>
               ))}
               {user && (
                 <>
                   <Link
                     to="/saved"
-                    className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`px-2.5 xl:px-3 py-1.5 rounded-lg text-xs xl:text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
                       isActive('/saved')
                         ? 'text-[#1A3BAA] bg-[#EEF2FC] font-semibold'
                         : 'text-[#4B5563] hover:text-[#121414] hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -90,7 +91,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   </Link>
                   <Link
                     to="/trends"
-                    className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`px-2.5 xl:px-3 py-1.5 rounded-lg text-xs xl:text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
                       isActive('/trends')
                         ? 'text-[#1A3BAA] bg-[#EEF2FC] font-semibold'
                         : 'text-[#4B5563] hover:text-[#121414] hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -103,7 +104,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             </nav>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {user ? (
               <>
                 {/* Admin Page Switcher */}
@@ -124,40 +125,43 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 {/* Notifications Button */}
                 <NotificationCenter />
 
-                {/* Profile card summary and dropdown */}
-                <div className="relative hidden sm:flex items-center gap-3 pl-3 border-l border-[#E5E7EB] dark:border-slate-700">
+                {/* Profile Avatar & Clean Dropdown */}
+                <div className="relative flex items-center gap-2 pl-2 sm:pl-3 border-l border-[#E5E7EB] dark:border-slate-700">
                   <button
                     onClick={() => setProfileOpen(!profileOpen)}
                     aria-label="Toggle user profile menu"
                     aria-expanded={profileOpen}
-                    className="flex items-center gap-2.5 text-left focus:outline-none group cursor-pointer"
+                    className="flex items-center gap-2 text-left focus:outline-none group cursor-pointer"
                   >
-                    <div className="w-9 h-9 rounded-full bg-[#EEF2FC] flex items-center justify-center border border-[#1A3BAA]/20 text-[#1A3BAA] font-bold text-sm">
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#EEF2FC] flex items-center justify-center border border-[#1A3BAA]/20 text-[#1A3BAA] font-bold text-xs sm:text-sm shrink-0">
                       {user.name.charAt(0).toUpperCase()}
                     </div>
-                    <div className="hidden md:block">
-                      <p className="text-xs font-semibold text-[#121414] dark:text-white leading-tight">{user.name}</p>
-                      <span className="text-[11px] text-[#4B5563] dark:text-slate-400">{user.email}</span>
+                    <div className="hidden 2xl:block max-w-[120px]">
+                      <p className="text-xs font-semibold text-[#121414] dark:text-white leading-tight truncate">{user.name}</p>
                     </div>
                   </button>
 
                   {profileOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-900 border border-[#E5E7EB] dark:border-slate-700 shadow-ambient rounded-xl overflow-hidden z-50">
-                      <div className="py-2">
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-900 border border-[#E5E7EB] dark:border-slate-700 shadow-xl rounded-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="px-4 py-3 border-b border-[#E5E7EB] dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
+                        <p className="text-sm font-semibold text-[#121414] dark:text-white truncate">{user.name}</p>
+                        <p className="text-xs text-[#4B5563] dark:text-slate-400 truncate">{user.email}</p>
+                      </div>
+                      <div className="py-1.5">
                         <Link
                           to="/profile"
                           onClick={() => setProfileOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-[#121414] dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-[#1A3BAA] transition-colors"
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#121414] dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-[#1A3BAA] transition-colors"
                         >
-                          <UserIcon className="w-4 h-4" />
+                          <UserIcon className="w-4 h-4 text-[#1A3BAA]" />
                           My Profile
                         </Link>
                         <Link
                           to="/settings"
                           onClick={() => setProfileOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-[#121414] dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-[#1A3BAA] transition-colors"
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#121414] dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-[#1A3BAA] transition-colors"
                         >
-                          <Settings className="w-4 h-4" />
+                          <Settings className="w-4 h-4 text-[#1A3BAA]" />
                           Settings
                         </Link>
                         <button
@@ -165,7 +169,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                             setProfileOpen(false);
                             handleLogout();
                           }}
-                          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-[#C62828] hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#C62828] hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer"
                         >
                           <LogOut className="w-4 h-4" />
                           Log out
@@ -179,24 +183,24 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               <div className="flex items-center gap-1.5 sm:gap-3">
                 <Link
                   to="/login"
-                  className="hidden sm:inline-block text-sm font-medium text-[#1A3BAA] hover:underline px-2 py-1.5"
+                  className="hidden sm:inline-block text-sm font-medium text-[#1A3BAA] hover:underline px-2 py-1.5 whitespace-nowrap"
                 >
                   Sign in
                 </Link>
                 <Link
                   to="/register"
-                  className="h-8 sm:h-10 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-semibold bg-[#1A3BAA] hover:bg-[#142E86] text-white transition-colors flex items-center justify-center whitespace-nowrap"
+                  className="h-8 sm:h-9 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-semibold bg-[#1A3BAA] hover:bg-[#142E86] text-white transition-colors flex items-center justify-center whitespace-nowrap"
                 >
                   Get started
                 </Link>
               </div>
             )}
 
-            {/* Mobile menu trigger - Only show on web */}
+            {/* Mobile menu trigger - Only show on web below lg */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle navigation menu"
-              className="lg:hidden p-2 rounded-lg border border-[#E5E7EB] dark:border-slate-700 bg-white dark:bg-slate-800 text-[#4B5563]"
+              className="lg:hidden p-2 rounded-lg border border-[#E5E7EB] dark:border-slate-700 bg-white dark:bg-slate-800 text-[#4B5563] cursor-pointer"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>

@@ -304,7 +304,7 @@ export const Search: React.FC = () => {
       </div>
 
       {/* Red emergency banner per brief */}
-      <div className="border border-[#E7373A] bg-red-50 dark:bg-red-950/20 text-[#C62828] dark:text-red-300 rounded-lg p-3 text-sm font-medium flex items-center justify-between gap-4">
+      <div className="border border-[#E7373A] bg-red-50 dark:bg-red-950/20 text-[#C62828] dark:text-red-300 rounded-lg p-3 text-sm font-medium flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
         <div className="flex items-center gap-2">
           <AlertCircle className="w-5 h-5 shrink-0 text-[#E7373A]" />
           <span>Medical emergency? Call 112.</span>
@@ -312,7 +312,7 @@ export const Search: React.FC = () => {
         <button
           type="button"
           onClick={() => setEmergencyOnly(!emergencyOnly)}
-          className={`text-sm font-semibold px-3 py-1 rounded transition-colors ${
+          className={`text-sm font-semibold px-3 py-1 rounded transition-colors whitespace-nowrap cursor-pointer ${
             emergencyOnly ? 'bg-[#E7373A] text-white' : 'underline text-[#C62828]'
           }`}
         >
@@ -321,12 +321,12 @@ export const Search: React.FC = () => {
       </div>
 
       {/* Location Bar with City Notice & "Use my location" button per brief */}
-      <div className="flex items-center justify-between gap-3 text-sm text-[#4B5563] dark:text-slate-400 bg-white dark:bg-slate-900 border border-[#E5E7EB] dark:border-slate-800 p-3 rounded-xl flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm text-[#4B5563] dark:text-slate-400 bg-white dark:bg-slate-900 border border-[#E5E7EB] dark:border-slate-800 p-3 rounded-xl">
         <div className="flex items-center gap-2">
           <MapPin className="w-4 h-4 text-[#1A3BAA] shrink-0" />
           <span>Showing hospitals in <strong className="text-[#121414] dark:text-white">{cityName || 'Bengaluru'}</strong>. Use my location for closer results.</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={async () => {
@@ -334,7 +334,7 @@ export const Search: React.FC = () => {
               if (success) toast.success("Location updated via GPS!");
               else toast.error("Could not access GPS. Please choose city manually.");
             }}
-            className="px-3 py-1.5 rounded-lg bg-[#EEF2FC] hover:bg-[#1A3BAA] hover:text-white text-[#1A3BAA] text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="px-3 py-1.5 rounded-lg bg-[#EEF2FC] hover:bg-[#1A3BAA] hover:text-white text-[#1A3BAA] text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
           >
             <Navigation className="w-3.5 h-3.5" />
             Use my location
@@ -342,7 +342,7 @@ export const Search: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsLocationModalOpen(true)}
-            className="px-3 py-1.5 rounded-lg border border-[#E5E7EB] hover:bg-slate-50 text-xs font-medium text-[#121414] dark:text-slate-200 transition-colors cursor-pointer"
+            className="px-3 py-1.5 rounded-lg border border-[#E5E7EB] hover:bg-slate-50 text-xs font-medium text-[#121414] dark:text-slate-200 transition-colors cursor-pointer whitespace-nowrap"
           >
             Change city
           </button>
