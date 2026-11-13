@@ -1,9 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
+import { getHospitalLocality } from '@core/utils/utils';
 
 interface HospitalPin {
   id: string;
   name: string;
+  address?: string;
   latitude: number;
   longitude: number;
   rating: number;
@@ -115,9 +117,12 @@ export const Map: React.FC<MapProps> = ({
         icon: isSelected ? activeIcon : defaultIcon
       });
 
+      const locality = hosp.address ? getHospitalLocality(hosp.address) || hosp.address : '';
+
       marker.bindPopup(`
         <div style="font-family:Inter,sans-serif; padding:4px; min-width:180px;">
-          <h4 style="margin:0 0 4px 0; font-size:15px; font-weight:700; color:#111827;">${hosp.name}</h4>
+          <h4 style="margin:0 0 2px 0; font-size:15px; font-weight:700; color:#111827;">${hosp.name}</h4>
+          ${locality ? `<p style="margin:0 0 4px 0; font-size:13px; color:#6B7280;">📍 ${locality}</p>` : ''}
           ${hosp.rating > 0 ? `<p style="margin:0 0 6px 0; font-size:14px; color:#4B5563;">⭐ Google rating ${hosp.rating.toFixed(1)}</p>` : ''}
           <button id="btn-${hosp.id}" style="background:#1A3BAA; color:#fff; border:none; border-radius:8px; padding:8px 12px; font-size:14px; font-weight:600; cursor:pointer; width:100%; margin-top:6px;">View hospital details</button>
         </div>

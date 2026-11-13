@@ -136,10 +136,13 @@ async function main() {
         const lon = node.lon || (node.center ? node.center.lon : null);
         if (!lat || !lon) continue;
 
-        let city = 'Indian Region';
-        if (lat > 28) city = 'North India';
-        else if (lat > 18) city = 'Central India';
-        else city = 'South India';
+        let city = 'Bengaluru';
+        if (lat >= 28 && lat <= 29 && lon >= 76.5 && lon <= 77.8) city = 'New Delhi';
+        else if (lat >= 18.8 && lat <= 19.5 && lon >= 72.7 && lon <= 73.2) city = 'Mumbai';
+        else if (lat >= 12.5 && lat <= 13.5 && lon >= 77.2 && lon <= 78.0) city = 'Bengaluru';
+        else if (lat > 28) city = 'New Delhi';
+        else if (lat > 18) city = 'Mumbai';
+        else city = 'Bengaluru';
 
         const amenity = node.tags.amenity || 'hospital';
         const isHospital = amenity.toLowerCase() === 'hospital';
@@ -150,12 +153,19 @@ async function main() {
         const phone = node.tags['contact:phone'] || node.tags.phone || null;
         const website = node.tags['contact:website'] || node.tags.website || null;
 
-        let address = '';
-        if (node.tags['addr:street']) address += node.tags['addr:street'] + ', ';
-        if (node.tags['addr:city']) address += node.tags['addr:city'];
+        const suburb = node.tags['addr:suburb'] || node.tags['addr:neighbourhood'] || node.tags['addr:district'] || '';
+        const street = node.tags['addr:street'] || '';
+        const addrCity = node.tags['addr:city'] || city;
 
-        if (!address) {
-          address = `${city} Area`;
+        let address = '';
+        if (suburb && street) {
+          address = `${street}, ${suburb}, ${addrCity}`;
+        } else if (suburb) {
+          address = `${suburb}, ${addrCity}`;
+        } else if (street) {
+          address = `${street}, ${addrCity}`;
+        } else {
+          address = addrCity;
         }
 
         const lowerName = node.tags.name.toLowerCase();

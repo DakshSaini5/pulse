@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@core/context/AuthContext';
 import { formatIndianPhoneNumber, getDialerHref } from '@core/utils/phoneFormatter';
+import { getHospitalLocality } from '@core/utils/utils';
 import toast from 'react-hot-toast';
 
 export const HospitalDetail: React.FC = () => {
@@ -128,8 +129,16 @@ export const HospitalDetail: React.FC = () => {
               {hospital.name}
             </h1>
             <p className="text-sm text-slate-600 dark:text-slate-400 flex items-start gap-1.5">
-              <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-              <span>{hospital.address}</span>
+              <MapPin className="w-4 h-4 text-[#1A3BAA] shrink-0 mt-0.5" />
+              <span>
+                {getHospitalLocality(hospital.address) && getHospitalLocality(hospital.address) !== hospital.address ? (
+                  <>
+                    <strong className="text-slate-900 dark:text-white font-semibold">{getHospitalLocality(hospital.address)}</strong> — {hospital.address}
+                  </>
+                ) : (
+                  hospital.address
+                )}
+              </span>
             </p>
           </div>
 

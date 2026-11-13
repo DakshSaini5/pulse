@@ -6,7 +6,7 @@ import {
   ArrowLeft, Star, Clock, AlertCircle, ShieldCheck, 
   MapPin, Phone, Globe, Layers, Plus, Check, ArrowRight
 } from 'lucide-react';
-import { getHospitalDisplayName } from '@core/utils/utils';
+import { getHospitalDisplayName, getHospitalLocality } from '@core/utils/utils';
 import toast from 'react-hot-toast';
 
 export const Comparison: React.FC = () => {
@@ -308,13 +308,13 @@ export const Comparison: React.FC = () => {
                       {hosp.rating.toFixed(1)}
                     </span>
                   </div>
-                  <p className="text-xs text-[#4B5563] dark:text-slate-400 flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-[#1A3BAA] shrink-0" />
-                    <span className="truncate">{hosp.address}</span>
+                  <p className="text-sm text-[#4B5563] dark:text-slate-400 flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 text-[#1A3BAA] shrink-0" />
+                    <span className="truncate">{getHospitalLocality(hosp.address) || hosp.address}</span>
                   </p>
                   {hosp.emergencyAvailable && (
-                    <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-[#12805C] border border-[#12805C]/20">
-                      24x7 Emergency
+                    <span className="inline-block px-2.5 py-0.5 rounded text-sm font-semibold bg-emerald-50 text-[#12805C] border border-[#12805C]/20">
+                      24×7 emergency
                     </span>
                   )}
                 </div>

@@ -13,7 +13,7 @@ import toast from 'react-hot-toast';
 import { useUserLocation } from '@core/context/LocationContext';
 import LocationModal from '../components/LocationModal';
 import { isNativeApp } from '@core/utils/platform';
-import { getHospitalDisplayName } from '@core/utils/utils';
+import { getHospitalDisplayName, getHospitalLocality } from '@core/utils/utils';
 
 
 export const Search: React.FC = () => {
@@ -634,7 +634,7 @@ export const Search: React.FC = () => {
                             <h3 className="font-bold text-slate-900 dark:text-white text-base leading-snug">{getHospitalDisplayName(hosp.name, hosp.address)}</h3>
                             <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-1 leading-normal">
                               <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-                              <span>{hosp.address}</span>
+                              <span>{getHospitalLocality(hosp.address) || hosp.address}</span>
                             </p>
                             {hosp.phone ? (
                               <div className="mt-2 space-y-0.5">
@@ -823,6 +823,7 @@ export const Search: React.FC = () => {
                 hospitals={hospitals.map(h => ({
                   id: h.id,
                   name: h.name,
+                  address: h.address,
                   latitude: h.latitude,
                   longitude: h.longitude,
                   rating: h.rating,

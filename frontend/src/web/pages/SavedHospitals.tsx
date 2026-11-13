@@ -6,6 +6,7 @@ import {
 import { useAuth } from '@core/context/AuthContext';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { getInitialLocation } from '@core/utils/geolocation';
+import { getHospitalLocality } from '@core/utils/utils';
 
 export const SavedHospitals: React.FC = () => {
   const { user } = useAuth();
@@ -175,9 +176,9 @@ export const SavedHospitals: React.FC = () => {
                   <div className="flex justify-between items-start gap-4">
                     <div>
                       <h3 className="font-extrabold text-slate-900 dark:text-white text-lg leading-snug">{hosp.name}</h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1 leading-none">
-                        <MapPin className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                        {hosp.address}
+                      <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-1 leading-normal">
+                        <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                        <span>{getHospitalLocality(hosp.address) || hosp.address}</span>
                       </p>
                     </div>
 
