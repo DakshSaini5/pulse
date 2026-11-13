@@ -59,14 +59,14 @@ export const PublicLanding: React.FC = () => {
   ];
 
   const specialties = [
-    { name: 'Cardiology', icon: Heart, query: 'Cardiology' },
-    { name: 'Orthopaedics', icon: Bone, query: 'Orthopaedics' },
-    { name: 'Paediatrics', icon: Baby, query: 'Paediatrics' },
-    { name: 'Gynaecology', icon: HeartPulse, query: 'Gynaecology' },
-    { name: 'Neurology', icon: Brain, query: 'Neurology' },
-    { name: 'Dermatology', icon: Sparkles, query: 'Dermatology' },
-    { name: 'ENT', icon: Stethoscope, query: 'ENT' },
-    { name: 'Emergency care', icon: AlertTriangle, query: 'Emergency' },
+    { name: 'Cardiology', icon: Heart, query: 'Cardiology', color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-500/10' },
+    { name: 'Orthopaedics', icon: Bone, query: 'Orthopaedics', color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10' },
+    { name: 'Paediatrics', icon: Baby, query: 'Paediatrics', color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-500/10' },
+    { name: 'Gynaecology', icon: HeartPulse, query: 'Gynaecology', color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-500/10' },
+    { name: 'Neurology', icon: Brain, query: 'Neurology', color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-500/10' },
+    { name: 'Dermatology', icon: Sparkles, query: 'Dermatology', color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
+    { name: 'ENT', icon: Stethoscope, query: 'ENT', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-500/10' },
+    { name: 'Emergency care', icon: AlertTriangle, query: 'Emergency', color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-500/10' },
   ];
 
   const trustPoints = [
@@ -335,8 +335,8 @@ export const PublicLanding: React.FC = () => {
                   to={`/search?specialty=${encodeURIComponent(spec.query)}&city=${encodeURIComponent(selectedCity)}`}
                   className="bg-white dark:bg-slate-900 border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-3 sm:p-4 flex flex-col items-center justify-center gap-2 hover:border-[#1A3BAA] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
                 >
-                  <div className="w-11 h-11 rounded-full bg-[#EEF2FC] text-[#1A3BAA] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <Icon className="w-5 h-5 text-[#1A3BAA]" />
+                  <div className={`w-11 h-11 rounded-full ${spec.bg} ${spec.color} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
+                    <Icon className={`w-5 h-5 ${spec.color}`} />
                   </div>
                   <span className="text-sm font-medium text-[#121414] dark:text-white leading-tight">
                     {spec.name}
