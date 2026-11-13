@@ -27,10 +27,10 @@
   }
 }
 
-/* Strict Typography Guardrail per Developer Brief: No text smaller than 12px */
-.text-\[8px\], .text-\[9px\], .text-\[10px\], .text-\[11px\] {
-  font-size: 0.75rem !important; /* 12px minimum */
-  line-height: 1rem !important;
+/* Strict Typography Guardrail per Developer Brief: Nothing under 14px anywhere on the site */
+.text-\[8px\], .text-\[9px\], .text-\[10px\], .text-\[11px\], .text-\[12px\], .text-\[13px\], .text-xs {
+  font-size: 0.875rem !important; /* 14px minimum */
+  line-height: 1.25rem !important;
 }
 
 /* Logo Tagline - Proportional scaling directly under the logo wordmark */

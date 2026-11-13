@@ -125,6 +125,7 @@ export interface Hospital {
   latitude: number;
   longitude: number;
   rating: number;
+  reviewCount?: number;
   phone?: string;
   email?: string;
   website?: string;

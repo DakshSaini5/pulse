@@ -101,7 +101,7 @@ const ChatAssistant: React.FC = () => {
   const dragStartPos = useRef({ x: 0, y: 0 });
   const pointerStartCoords = useRef({ x: 0, y: 0 });
   const currentOffset = useRef({ x: 0, y: 0 });
-  const fabRef = useRef<HTMLDivElement>(null);
+  const fabRef = useRef<HTMLButtonElement>(null);
 
   const startWatchdog = () => {
     if (watchdogTimerRef.current) {
@@ -594,22 +594,25 @@ const ChatAssistant: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-20 left-4 right-4 sm:bottom-6 sm:right-6 sm:left-auto z-50 flex flex-col items-end pointer-events-none">
-      {/* Floating Button with Label */}
+    <div className="fixed bottom-24 right-4 sm:bottom-8 sm:right-8 z-50 flex flex-col items-end pointer-events-none">
+      {/* 56px Icon-Only Circle FAB - Never overlaps mobile tab bar or footer */}
       {!isOpen && !isKeyboardActive && (
-        <div
+        <button
+          type="button"
           ref={fabRef}
-          className="flex items-center gap-2 pointer-events-auto cursor-grab active:cursor-grabbing bg-primary hover:bg-primary-hover text-white rounded-full py-2 pl-2 pr-4 shadow-md transition-transform hover:scale-105 active:scale-95 shrink-0"
+          aria-label="Open Pulse Assistant"
+          title="Pulse Assistant"
+          className="w-14 h-14 rounded-full bg-[#1A3BAA] hover:bg-[#142E86] text-white shadow-xl flex items-center justify-center pointer-events-auto cursor-grab active:cursor-grabbing transition-transform hover:scale-105 active:scale-95 shrink-0"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
+          onClick={() => setIsOpen(true)}
           style={{ transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`, touchAction: 'none' }}
         >
-          <div className="size-8 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm">
+          <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
             <PulseLogo variant="icon" size={20} />
           </div>
-          <span className="font-semibold text-xs tracking-wide whitespace-nowrap">Pulse Assistant</span>
-        </div>
+        </button>
       )}
 
       {/* Chat Window */}

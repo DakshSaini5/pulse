@@ -86,7 +86,9 @@ const COMMON_TERMS: TermItem[] = [
 
 export const MedicalTerms: React.FC = () => {
   useEffect(() => {
-    document.title = 'Medical Term Explainer | Pulse';
+    document.title = 'Explain a medical term | Pulse';
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', 'Look up medical terms, lab biomarkers, and prescription acronyms in plain English.');
   }, []);
 
   const [query, setQuery] = useState('');

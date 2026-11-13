@@ -1,88 +1,273 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://pulsehealthcare.app/</loc>
-    <lastmod>2026-07-01</lastmod>
+    <loc>https://pulsehealthcare.in/</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://pulsehealthcare.app/search</loc>
-    <lastmod>2026-07-01</lastmod>
+    <loc>https://pulsehealthcare.in/search</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://pulsehealthcare.app/compare</loc>
-    <lastmod>2026-07-01</lastmod>
+    <loc>https://pulsehealthcare.in/compare</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://pulsehealthcare.app/reports</loc>
-    <lastmod>2026-07-01</lastmod>
+    <loc>https://pulsehealthcare.in/reports</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://pulsehealthcare.app/medical-terms</loc>
-    <lastmod>2026-07-01</lastmod>
+    <loc>https://pulsehealthcare.in/medical-terms</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://pulsehealthcare.app/how-it-works</loc>
-    <lastmod>2026-07-01</lastmod>
+    <loc>https://pulsehealthcare.in/how-it-works</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://pulsehealthcare.app/pulse-plus</loc>
-    <lastmod>2026-07-01</lastmod>
+    <loc>https://pulsehealthcare.in/pulse-plus</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://pulsehealthcare.app/faq</loc>
-    <lastmod>2026-07-01</lastmod>
+    <loc>https://pulsehealthcare.in/faq</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://pulsehealthcare.app/about</loc>
-    <lastmod>2026-07-01</lastmod>
+    <loc>https://pulsehealthcare.in/about</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://pulsehealthcare.app/contact</loc>
-    <lastmod>2026-07-01</lastmod>
+    <loc>https://pulsehealthcare.in/contact</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://pulsehealthcare.app/privacy</loc>
-    <lastmod>2026-07-01</lastmod>
+    <loc>https://pulsehealthcare.in/privacy</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://pulsehealthcare.app/terms</loc>
-    <lastmod>2026-07-01</lastmod>
+    <loc>https://pulsehealthcare.in/terms</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://pulsehealthcare.app/disclaimer</loc>
-    <lastmod>2026-07-01</lastmod>
+    <loc>https://pulsehealthcare.in/disclaimer</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://pulsehealthcare.app/sitemap</loc>
-    <lastmod>2026-07-01</lastmod>
+    <loc>https://pulsehealthcare.in/sitemap</loc>
+    <lastmod>2026-11-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Indraprastha%20Apollo%20Hospital</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Max%20Super%20Speciality%20Hospital%20(Saket)</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Fortis%20Escorts%20Heart%20Institute</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=AIIMS%20New%20Delhi</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Safdarjung%20Hospital</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Sir%20Ganga%20Ram%20Hospital</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Lok%20Nayak%20Hospital%20(LNJP)</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Medanta%20%E2%80%93%20The%20Medicity</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Fortis%20Memorial%20Research%20Institute%20(FMRI)</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=BLK-Max%20Super%20Speciality%20Hospital</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Primus%20Super%20Speciality%20Hospital</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Venkateshwar%20Hospital</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Manipal%20Hospital%20(Dwarka)</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Metro%20Hospitals%20%26%20Heart%20Institute%20(Lajpat%20Nagar)</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Delhi%20Clinic%20%26%20Metabolic%20Center</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Hindu%20Rao%20Hospital</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Max%20Hospital%20Vaishali</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Kailash%20Hospital%20%26%20Neuro%20Institute</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Fortis%20Noida</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Yashoda%20Hospital%20(Ghaziabad)</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Columbia%20Asia%20Hospital%20(Gurugram)</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Paras%20Hospital%20(Gurugram)</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Artemis%20Hospital%20(Gurugram)</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Ram%20Manohar%20Lohia%20Hospital</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Mool%20Chand%20Hospital</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Holy%20Family%20Hospital</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Rockland%20Hospital%20(Dwarka)</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Pushpawati%20Singhania%20Hospital</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Sant%20Parmanand%20Hospital</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Batra%20Hospital%20%26%20Medical%20Research%20Centre</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://pulsehealthcare.in/search?q=Mahajan%20Imaging%20%26%20Labs</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>
-

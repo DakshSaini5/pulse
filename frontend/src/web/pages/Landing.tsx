@@ -11,7 +11,8 @@ import {
   Activity, Search, FileText, ArrowRight,
   Map, Play, Sparkles, Heart, Activity as ActivityIcon,
   ShieldAlert, AlertTriangle, Stethoscope, Syringe,
-  TestTube, Bone, Brain, Eye, Baby, MapPin
+  TestTube, Bone, Brain, Eye, Baby, MapPin, HeartPulse,
+  BookOpen, ArrowLeftRight
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Capacitor } from '@capacitor/core';
@@ -298,12 +299,12 @@ export const Landing: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6 text-left">
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                Hi, {toTitleCase(user.name)} 👋
+                Hi, {toTitleCase(user.name)}
               </h1>
-              <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
+              <div className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
                 {locationStatus === 'granted' && cityName ? (
                   <span className="flex items-center flex-wrap gap-1">
-                    <MapPin className="w-4 h-4 text-primary shrink-0 animate-bounce" />
+                    <MapPin className="w-4 h-4 text-primary shrink-0" />
                     <span>Showing care services in <strong className="text-slate-800 dark:text-white">{cityName}</strong></span>
                     <button
                       type="button"
@@ -311,7 +312,7 @@ export const Landing: React.FC = () => {
                         console.log("[Landing] Change Location clicked, setting modal open to true");
                         setIsLocationModalOpen(true);
                       }}
-                      className="text-[10px] bg-primary/10 hover:bg-primary/20 text-primary px-2 py-0.5 rounded-lg ml-2 font-bold transition-all border border-primary/20 cursor-pointer relative z-50"
+                      className="text-sm bg-primary/10 hover:bg-primary/20 text-primary px-2.5 py-0.5 rounded-lg ml-2 font-semibold transition-all border border-primary/20 cursor-pointer relative z-50"
                     >
                       Change
                     </button>
@@ -328,17 +329,16 @@ export const Landing: React.FC = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-start sm:justify-end">
-
               <button
                 onClick={() => setShowHelpModal(true)}
-                className="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-xl border border-blue-200 dark:border-blue-800/50 shadow-sm transition-all flex items-center gap-2"
+                className="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-[#1A3BAA] dark:text-blue-300 text-sm font-semibold rounded-xl border border-blue-200 dark:border-blue-800/50 shadow-sm transition-all flex items-center gap-2"
               >
-                <ActivityIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                Need Help?
+                <ActivityIcon className="w-4 h-4 text-[#1A3BAA] dark:text-blue-400" />
+                Need help?
               </button>
               <button
                 onClick={() => setShowPanicModal(true)}
-                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold rounded-xl shadow-md shadow-red-600/20 transition-all active:scale-95 flex items-center gap-2 border border-red-500/10"
+                className="px-5 py-2 bg-[#E7373A] hover:bg-red-700 text-white text-sm font-extrabold rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-2"
               >
                 <ShieldAlert className="w-4 h-4" />
                 PANIC
@@ -356,44 +356,44 @@ export const Landing: React.FC = () => {
             </div>
           ) : locationStatus === 'granted' ? (
             <>
-              {/* Global Search Bar with AutoComplete Dropdown */}
-              <div className="search-container relative group w-full">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-teal-500/20 rounded-2xl sm:rounded-3xl blur-xl group-hover:blur-2xl transition-all opacity-50" />
-                <form onSubmit={handleSearchSubmit} className="relative flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-1.5 sm:p-2 shadow-sm">
-                  <div className="pl-3 sm:pl-4 text-slate-400 shrink-0">
-                    <Search className="w-4 h-4 sm:w-6 sm:h-6" />
+              {/* Global Search Bar with AutoComplete Dropdown - NO GLOW */}
+              <div className="search-container relative w-full">
+                <form onSubmit={handleSearchSubmit} className="relative flex items-center bg-white dark:bg-slate-900 border border-[#E5E7EB] dark:border-slate-800 rounded-2xl p-1.5 sm:p-2 shadow-sm">
+                  <div className="pl-3 sm:pl-4 text-[#1A3BAA] shrink-0">
+                    <Search className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search for services, hospitals, or conditions..."
-                    className="w-full bg-transparent border-none focus:ring-0 text-[11px] sm:text-lg px-2 sm:px-4 py-2 sm:py-3 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
+                    placeholder="Search hospitals or specialties"
+                    aria-label="Search hospitals or specialties"
+                    className="w-full bg-transparent border-none focus:ring-0 text-sm sm:text-base px-3 sm:px-4 py-2.5 sm:py-3 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
                   />
-                  <button type="submit" className="bg-primary hover:bg-primary-hover text-white px-5 sm:px-8 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-base font-bold transition-colors shrink-0">
+                  <button type="submit" className="bg-[#1A3BAA] hover:bg-[#142E86] text-white px-5 sm:px-8 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-colors shrink-0">
                     Search
                   </button>
                 </form>
 
                 {/* Autocomplete Dropdown List */}
                 {showDropdown && searchQuery.trim().length >= 2 && (
-                  <div className="absolute left-0 right-0 top-full mt-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-[1000] p-4 text-left max-h-96 overflow-y-auto">
+                  <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-[1000] p-4 text-left max-h-96 overflow-y-auto">
                     {searchingAutocomplete ? (
-                      <div className="py-4 text-center text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
-                        <Activity className="animate-spin text-primary w-4 h-4" />
-                        Searching Database...
+                      <div className="py-4 text-center text-sm text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
+                        <Activity className="animate-spin text-[#1A3BAA] w-4 h-4" />
+                        Searching database...
                       </div>
                     ) : autocompleteResults.hospitals.length === 0 && autocompleteResults.specialties.length === 0 ? (
-                      <div className="py-6 text-center text-xs text-slate-500 dark:text-slate-400">
-                        ❌ No matching hospitals or services found in database.
+                      <div className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+                        No matching hospitals or services found in database.
                       </div>
                     ) : (
                       <div className="space-y-4">
                         {/* Specialties/Services Autocomplete results */}
                         {autocompleteResults.specialties.length > 0 && (
                           <div>
-                            <span className="text-[10px] font-extrabold text-primary uppercase tracking-wider block mb-2 px-2">
-                              🩺 Results in Services
+                            <span className="text-sm font-semibold text-[#1A3BAA] block mb-2 px-2">
+                              Services
                             </span>
                             <div className="space-y-1">
                               {autocompleteResults.specialties.map((spec) => (
@@ -403,11 +403,11 @@ export const Landing: React.FC = () => {
                                     setShowDropdown(false);
                                     navigate(`/search?specialty=${encodeURIComponent(spec.name)}`);
                                   }}
-                                  className="px-3 py-2.5 rounded-xl text-xs hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer flex items-center justify-between group transition-colors"
+                                  className="px-3 py-2.5 rounded-xl text-sm hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer flex items-center justify-between group transition-colors"
                                 >
-                                  <span className="font-semibold">{spec.name}</span>
-                                  <span className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold group-hover:bg-primary group-hover:text-white transition-colors">
-                                    Go to Service
+                                  <span className="font-medium">{spec.name}</span>
+                                  <span className="text-sm bg-[#EEF2FC] text-[#1A3BAA] px-2.5 py-0.5 rounded-full font-semibold group-hover:bg-[#1A3BAA] group-hover:text-white transition-colors">
+                                    Filter
                                   </span>
                                 </div>
                               ))}
@@ -418,8 +418,8 @@ export const Landing: React.FC = () => {
                         {/* Hospitals Autocomplete results */}
                         {autocompleteResults.hospitals.length > 0 && (
                           <div>
-                            <span className="text-[10px] font-extrabold text-red-500 uppercase tracking-wider block mb-2 px-2">
-                              🏥 Results in Hospitals
+                            <span className="text-sm font-semibold text-[#1A3BAA] block mb-2 px-2">
+                              Hospitals
                             </span>
                             <div className="space-y-1">
                               {autocompleteResults.hospitals.map((hosp) => (
@@ -429,11 +429,11 @@ export const Landing: React.FC = () => {
                                     setShowDropdown(false);
                                     navigate(`/hospitals/${hosp.id}`);
                                   }}
-                                  className="px-3 py-2.5 rounded-xl text-xs hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer flex items-center justify-between group transition-colors"
+                                  className="px-3 py-2.5 rounded-xl text-sm hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer flex items-center justify-between group transition-colors"
                                 >
-                                  <span className="font-semibold">{hosp.name}</span>
-                                  <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-0.5 rounded-full group-hover:bg-primary group-hover:text-white transition-colors">
-                                    View Details
+                                  <span className="font-medium">{hosp.name}</span>
+                                  <span className="text-sm bg-slate-100 dark:bg-slate-800 text-slate-600 px-2.5 py-0.5 rounded-full font-semibold group-hover:bg-[#1A3BAA] group-hover:text-white transition-colors">
+                                    View
                                   </span>
                                 </div>
                               ))}
@@ -446,31 +446,98 @@ export const Landing: React.FC = () => {
                 )}
               </div>
 
-              {/* Browse Services Grid */}
-              <div>
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-4 sm:mb-6 text-left">Browse Services</h2>
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-4">
-                  {[
-                    { name: 'General', icon: Stethoscope, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-500/10', specialty: 'General Medicine' },
-                    { name: 'Vaccination', icon: Syringe, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10', query: 'vaccination' },
-                    { name: 'Blood Test', icon: TestTube, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-500/10', query: 'blood test' },
-                    { name: 'Dental', icon: Bone, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-500/10', specialty: 'Dental' },
-                    { name: 'Cardiology', icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-500/10', specialty: 'Cardiology' },
-                    { name: 'Neurology', icon: Brain, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-500/10', specialty: 'Neurology' },
-                    { name: 'Eye Care', icon: Eye, color: 'text-cyan-500', bg: 'bg-cyan-50 dark:bg-cyan-500/10', specialty: 'Eye Care' },
-                    { name: 'Pediatrics', icon: Baby, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-500/10', specialty: 'Pediatrics' },
-                  ].map((service, idx) => (
+              {/* 4 Feature Cards (Matching Brief) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 text-left">
+                {[
+                  {
+                    title: 'Find hospitals',
+                    desc: 'Search by specialty, distance and emergency care.',
+                    path: '/search',
+                    icon: Search,
+                  },
+                  {
+                    title: 'Compare hospitals',
+                    desc: 'Put 2 or 3 hospitals side by side.',
+                    path: '/compare',
+                    icon: ArrowLeftRight,
+                  },
+                  {
+                    title: 'Understand a report',
+                    desc: 'Upload a report and get it explained simply.',
+                    path: '/reports',
+                    icon: FileText,
+                  },
+                  {
+                    title: 'Explain a medical term',
+                    desc: 'Type any word from your prescription.',
+                    path: '/medical-terms',
+                    icon: BookOpen,
+                  },
+                ].map((card) => {
+                  const Icon = card.icon;
+                  return (
                     <Link
-                      key={idx}
-                      to={'query' in service ? `/search?q=${encodeURIComponent(service.query as string)}` : `/search?specialty=${encodeURIComponent((service as any).specialty || service.name)}`}
-                      className="flex flex-col items-center justify-center p-3 sm:p-6 bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl sm:rounded-3xl hover:-translate-y-1 transition-transform group shadow-sm hover:shadow-xl hover:shadow-slate-200/20 dark:hover:shadow-black/40"
+                      key={card.title}
+                      to={card.path}
+                      className="bg-white dark:bg-slate-900 border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:border-[#1A3BAA] transition-all group flex flex-col justify-between"
                     >
-                      <div className={`w-10 h-10 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl ${service.bg} flex items-center justify-center mb-2 sm:mb-4 group-hover:scale-110 transition-transform`}>
-                        <service.icon className={`w-5 h-5 sm:w-8 sm:h-8 ${service.color}`} />
+                      <div>
+                        <div className="w-11 h-11 rounded-full bg-[#EEF2FC] flex items-center justify-center mb-3">
+                          <Icon className="w-6 h-6 text-[#1A3BAA]" />
+                        </div>
+                        <h3 className="text-base font-semibold text-[#121414] dark:text-white leading-[1.4] group-hover:text-[#1A3BAA] transition-colors">
+                          {card.title}
+                        </h3>
+                        <p className="text-sm text-[#4B5563] dark:text-slate-400 mt-1.5 leading-[1.5]">
+                          {card.desc}
+                        </p>
                       </div>
-                      <span className="text-slate-900 dark:text-slate-200 font-semibold text-[10px] sm:text-base text-center leading-tight">{service.name}</span>
+                      <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-[#1A3BAA]">
+                        <span>Explore</span>
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      </div>
                     </Link>
-                  ))}
+                  );
+                })}
+              </div>
+
+              {/* 8 Specialty Tiles with Blue Icons in Light Blue Circles */}
+              <div className="text-left pt-2">
+                <div className="mb-4">
+                  <h2 className="text-xl sm:text-2xl font-bold text-[#121414] dark:text-white">
+                    Browse by specialty
+                  </h2>
+                  <p className="text-sm text-[#4B5563] dark:text-slate-400 mt-1">
+                    Find hospitals across clinical departments.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 sm:gap-4 text-center">
+                  {[
+                    { name: 'Cardiology', icon: Heart, query: 'Cardiology' },
+                    { name: 'Orthopaedics', icon: Bone, query: 'Orthopaedics' },
+                    { name: 'Paediatrics', icon: Baby, query: 'Paediatrics' },
+                    { name: 'Gynaecology', icon: HeartPulse, query: 'Gynaecology' },
+                    { name: 'Neurology', icon: Brain, query: 'Neurology' },
+                    { name: 'Dermatology', icon: Sparkles, query: 'Dermatology' },
+                    { name: 'ENT', icon: Stethoscope, query: 'ENT' },
+                    { name: '24×7 emergency', icon: AlertTriangle, query: 'Emergency' },
+                  ].map((spec) => {
+                    const Icon = spec.icon;
+                    return (
+                      <Link
+                        key={spec.name}
+                        to={`/search?specialty=${encodeURIComponent(spec.query)}`}
+                        className="bg-white dark:bg-slate-900 border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-3 sm:p-4 flex flex-col items-center justify-center gap-2 hover:border-[#1A3BAA] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+                      >
+                        <div className="w-11 h-11 rounded-full bg-[#EEF2FC] text-[#1A3BAA] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <Icon className="w-5 h-5 text-[#1A3BAA]" />
+                        </div>
+                        <span className="text-sm font-medium text-[#121414] dark:text-white leading-tight">
+                          {spec.name}
+                        </span>
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             </>
@@ -512,41 +579,41 @@ export const Landing: React.FC = () => {
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
               {/* Daily Health Tips */}
               <div>
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-4 text-left">Daily Health Tips</h2>
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-4 text-left">Daily health tips</h2>
                 <div className="flex overflow-x-auto gap-4 pb-4 snap-x hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
-                  <div className="w-60 h-32 p-4 bg-[#FFFBF0] dark:bg-amber-950/30 border border-[#FDE68A] dark:border-amber-800/50 rounded-2xl snap-center flex-shrink-0 flex flex-col justify-between">
+                  <div className="w-64 p-4 bg-[#FFFBF0] dark:bg-amber-950/30 border border-[#FDE68A] dark:border-amber-800/50 rounded-2xl snap-center flex-shrink-0 flex flex-col justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-blue-400">💧</span>
-                      <h3 className="font-bold text-[#854D0E] dark:text-amber-500">Stay Hydrated</h3>
+                      <h3 className="font-bold text-sm text-[#854D0E] dark:text-amber-500">Stay hydrated</h3>
                     </div>
-                    <p className="text-xs text-[#D97706] dark:text-amber-600/90 leading-relaxed font-medium">
+                    <p className="text-sm text-[#D97706] dark:text-amber-600/90 leading-relaxed font-medium mt-2">
                       Drinking at least 8 glasses of water daily improves energy levels and keeps your skin glowing.
                     </p>
                   </div>
-                  <div className="w-60 h-32 p-4 bg-[#F0FDF4] dark:bg-emerald-950/30 border border-[#BBF7D0] dark:border-emerald-800/50 rounded-2xl snap-center flex-shrink-0 flex flex-col justify-between">
+                  <div className="w-64 p-4 bg-[#F0FDF4] dark:bg-emerald-950/30 border border-[#BBF7D0] dark:border-emerald-800/50 rounded-2xl snap-center flex-shrink-0 flex flex-col justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-emerald-500">🚶</span>
-                      <h3 className="font-bold text-[#166534] dark:text-emerald-500">Keep Moving</h3>
+                      <h3 className="font-bold text-sm text-[#166534] dark:text-emerald-500">Keep moving</h3>
                     </div>
-                    <p className="text-xs text-[#059669] dark:text-emerald-600/90 leading-relaxed font-medium">
+                    <p className="text-sm text-[#059669] dark:text-emerald-600/90 leading-relaxed font-medium mt-2">
                       A brisk 30-minute walk every day can significantly boost your cardiovascular health.
                     </p>
                   </div>
-                  <div className="w-60 h-32 p-4 bg-[#FAF5FF] dark:bg-purple-950/30 border border-[#E9D5FF] dark:border-purple-800/50 rounded-2xl snap-center flex-shrink-0 flex flex-col justify-between">
+                  <div className="w-64 p-4 bg-[#FAF5FF] dark:bg-purple-950/30 border border-[#E9D5FF] dark:border-purple-800/50 rounded-2xl snap-center flex-shrink-0 flex flex-col justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-purple-500">💤</span>
-                      <h3 className="font-bold text-[#6B21A8] dark:text-purple-500">Quality Sleep</h3>
+                      <h3 className="font-bold text-sm text-[#6B21A8] dark:text-purple-500">Quality sleep</h3>
                     </div>
-                    <p className="text-xs text-[#9333EA] dark:text-purple-600/90 leading-relaxed font-medium">
+                    <p className="text-sm text-[#9333EA] dark:text-purple-600/90 leading-relaxed font-medium mt-2">
                       Aim for 7-9 hours of uninterrupted sleep to enhance immune function and cognitive performance.
                     </p>
                   </div>
-                  <div className="w-60 h-32 p-4 bg-[#F0F9FF] dark:bg-sky-950/30 border border-[#BAE6FD] dark:border-sky-800/50 rounded-2xl snap-center flex-shrink-0 flex flex-col justify-between">
+                  <div className="w-64 p-4 bg-[#F0F9FF] dark:bg-sky-950/30 border border-[#BAE6FD] dark:border-sky-800/50 rounded-2xl snap-center flex-shrink-0 flex flex-col justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-sky-500">🥗</span>
-                      <h3 className="font-bold text-[#075985] dark:text-sky-500">Balanced Diet</h3>
+                      <h3 className="font-bold text-sm text-[#075985] dark:text-sky-500">Balanced diet</h3>
                     </div>
-                    <p className="text-xs text-[#0369A1] dark:text-sky-600/90 leading-relaxed font-medium">
+                    <p className="text-sm text-[#0369A1] dark:text-sky-600/90 leading-relaxed font-medium mt-2">
                       Incorporate a variety of colorful vegetables and lean proteins to fuel your body throughout the day.
                     </p>
                   </div>
@@ -555,22 +622,22 @@ export const Landing: React.FC = () => {
 
               {/* Health Summary / Dashboard */}
               <div>
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-4 text-left">Your Health Summary</h2>
-                <div className="grid grid-cols-3 gap-2">
-                  <Link to="/prescriptions" className="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-100 dark:border-slate-700 flex flex-col items-center justify-center text-center gap-0.5 active:scale-95 transition-transform shadow-sm">
-                    <span className="text-xl font-black text-blue-600 dark:text-blue-400">{dashboardCounts.scans}</span>
-                    <span className="block text-xs font-bold text-slate-800 dark:text-white mt-1">Scans</span>
-                    <span className="text-[9px] font-medium text-slate-500">prescriptions</span>
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-4 text-left">Your health summary</h2>
+                <div className="grid grid-cols-3 gap-3">
+                  <Link to="/prescriptions" className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 flex flex-col items-center justify-center text-center gap-1 active:scale-95 transition-transform shadow-sm">
+                    <span className="text-2xl font-black text-[#1A3BAA] dark:text-blue-400">{dashboardCounts.scans}</span>
+                    <span className="block text-sm font-bold text-slate-800 dark:text-white">Scans</span>
+                    <span className="text-sm font-medium text-slate-500">prescriptions</span>
                   </Link>
-                  <Link to="/saved" className="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-100 dark:border-slate-700 flex flex-col items-center justify-center text-center gap-0.5 active:scale-95 transition-transform shadow-sm">
-                    <span className="text-xl font-black text-blue-600 dark:text-blue-400">{dashboardCounts.saved}</span>
-                    <span className="block text-xs font-bold text-slate-800 dark:text-white mt-1">Hospitals</span>
-                    <span className="text-[9px] font-medium text-slate-500">saved</span>
+                  <Link to="/saved" className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 flex flex-col items-center justify-center text-center gap-1 active:scale-95 transition-transform shadow-sm">
+                    <span className="text-2xl font-black text-[#1A3BAA] dark:text-blue-400">{dashboardCounts.saved}</span>
+                    <span className="block text-sm font-bold text-slate-800 dark:text-white">Hospitals</span>
+                    <span className="text-sm font-medium text-slate-500">saved</span>
                   </Link>
-                  <Link to="/reports" className="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-100 dark:border-slate-700 flex flex-col items-center justify-center text-center gap-0.5 active:scale-95 transition-transform shadow-sm">
-                    <span className="text-xl font-black text-blue-600 dark:text-blue-400">{dashboardCounts.trends}</span>
-                    <span className="block text-xs font-bold text-slate-800 dark:text-white mt-1">Trends</span>
-                    <span className="text-[9px] font-medium text-slate-500">tracked</span>
+                  <Link to="/reports" className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 flex flex-col items-center justify-center text-center gap-1 active:scale-95 transition-transform shadow-sm">
+                    <span className="text-2xl font-black text-[#1A3BAA] dark:text-blue-400">{dashboardCounts.trends}</span>
+                    <span className="block text-sm font-bold text-slate-800 dark:text-white">Trends</span>
+                    <span className="text-sm font-medium text-slate-500">tracked</span>
                   </Link>
                 </div>
               </div>

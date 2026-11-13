@@ -85,7 +85,7 @@ export const Contact: React.FC = () => {
                 <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Location</div>
                 <div className="text-sm font-semibold text-slate-800 dark:text-white">Bengaluru, Karnataka, India</div>
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Built for patients and families across Indian cities.
+                  Built for people and families across Indian cities.
                 </p>
               </div>
             </div>

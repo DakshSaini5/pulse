@@ -155,7 +155,7 @@ export const App: React.FC = () => {
                 <Route path="/hospital/:id" element={<HospitalDetail />} />
                 <Route path="/compare" element={<Comparison />} />
                 <Route path="/reports" element={<ReportCenter />} />
-                <Route path="/analyze" element={<ReportCenter />} />
+                <Route path="/analyze" element={<Navigate to="/reports" replace />} />
                 <Route path="/medical-terms" element={<MedicalTerms />} />
                 <Route path="/how-it-works" element={<HowItWorks />} />
                 <Route path="/faq" element={<FAQ />} />

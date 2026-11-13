@@ -23,6 +23,8 @@ export const Search: React.FC = () => {
 
   useEffect(() => {
     document.title = 'Find hospitals | Pulse';
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', 'Filter and discover hospitals near you by specialty, distance and 24×7 emergency care.');
   }, []);
 
   // Search parameters state initialized from URL if present
@@ -297,7 +299,7 @@ export const Search: React.FC = () => {
           Hospitals near you
         </h1>
         <p className="text-sm text-[#4B5563] dark:text-slate-400">
-          Filter by specialty, distance and 24x7 emergency care.
+          Filter by specialty, distance and 24×7 emergency care.
         </p>
       </div>
 
@@ -310,11 +312,11 @@ export const Search: React.FC = () => {
         <button
           type="button"
           onClick={() => setEmergencyOnly(!emergencyOnly)}
-          className={`text-xs font-semibold px-3 py-1 rounded transition-colors ${
+          className={`text-sm font-semibold px-3 py-1 rounded transition-colors ${
             emergencyOnly ? 'bg-[#E7373A] text-white' : 'underline text-[#C62828]'
           }`}
         >
-          {emergencyOnly ? 'Showing 24x7 Emergency Only' : 'Filter 24x7 Emergency'}
+          {emergencyOnly ? 'Showing 24×7 emergency only' : 'Filter 24×7 emergency'}
         </button>
       </div>
 
@@ -348,161 +350,177 @@ export const Search: React.FC = () => {
       </div>
 
       {/* Filters Segment */}
-      <form onSubmit={handleSearchSubmit} className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-5 border border-[#E5E7EB] dark:border-slate-800 grid grid-cols-1 md:grid-cols-12 gap-4 items-end text-left shadow-[0_1px_3px_rgba(0,0,0,0.06)] relative z-30">
-            <div className="md:col-span-4 space-y-1 search-container-main relative">
-              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Hospital Name / Keywords</label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 dark:text-slate-400">
-                  <SearchIcon className="w-4 h-4" />
-                </span>
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onFocus={() => { if (query.trim().length >= 2) setShowDropdown(true); }}
-                  placeholder="Search Hospital or Specialty Name"
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl glass-input text-xs text-slate-900"
-                />
-              </div>
-
-              {/* Autocomplete Dropdown List */}
-              {showDropdown && query.trim().length >= 2 && (
-                <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl z-50 p-4 text-left max-h-60 overflow-y-auto">
-                  {searchingAutocomplete ? (
-                    <div className="py-2 text-center text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
-                      <Activity className="animate-spin text-primary w-4 h-4" />
-                      Searching...
-                    </div>
-                  ) : autocompleteResults.hospitals.length === 0 && autocompleteResults.specialties.length === 0 ? (
-                    <div className="py-4 text-center text-xs text-slate-500 dark:text-slate-400">
-                      ❌ No matching results found.
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {/* Specialties/Services Autocomplete results */}
-                      {autocompleteResults.specialties.length > 0 && (
-                        <div>
-                          <span className="text-[9px] font-extrabold text-primary uppercase tracking-wider block mb-1 px-1">
-                            🩺 Services
-                          </span>
-                          <div className="space-y-0.5">
-                            {autocompleteResults.specialties.map((spec) => (
-                              <div
-                                key={spec.name}
-                                onClick={() => {
-                                  setSpecialty(spec.name);
-                                  setQuery('');
-                                  setShowDropdown(false);
-                                }}
-                                className="px-2 py-1.5 rounded-lg text-xs hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer flex items-center justify-between group transition-colors"
-                              >
-                                <span className="font-semibold">{spec.name}</span>
-                                <span className="text-[8px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold group-hover:bg-primary group-hover:text-white transition-colors">
-                                  Filter
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Hospitals Autocomplete results */}
-                      {autocompleteResults.hospitals.length > 0 && (
-                        <div>
-                          <span className="text-[9px] font-extrabold text-red-500 uppercase tracking-wider block mb-1 px-1">
-                            🏥 Hospitals
-                          </span>
-                          <div className="space-y-0.5">
-                            {autocompleteResults.hospitals.map((hosp) => (
-                              <div
-                                key={hosp.id}
-                                onClick={() => {
-                                  setQuery(hosp.name);
-                                  setSelectedHospitalId(hosp.id);
-                                  setShowDropdown(false);
-                                }}
-                                className="px-2 py-1.5 rounded-lg text-xs hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer flex items-center justify-between group transition-colors"
-                              >
-                                <span className="font-semibold">{hosp.name}</span>
-                                <span className="text-[8px] bg-gray-100 dark:bg-gray-800 text-gray-500 px-1.5 py-0.5 rounded-full group-hover:bg-primary group-hover:text-white transition-colors">
-                                  Select
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="md:col-span-3 space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Clinical Specialty</label>
-              <select
-                value={specialty}
-                onChange={(e) => setSpecialty(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl glass-input text-xs text-slate-900"
-              >
-                <option value="">All Specialties</option>
-                {specialties.map(spec => (
-                  <option key={spec.name} value={spec.name}>{spec.label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="md:col-span-2 space-y-1">
-              <div className="flex justify-between items-center">
-                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Max Radius</label>
-                <span className="text-[10px] text-primary font-extrabold">{radius} km</span>
-              </div>
+      <form onSubmit={handleSearchSubmit} className="bg-white dark:bg-slate-900 rounded-xl p-4 sm:p-5 border border-[#E5E7EB] dark:border-slate-800 space-y-4 text-left shadow-[0_1px_3px_rgba(0,0,0,0.06)] relative z-30">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+          {/* Search Query */}
+          <div className="md:col-span-5 space-y-1.5 search-container-main relative">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Hospital name or specialty
+            </label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                <SearchIcon className="w-4 h-4 text-[#1A3BAA]" />
+              </span>
               <input
-                type="range"
-                min="2"
-                max="40"
-                value={radius}
-                onChange={(e) => setRadius(parseInt(e.target.value))}
-                className="w-full accent-primary h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => { if (query.trim().length >= 2) setShowDropdown(true); }}
+                placeholder="Search hospital or specialty name"
+                className="w-full h-12 pl-10 pr-4 rounded-lg border border-[#E5E7EB] dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-[#121414] dark:text-white focus:outline-none focus:border-[#1A3BAA]"
               />
             </div>
 
-            <div className="md:col-span-2 space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Sort By</label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl glass-input text-xs text-slate-900"
-              >
-                <option value="distance">Nearest First</option>
-                <option value="match">Best Match</option>
-                <option value="rating">Highest Rated</option>
-              </select>
-            </div>
+            {/* Autocomplete Dropdown List */}
+            {showDropdown && query.trim().length >= 2 && (
+              <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl z-50 p-4 text-left max-h-60 overflow-y-auto">
+                {searchingAutocomplete ? (
+                  <div className="py-2 text-center text-sm text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
+                    <Activity className="animate-spin text-[#1A3BAA] w-4 h-4" />
+                    Searching...
+                  </div>
+                ) : autocompleteResults.hospitals.length === 0 && autocompleteResults.specialties.length === 0 ? (
+                  <div className="py-4 text-center text-sm text-slate-500 dark:text-slate-400">
+                    No matching results found.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {/* Specialties/Services Autocomplete results */}
+                    {autocompleteResults.specialties.length > 0 && (
+                      <div>
+                        <span className="text-sm font-semibold text-[#1A3BAA] block mb-1 px-1">
+                          Services
+                        </span>
+                        <div className="space-y-0.5">
+                          {autocompleteResults.specialties.map((spec) => (
+                            <div
+                              key={spec.name}
+                              onClick={() => {
+                                setSpecialty(spec.name);
+                                setQuery('');
+                                setShowDropdown(false);
+                              }}
+                              className="px-2.5 py-2 rounded-lg text-sm hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer flex items-center justify-between group transition-colors"
+                            >
+                              <span className="font-medium">{spec.name}</span>
+                              <span className="text-sm bg-[#EEF2FC] text-[#1A3BAA] px-2 py-0.5 rounded-full font-semibold group-hover:bg-[#1A3BAA] group-hover:text-white transition-colors">
+                                Filter
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-            <div className="md:col-span-2 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setEmergencyOnly(!emergencyOnly)}
-                className={`py-3 px-3 rounded-xl border text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 ${
-                  emergencyOnly 
-                    ? 'bg-danger/10 border-danger/30 text-danger shadow-md shadow-danger/5' 
-                    : 'border-pulseBorder dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                <AlertCircle className="w-3.5 h-3.5" />
-                24/7 ER Room
-              </button>
-              
-              <button
-                type="submit"
-                className="py-3 px-3 rounded-xl bg-primary hover:bg-primary-hover text-white text-[11px] font-bold shadow-md shadow-primary/25 transition-all flex items-center justify-center gap-1.5"
-              >
-                <SearchIcon className="w-3.5 h-3.5" />
-                Search
-              </button>
-            </div>
-          </form>
+                    {/* Hospitals Autocomplete results */}
+                    {autocompleteResults.hospitals.length > 0 && (
+                      <div>
+                        <span className="text-sm font-semibold text-[#1A3BAA] block mb-1 px-1">
+                          Hospitals
+                        </span>
+                        <div className="space-y-0.5">
+                          {autocompleteResults.hospitals.map((hosp) => (
+                            <div
+                              key={hosp.id}
+                              onClick={() => {
+                                setQuery(hosp.name);
+                                setSelectedHospitalId(hosp.id);
+                                setShowDropdown(false);
+                              }}
+                              className="px-2.5 py-2 rounded-lg text-sm hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer flex items-center justify-between group transition-colors"
+                            >
+                              <span className="font-medium">{hosp.name}</span>
+                              <span className="text-sm bg-slate-100 dark:bg-slate-800 text-slate-600 px-2 py-0.5 rounded-full group-hover:bg-[#1A3BAA] group-hover:text-white transition-colors">
+                                Select
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Specialty Dropdown */}
+          <div className="md:col-span-3 space-y-1.5">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Specialty
+            </label>
+            <select
+              value={specialty}
+              onChange={(e) => setSpecialty(e.target.value)}
+              className="w-full h-12 px-3 rounded-lg border border-[#E5E7EB] dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-[#121414] dark:text-white focus:outline-none focus:border-[#1A3BAA]"
+            >
+              <option value="">All specialties</option>
+              {specialties.map(spec => (
+                <option key={spec.name} value={spec.name}>{spec.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sort By Dropdown */}
+          <div className="md:col-span-2 space-y-1.5">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Sort by
+            </label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="w-full h-12 px-3 rounded-lg border border-[#E5E7EB] dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-[#121414] dark:text-white focus:outline-none focus:border-[#1A3BAA]"
+            >
+              <option value="distance">Nearest first</option>
+              <option value="match">Best match</option>
+              <option value="rating">Highest rated</option>
+            </select>
+          </div>
+
+          {/* Search Button (same row as filters!) */}
+          <div className="md:col-span-2">
+            <button
+              type="submit"
+              className="w-full h-12 rounded-lg bg-[#1A3BAA] hover:bg-[#142E86] text-white text-sm font-semibold shadow-sm transition-colors flex items-center justify-center gap-2"
+            >
+              <SearchIcon className="w-4 h-4" />
+              <span>Search</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Second Row: 36px 24×7 emergency chip & Radius Slider */}
+        <div className="pt-2 border-t border-[#E5E7EB] dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setEmergencyOnly(!emergencyOnly)}
+              className={`h-9 px-4 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                emergencyOnly
+                  ? 'bg-[#EEF2FC] text-[#1A3BAA] border border-[#1A3BAA]'
+                  : 'border border-[#E5E7EB] dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:border-[#1A3BAA]'
+              }`}
+            >
+              <AlertCircle className="w-4 h-4 text-[#1A3BAA]" />
+              <span>24×7 emergency</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3 max-w-xs w-full">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
+              Radius: <span className="text-[#1A3BAA] font-semibold">{radius} km</span>
+            </label>
+            <input
+              type="range"
+              min="2"
+              max="40"
+              value={radius}
+              onChange={(e) => setRadius(parseInt(e.target.value))}
+              className="w-full accent-[#1A3BAA] h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
+            />
+          </div>
+        </div>
+      </form>
 
           {/* Mobile view switcher between List and Map */}
           <div className="lg:hidden flex items-center justify-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl max-w-xs mx-auto mb-4">
@@ -614,93 +632,102 @@ export const Search: React.FC = () => {
                         <div className="flex justify-between items-start gap-4">
                           <div>
                             <h3 className="font-bold text-slate-900 dark:text-white text-base leading-snug">{getHospitalDisplayName(hosp.name, hosp.address)}</h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1 leading-none">
-                              <MapPin className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                              {hosp.address}
+                            <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-1 leading-normal">
+                              <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                              <span>{hosp.address}</span>
                             </p>
                             {hosp.phone ? (
-                              <div className="mt-1.5 space-y-0.5">
-                                <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 leading-none">
-                                  <Phone className="w-3.5 h-3.5 text-[#1A3BAA]" />
-                                  <a href={getDialerHref(hosp.phone, hosp.address)} className="hover:text-[#1A3BAA] transition-colors font-medium">
+                              <div className="mt-2 space-y-0.5">
+                                <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-1.5 leading-normal">
+                                  <Phone className="w-4 h-4 text-[#1A3BAA]" />
+                                  <a href={getDialerHref(hosp.phone, hosp.address)} className="hover:text-[#1A3BAA] transition-colors font-semibold">
                                     {formatIndianPhoneNumber(hosp.phone, hosp.address)}
                                   </a>
                                 </p>
-                                <p className="text-[12px] text-[#4B5563] dark:text-slate-400">
+                                <p className="text-sm text-[#4B5563] dark:text-slate-400">
                                   Call the hospital to confirm before visiting.
                                 </p>
                               </div>
                             ) : (
-                              <div className="mt-1.5 space-y-0.5">
-                                <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 leading-none">
-                                  <Phone className="w-3.5 h-3.5 text-slate-400" />
+                              <div className="mt-2 space-y-0.5">
+                                <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-1.5 leading-normal">
+                                  <Phone className="w-4 h-4 text-slate-400" />
                                   <a 
                                     href={`https://www.google.com/search?q=phone+number+for+${encodeURIComponent(hosp.name)}+${encodeURIComponent(hosp.address)}`} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
-                                    className="text-[#1A3BAA] hover:underline transition-colors font-semibold flex items-center gap-0.5"
+                                    className="text-[#1A3BAA] hover:underline transition-colors font-semibold flex items-center gap-1"
                                   >
-                                    Search number on Google
-                                    <Globe className="w-3 h-3 text-slate-400 shrink-0" />
+                                    <span>Search phone number on Google</span>
+                                    <Globe className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                   </a>
-                                </p>
-                                <p className="text-[12px] text-[#4B5563] dark:text-slate-400">
-                                  Call the hospital to confirm before visiting.
                                 </p>
                               </div>
                             )}
                           </div>
 
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-2">
                             {/* Bookmark Button */}
                             <button
+                              type="button"
                               onClick={(e) => handleToggleSave(hosp.id, e)}
-                              className={`p-2 rounded-lg border transition-all ${
+                              className={`h-9 w-9 rounded-lg border transition-all flex items-center justify-center ${
                                 isSaved 
                                   ? 'border-[#E7373A]/30 bg-red-50 text-[#E7373A]' 
-                                  : 'border-[#E5E7EB] dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-900'
+                                  : 'border-[#E5E7EB] dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-900'
                               }`}
-                              title={isSaved ? "Remove from Saved" : "Save Hospital"}
+                              title={isSaved ? "Remove from saved" : "Save hospital"}
                             >
                               <Heart className={`w-4 h-4 ${isSaved ? 'fill-[#E7373A]' : ''}`} />
                             </button>
                             
-                            {/* Compare Button */}
+                            {/* Explicit Add to compare Button */}
                             <button
+                              type="button"
                               onClick={(e) => handleToggleCompare(hosp.id, e)}
-                              className={`p-2 rounded-lg border transition-all ${
+                              className={`h-9 px-3 rounded-lg border text-sm font-semibold transition-all flex items-center gap-1.5 ${
                                 isComparing 
                                   ? 'border-[#1A3BAA] bg-[#EEF2FC] text-[#1A3BAA]' 
-                                  : 'border-[#E5E7EB] dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-900'
+                                  : 'border-[#E5E7EB] dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:border-[#1A3BAA]'
                               }`}
-                              title="Add to Compare Panel"
+                              title={isComparing ? "Remove from comparison" : "Add to comparison"}
                             >
-                              {isComparing ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                              {isComparing ? (
+                                <>
+                                  <CheckSquare className="w-4 h-4 text-[#1A3BAA]" />
+                                  <span>Comparing</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Square className="w-4 h-4 text-slate-400" />
+                                  <span>Add to compare</span>
+                                </>
+                              )}
                             </button>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3 text-xs font-semibold flex-wrap pt-1">
-                          <span className="flex items-center gap-1 text-[#B45309]">
-                            <Star className="w-4 h-4 fill-[#B45309] text-[#B45309]" />
-                            {hosp.rating.toFixed(1)}
-                          </span>
+                        <div className="flex items-center gap-3 text-sm font-medium flex-wrap pt-1">
+                          {hosp.rating > 0 && hosp.reviewCount !== 0 ? (
+                            <span className="flex items-center gap-1 text-[#B45309] font-semibold">
+                              <Star className="w-4 h-4 fill-[#B45309] text-[#B45309]" />
+                              <span>Google rating {hosp.rating.toFixed(1)}{hosp.reviewCount ? ` (${hosp.reviewCount} reviews)` : ''}</span>
+                            </span>
+                          ) : null}
 
                           {hosp.emergencyAvailable && (
-                            <span className="h-6 px-2.5 rounded text-xs font-semibold bg-emerald-50 text-[#12805C] border border-[#12805C]/30 flex items-center">
-                              24x7 Emergency
+                            <span className="h-7 px-2.5 rounded text-sm font-medium bg-emerald-50 text-[#12805C] border border-[#12805C]/30 flex items-center">
+                              24×7 emergency
                             </span>
                           )}
 
                           {hosp.distance ? (
-                            <span className="h-6 px-2.5 rounded bg-[#EEF2FC] text-[#1A3BAA] border border-[#1A3BAA]/20 font-semibold flex items-center whitespace-nowrap">
-                              📍 {hosp.distance.toFixed(1)} km
+                            <span className="h-7 px-2.5 rounded bg-[#EEF2FC] text-[#1A3BAA] border border-[#1A3BAA]/20 font-medium flex items-center whitespace-nowrap">
+                              {locationStatus === 'granted'
+                                ? `${hosp.distance.toFixed(1)} km from you`
+                                : `${hosp.distance.toFixed(1)} km from ${cityName || 'city'} centre`}
                             </span>
                           ) : null}
-
-                          <span className="text-[12px] text-[#4B5563] ml-auto">
-                            Last updated July 2026
-                          </span>
                         </div>
 
                         {/* Active Specialty OPD Hours & INR Fees */}
@@ -709,70 +736,60 @@ export const Search: React.FC = () => {
                             (s) => s.specialty.name.toLowerCase() === specialty.toLowerCase()
                           );
                           if (!matchedSpec) return null;
+                          const hasHours = matchedSpec.opdTimings && matchedSpec.opdTimings.trim() && !matchedSpec.opdTimings.toLowerCase().includes('contact facility') && !matchedSpec.opdTimings.includes('09:00 AM - 05:00 PM');
+                          const hasCost = matchedSpec.averageCost > 0;
+                          if (!hasHours && !hasCost) return null;
+
                           return (
-                            <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 rounded-xl text-[10px] leading-normal font-semibold space-y-1">
-                              <div className="flex justify-between items-center text-[10px]">
-                                <span className="text-slate-500 dark:text-slate-400 font-semibold">Consulting Hours</span>
-                                <span className="font-bold text-slate-900 dark:text-white">
-                                  {(!matchedSpec.opdTimings || matchedSpec.opdTimings.includes('09:00 AM - 05:00 PM') || matchedSpec.opdTimings.includes('09:00 AM - 09:00 PM')) 
-                                    ? (
-                                        <a 
-                                          href={`https://www.google.com/search?q=${encodeURIComponent(`${hosp.name} opd timings`)}`} 
-                                          target="_blank" 
-                                          rel="noopener noreferrer"
-                                          className="hover:text-primary hover:underline transition-colors cursor-pointer"
-                                          onClick={(e) => e.stopPropagation()}
-                                        >
-                                          Contact Facility
-                                        </a>
-                                      )
-                                    : matchedSpec.opdTimings}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center text-[10px]">
-                                <span className="text-slate-500 dark:text-slate-400 font-semibold">Avg. Consultation Fee</span>
-                                <span className="font-extrabold text-slate-900 dark:text-white">
-                                  {matchedSpec.averageCost > 0 
-                                    ? `₹${matchedSpec.averageCost}` 
-                                    : (
-                                        <a 
-                                          href={`https://www.google.com/search?q=${encodeURIComponent(`${hosp.name} consultation fees`)}`} 
-                                          target="_blank" 
-                                          rel="noopener noreferrer"
-                                          className="hover:text-primary hover:underline transition-colors cursor-pointer"
-                                          onClick={(e) => e.stopPropagation()}
-                                        >
-                                          Contact Hospital
-                                        </a>
-                                      )}
-                                </span>
-                              </div>
+                            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium space-y-1.5">
+                              {hasHours && (
+                                <div className="flex justify-between items-center text-sm">
+                                  <span className="text-slate-500 dark:text-slate-400">Consulting hours</span>
+                                  <span className="font-semibold text-slate-900 dark:text-white">
+                                    {matchedSpec.opdTimings}
+                                  </span>
+                                </div>
+                              )}
+                              {hasCost && (
+                                <div className="flex justify-between items-center text-sm">
+                                  <span className="text-slate-500 dark:text-slate-400">Consultation fee</span>
+                                  <span className="font-semibold text-slate-900 dark:text-white">
+                                    ₹{matchedSpec.averageCost}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           );
                         })()}
                       </div>
 
-                      <div className="flex justify-between items-center pt-4 border-t border-pulseBorder dark:border-slate-700 mt-4 gap-4 flex-wrap">
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Open: {hosp.workingHours}</span>
+                      <div className="flex justify-between items-center pt-3 border-t border-slate-200 dark:border-slate-700 mt-4 gap-4 flex-wrap">
+                        {hosp.workingHours && !hosp.workingHours.toLowerCase().includes('contact facility') ? (
+                          <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">
+                            Open: {hosp.workingHours}
+                          </span>
+                        ) : (
+                          <span />
+                        )}
                         
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4">
                           <a
                             href={`https://www.google.com/maps/search/?api=1&query=${hosp.latitude},${hosp.longitude}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="text-xs text-slate-600 hover:text-primary font-extrabold flex items-center gap-1 hover:underline"
+                            className="text-sm text-[#1A3BAA] hover:underline font-semibold flex items-center gap-1.5"
                           >
-                            <Navigation className="w-3.5 h-3.5 text-primary shrink-0 animate-bounce" />
-                            Start Navigation
+                            <Navigation className="w-4 h-4 text-[#1A3BAA] shrink-0" />
+                            <span>Start navigation</span>
                           </a>
 
                           <button
                             onClick={() => navigate(`/hospitals/${hosp.id}${specialty ? `?specialty=${specialty}` : ''}`)}
-                            className="text-xs text-primary font-bold flex items-center gap-1 hover:underline"
+                            className="text-sm text-[#1A3BAA] hover:underline font-semibold flex items-center gap-1"
                           >
-                            Full Departments
-                            <ArrowRight className="w-3.5 h-3.5" />
+                            <span>View departments</span>
+                            <ArrowRight className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
@@ -785,15 +802,15 @@ export const Search: React.FC = () => {
               {!loading && hospitals.length > 0 && (
                 <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl flex flex-col gap-3">
                   <div>
-                    <strong className="text-[10px] font-bold text-slate-900 dark:text-white block mb-1">Ratings Disclaimer</strong>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    <strong className="text-sm font-semibold text-slate-900 dark:text-white block mb-1">Ratings disclaimer</strong>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
                       Ratings shown are sourced from Google Reviews (public data). Pulse is not responsible for the accuracy of this information.
                     </p>
                   </div>
                   <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
-                    <strong className="text-[10px] font-bold text-slate-900 dark:text-white block mb-1">Hospital/Clinic Comparison Disclaimer</strong>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                      Information is based on publicly available data. Users should contact the hospital/clinic directly for the latest and most accurate details.
+                    <strong className="text-sm font-semibold text-slate-900 dark:text-white block mb-1">Hospital comparison disclaimer</strong>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                      Information is based on publicly available data. Users should contact the hospital directly for the latest and most accurate details.
                     </p>
                   </div>
                 </div>

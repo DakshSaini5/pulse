@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://pulsehealthcare.app/sitemap.xml
+Sitemap: https://pulsehealthcare.in/sitemap.xml

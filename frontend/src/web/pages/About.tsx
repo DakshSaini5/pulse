@@ -15,7 +15,7 @@ export const About: React.FC = () => {
           About Pulse
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
-          Clear healthcare information for patients and families.
+          Clear healthcare information for people and families.
         </h1>
         <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
           Pulse was built in Bengaluru to solve a simple problem: healthcare in India can feel confusing, opaque, and stressful. We help you find nearby hospitals, compare their facilities, and understand your lab test reports in plain English.
@@ -87,7 +87,7 @@ export const About: React.FC = () => {
             <div className="w-10 h-10 rounded-lg bg-pulseTint text-primary flex items-center justify-center font-bold">
               <Shield className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">Strict patient privacy</h3>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">Strict health privacy</h3>
             <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
               Your health reports belong exclusively to you. We do not sell your personal data or health history to insurance companies, advertising networks, or third-party brokers.
             </p>

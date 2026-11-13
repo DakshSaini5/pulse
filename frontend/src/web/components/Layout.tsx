@@ -37,11 +37,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     navigate('/');
   };
 
-  // Nav per developer brief: Find Hospitals, Compare, Analyze Report, How it works
+  // Nav per developer brief: Find hospitals, Compare hospitals, Understand a report, Explain a medical term, How it works
   const publicNavItems = [
-    { name: 'Find Hospitals', path: '/search', icon: Search },
-    { name: 'Compare', path: '/compare', icon: ArrowLeftRight },
-    { name: 'Analyze Report', path: '/reports', icon: FileText },
+    { name: 'Find hospitals', path: '/search', icon: Search },
+    { name: 'Compare hospitals', path: '/compare', icon: ArrowLeftRight },
+    { name: 'Understand a report', path: '/reports', icon: FileText },
+    { name: 'Explain a medical term', path: '/medical-terms', icon: FileText },
     { name: 'How it works', path: '/how-it-works', icon: HelpCircle },
   ];
 

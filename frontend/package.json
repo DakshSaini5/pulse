@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "build:mobile": "tsc && vite build --mode mobile",
+    "build": "node scripts/generate-sitemap.mjs && tsc && vite build",
+    "build:mobile": "node scripts/generate-sitemap.mjs && tsc && vite build --mode mobile",
     "preview": "vite preview"
   },
   "dependencies": {

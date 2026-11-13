@@ -67,6 +67,12 @@ export const ReportCenter: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    document.title = 'Understand a report | Pulse';
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', 'Upload and translate your laboratory reports and blood tests into plain English.');
+  }, []);
+
   const [reports, setReports] = useState<MedicalReport[]>([]);
   const [loading, setLoading] = useState(true);
   

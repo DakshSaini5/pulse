@@ -11,10 +11,10 @@ export const Sitemap: React.FC = () => {
     {
       category: 'Features',
       pages: [
-        { name: 'Find Hospitals', path: '/search', desc: 'Search hospitals by distance, city, and specialty.' },
-        { name: 'Compare Hospitals', path: '/compare', desc: 'Side-by-side comparison of hospital facilities and emergency care.' },
+        { name: 'Find hospitals', path: '/search', desc: 'Search hospitals by distance, city, and specialty.' },
+        { name: 'Compare hospitals', path: '/compare', desc: 'Side-by-side comparison of hospital facilities and emergency care.' },
         { name: 'Understand a report', path: '/reports', desc: 'Upload and decode laboratory tests and blood reports in plain English.' },
-        { name: 'Medical term explainer', path: '/medical-terms', desc: 'Simple explanations for prescription words and medical terminology.' },
+        { name: 'Explain a medical term', path: '/medical-terms', desc: 'Simple explanations for prescription words and medical terminology.' },
         { name: 'Pulse Plus (Waitlist)', path: '/pulse-plus', desc: 'Direct appointment booking and family health records (coming soon).' },
       ],
     },

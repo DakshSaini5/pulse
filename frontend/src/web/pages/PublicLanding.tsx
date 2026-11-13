@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   Search, ArrowRight, Heart, Activity, FileText, BookOpen,
   ChevronDown, ShieldCheck, Lock, CheckCircle2, MapPin, AlertCircle,
-  Stethoscope, Bone, Baby, Brain, Eye, Sparkles, AlertTriangle
+  Stethoscope, Bone, Baby, Brain, Eye, Sparkles, AlertTriangle,
+  HeartPulse, ArrowLeftRight, Star, Phone, CheckSquare
 } from 'lucide-react';
+import { PulseLogo } from '../components/PulseLogo';
 
 export const PublicLanding: React.FC = () => {
   const navigate = useNavigate();
@@ -25,7 +27,7 @@ export const PublicLanding: React.FC = () => {
 
   const serviceCards = [
     {
-      title: 'Find a hospital',
+      title: 'Find hospitals',
       desc: 'See hospitals near you by specialty and distance.',
       path: '/search',
       icon: Search,
@@ -34,10 +36,10 @@ export const PublicLanding: React.FC = () => {
       title: 'Compare hospitals',
       desc: 'Put 2 or 3 hospitals side by side.',
       path: '/compare',
-      icon: Activity,
+      icon: ArrowLeftRight,
     },
     {
-      title: 'Understand my report',
+      title: 'Understand a report',
       desc: 'Upload a report and get it explained simply.',
       path: '/reports',
       icon: FileText,
@@ -54,11 +56,11 @@ export const PublicLanding: React.FC = () => {
     { name: 'Cardiology', icon: Heart, query: 'Cardiology' },
     { name: 'Orthopaedics', icon: Bone, query: 'Orthopaedics' },
     { name: 'Paediatrics', icon: Baby, query: 'Paediatrics' },
-    { name: 'Gynaecology', icon: Activity, query: 'Gynaecology' },
+    { name: 'Gynaecology', icon: HeartPulse, query: 'Gynaecology' },
     { name: 'Neurology', icon: Brain, query: 'Neurology' },
     { name: 'Dermatology', icon: Sparkles, query: 'Dermatology' },
     { name: 'ENT', icon: Stethoscope, query: 'ENT' },
-    { name: 'Emergency care', icon: AlertTriangle, query: 'Emergency', isEmergency: true },
+    { name: 'Emergency care', icon: AlertTriangle, query: 'Emergency' },
   ];
 
   const trustPoints = [
@@ -112,7 +114,7 @@ export const PublicLanding: React.FC = () => {
       
       {/* 1. HERO SECTION WITH SEARCH */}
       <section className="pt-8 pb-12 sm:pt-14 sm:pb-16 text-center max-w-[900px] mx-auto">
-        <h1 className="text-[28px] sm:text-[40px] font-bold text-[#121414] dark:text-white leading-[1.2] tracking-[-0.02em]">
+        <h1 className="text-[28px] sm:text-[40px] font-bold text-[#121414] dark:text-white leading-[1.2] tracking-[-0.02em] [text-wrap:balance]">
           Find the right hospital. Understand your reports.
         </h1>
 
@@ -195,7 +197,87 @@ export const PublicLanding: React.FC = () => {
           </button>
         </form>
 
-        {/* 2. 4 SERVICE CARDS DIRECTLY UNDER SEARCH */}
+        {/* Real Mobile App Screenshot in Modern Phone Frame (Item 37) */}
+        <div className="my-10 sm:my-12 flex justify-center">
+          <div className="w-[280px] sm:w-[320px] rounded-[36px] p-2.5 bg-slate-900 shadow-2xl border-4 border-slate-800 ring-1 ring-slate-700">
+            {/* Notch / Speaker bar */}
+            <div className="flex justify-center mb-1.5">
+              <div className="w-20 h-4 bg-slate-950 rounded-full flex items-center justify-end px-2">
+                <div className="w-2 h-2 rounded-full bg-slate-800" />
+              </div>
+            </div>
+
+            {/* Inner Phone Screen */}
+            <div className="bg-white dark:bg-slate-900 rounded-[28px] overflow-hidden text-left border border-slate-200 dark:border-slate-800 shadow-inner">
+              {/* App Status & Header */}
+              <div className="px-3.5 pt-3 pb-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <PulseLogo size={22} showTagline={false} />
+                <span className="text-[11px] font-semibold text-[#1A3BAA] bg-[#EEF2FC] px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <MapPin className="w-3 h-3" />
+                  Bengaluru
+                </span>
+              </div>
+
+              {/* In-App Mock Search */}
+              <div className="p-3 space-y-2.5">
+                <div className="flex items-center gap-2 bg-[#F5F7FA] dark:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-[#E5E7EB] dark:border-slate-700 text-slate-400">
+                  <Search className="w-3.5 h-3.5 text-[#1A3BAA]" />
+                  <span className="text-xs text-slate-500 font-medium truncate">Search hospitals or specialties</span>
+                </div>
+
+                {/* Emergency banner in mock app */}
+                <div className="bg-red-50 text-[#C62828] border border-red-200 px-2 py-1 rounded-md text-[10px] font-medium flex items-center justify-between">
+                  <span>Emergency? Call 112</span>
+                  <span className="font-semibold text-[#1A3BAA] underline">24×7 hospitals</span>
+                </div>
+
+                {/* Mock Hospital Card */}
+                <div className="bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-xl p-2.5 shadow-sm space-y-1.5">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-tight">Manipal Hospital</h4>
+                      <p className="text-[10px] text-slate-500 flex items-center gap-0.5 mt-0.5">
+                        <MapPin className="w-2.5 h-2.5" />
+                        Old Airport Rd, Bengaluru
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                      24×7
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px] font-semibold pt-1 border-t border-slate-100 dark:border-slate-700 text-slate-600">
+                    <span className="text-[#B45309] flex items-center gap-0.5">
+                      <Star className="w-3 h-3 fill-[#B45309]" /> 4.6 (420)
+                    </span>
+                    <span className="text-[#1A3BAA]">1.8 km from you</span>
+                  </div>
+                </div>
+
+                {/* Mock Feature Pills */}
+                <div className="grid grid-cols-2 gap-1.5 pt-1">
+                  <div className="bg-[#EEF2FC] text-[#1A3BAA] p-2 rounded-lg text-center">
+                    <span className="block text-[11px] font-bold">Compare</span>
+                    <span className="text-[9px] text-slate-500">2-3 facilities</span>
+                  </div>
+                  <div className="bg-[#EEF2FC] text-[#1A3BAA] p-2 rounded-lg text-center">
+                    <span className="block text-[11px] font-bold">Lab Reports</span>
+                    <span className="text-[9px] text-slate-500">Plain English</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Nav Mock Tab Bar */}
+              <div className="border-t border-slate-200 dark:border-slate-800 px-4 py-2 flex justify-between text-slate-400 bg-white dark:bg-slate-900">
+                <span className="text-[10px] font-bold text-[#1A3BAA]">Discover</span>
+                <span className="text-[10px] font-medium">Compare</span>
+                <span className="text-[10px] font-medium">Reports</span>
+                <span className="text-[10px] font-medium">Profile</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 2. 4 SERVICE CARDS DIRECTLY UNDER SEARCH & PREVIEW */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 mt-8 sm:mt-10 text-left">
           {serviceCards.map((card) => {
             const Icon = card.icon;
@@ -234,7 +316,7 @@ export const PublicLanding: React.FC = () => {
               Browse by specialty
             </h2>
             <p className="text-sm text-[#4B5563] dark:text-slate-400 mt-1">
-              Find hospitals with certified departments and specialists.
+              Find hospitals across clinical departments.
             </p>
           </div>
 
@@ -245,16 +327,12 @@ export const PublicLanding: React.FC = () => {
                 <Link
                   key={spec.name}
                   to={`/search?specialty=${encodeURIComponent(spec.query)}&city=${encodeURIComponent(selectedCity)}`}
-                  className={`bg-white dark:bg-slate-900 border rounded-xl p-3 sm:p-4 flex flex-col items-center justify-center gap-2 hover:border-[#1A3BAA] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.06)] ${
-                    spec.isEmergency ? 'border-[#E7373A]' : 'border-[#E5E7EB] dark:border-slate-800'
-                  }`}
+                  className="bg-white dark:bg-slate-900 border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-3 sm:p-4 flex flex-col items-center justify-center gap-2 hover:border-[#1A3BAA] transition-all group shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
                 >
-                  <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center shrink-0 ${
-                    spec.isEmergency ? 'bg-red-50 text-[#E7373A]' : 'bg-[#EEF2FC] text-[#1A3BAA]'
-                  }`}>
-                    <Icon className="w-5 h-5" />
+                  <div className="w-11 h-11 rounded-full bg-[#EEF2FC] text-[#1A3BAA] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <Icon className="w-5 h-5 text-[#1A3BAA]" />
                   </div>
-                  <span className="text-xs sm:text-sm font-medium text-[#121414] dark:text-white leading-tight">
+                  <span className="text-sm font-medium text-[#121414] dark:text-white leading-tight">
                     {spec.name}
                   </span>
                 </Link>
@@ -270,9 +348,9 @@ export const PublicLanding: React.FC = () => {
             </div>
             <Link
               to="/search?emergency=true"
-              className="text-xs sm:text-sm font-semibold underline whitespace-nowrap"
+              className="text-sm font-semibold underline whitespace-nowrap"
             >
-              View 24x7 Emergency Hospitals →
+              View 24×7 emergency hospitals →
             </Link>
           </div>
         </div>
@@ -335,25 +413,25 @@ export const PublicLanding: React.FC = () => {
             <div className="bg-white dark:bg-slate-900 border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB] dark:border-slate-800 mb-4">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-[#4B5563]">Sample Blood Report (CBC)</span>
-                  <span className="text-xs text-[#4B5563]">12 July 2026</span>
+                  <span className="text-sm font-semibold text-[#4B5563]">Sample blood report (CBC)</span>
+                  <span className="text-sm text-[#4B5563]">12 July 2026</span>
                 </div>
-                <div className="space-y-3 font-mono text-sm">
+                <div className="space-y-3 font-sans tabular-nums text-sm">
                   <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
-                    <span className="text-[#121414] dark:text-white">Hemoglobin (Hb)</span>
+                    <span className="text-[#121414] dark:text-white font-medium">Hemoglobin (Hb)</span>
                     <span className="text-[#C62828] font-bold">8.2 g/dL (Low)</span>
                   </div>
                   <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
-                    <span className="text-[#121414] dark:text-white">Platelet Count</span>
+                    <span className="text-[#121414] dark:text-white font-medium">Platelet count</span>
                     <span className="text-[#C62828] font-bold">88,000 /uL (Low)</span>
                   </div>
                   <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
-                    <span className="text-[#121414] dark:text-white">WBC Count</span>
+                    <span className="text-[#121414] dark:text-white font-medium">WBC count</span>
                     <span className="text-[#12805C] font-semibold">6,400 /uL (Normal)</span>
                   </div>
                 </div>
               </div>
-              <div className="mt-4 pt-3 border-t border-[#E5E7EB] dark:border-slate-800 text-xs text-[#4B5563]">
+              <div className="mt-4 pt-3 border-t border-[#E5E7EB] dark:border-slate-800 text-sm text-[#4B5563]">
                 Standard laboratory format
               </div>
             </div>
@@ -362,8 +440,8 @@ export const PublicLanding: React.FC = () => {
             <div className="bg-white dark:bg-slate-900 border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB] dark:border-slate-800 mb-4">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-[#1A3BAA]">Pulse Plain-English Summary</span>
-                  <span className="text-xs text-[#12805C] font-medium">Simplified</span>
+                  <span className="text-sm font-semibold text-[#1A3BAA]">Pulse plain-English summary</span>
+                  <span className="text-sm text-[#12805C] font-medium">Simplified</span>
                 </div>
                 <div className="space-y-3 text-sm text-[#121414] dark:text-slate-200 leading-[1.6]">
                   <p>
@@ -374,7 +452,7 @@ export const PublicLanding: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <div className="mt-4 pt-3 border-t border-[#E5E7EB] dark:border-slate-800 text-xs text-[#4B5563]">
+              <div className="mt-4 pt-3 border-t border-[#E5E7EB] dark:border-slate-800 text-sm text-[#4B5563]">
                 This explains your report in simple words. It is not medical advice. Discuss results with your doctor.
               </div>
             </div>

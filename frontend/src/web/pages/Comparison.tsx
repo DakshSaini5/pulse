@@ -21,6 +21,8 @@ export const Comparison: React.FC = () => {
 
   useEffect(() => {
     document.title = 'Compare hospitals | Pulse';
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', 'Compare 2 or 3 hospitals side by side by distance, departments, and emergency care.');
   }, []);
 
   const idsStr = searchParams.get('ids') || '';

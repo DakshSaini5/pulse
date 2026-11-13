@@ -99,13 +99,13 @@ export const Map: React.FC<MapProps> = ({
       </svg>`,
     });
 
-    const defaultIcon = makePinIcon('#1A3BAA');    // Pulse Blue hospital pin
-    const activeIcon = makePinIcon('#E7373A', 32); // Pulse Red selected pin
-    const userIcon = makePinIcon('#16a34a');        // Green user location pin
+    const defaultIcon = makePinIcon('#1A3BAA', 28);    // Pulse Blue hospital pin
+    const activeIcon = makePinIcon('#142E86', 36);     // Darker Pulse Blue selected pin (no red)
+    const userIcon = makePinIcon('#16a34a', 28);       // Green user location pin
 
     // Add user coordinate marker
     L.marker([userLat, userLng], { icon: userIcon })
-      .bindPopup('<strong style="color:#198754">Your Location</strong>')
+      .bindPopup('<strong style="font-family:Inter,sans-serif; color:#16a34a; font-size:14px;">Your location</strong>')
       .addTo(group);
 
     // Plot hospital markers
@@ -116,10 +116,10 @@ export const Map: React.FC<MapProps> = ({
       });
 
       marker.bindPopup(`
-        <div style="font-family:Inter,sans-serif; padding:2px;">
-          <h4 style="margin:0 0 4px 0; font-weight:700; color:#111827;">${hosp.name}</h4>
-          <p style="margin:0 0 6px 0; font-size:11px; color:#64748b;">Match Score: <strong style="color:#0d6efd">${hosp.recommendationScore}%</strong></p>
-          <button id="btn-${hosp.id}" style="background:#0d6efd; color:#fff; border:none; border-radius:4px; padding:6px 8px; font-size:11px; font-weight:600; cursor:pointer; width:100%; margin-top:4px;">View Clinic Details</button>
+        <div style="font-family:Inter,sans-serif; padding:4px; min-width:180px;">
+          <h4 style="margin:0 0 4px 0; font-size:15px; font-weight:700; color:#111827;">${hosp.name}</h4>
+          ${hosp.rating > 0 ? `<p style="margin:0 0 6px 0; font-size:14px; color:#4B5563;">⭐ Google rating ${hosp.rating.toFixed(1)}</p>` : ''}
+          <button id="btn-${hosp.id}" style="background:#1A3BAA; color:#fff; border:none; border-radius:8px; padding:8px 12px; font-size:14px; font-weight:600; cursor:pointer; width:100%; margin-top:6px;">View hospital details</button>
         </div>
       `);
 
@@ -150,9 +150,9 @@ export const Map: React.FC<MapProps> = ({
     <div className="w-full h-full relative rounded-2xl overflow-hidden border border-slate-200 shadow-2xl min-h-[350px]">
       <div ref={mapContainerRef} className="w-full h-full absolute inset-0 bg-slate-50" />
       
-      {/* Floating coordinates indicator */}
-      <div className="absolute bottom-3 left-3 z-[1000] bg-[#111827]/80 backdrop-blur-md border border-slate-200 px-2.5 py-1 rounded-lg text-[9px] text-slate-500 font-semibold uppercase tracking-wider">
-        📍 Center: {userLat.toFixed(4)}, {userLng.toFixed(4)}
+      {/* Coordinates indicator without blur */}
+      <div className="absolute bottom-3 left-3 z-[1000] bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-lg text-sm text-slate-300 font-medium">
+        Location: {userLat.toFixed(3)}, {userLng.toFixed(3)}
       </div>
     </div>
   );
