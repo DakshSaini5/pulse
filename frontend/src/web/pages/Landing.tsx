@@ -48,7 +48,7 @@ export const Landing: React.FC = () => {
   // Autocomplete Dropdown State
   const [autocompleteResults, setAutocompleteResults] = useState<{
     hospitals: Array<{ id: string; name: string }>;
-    specialties: Array<{ name: string }>;
+    specialties: Array<{ name: string; category?: string; specialty?: string; isTest?: boolean }>;
   }>({ hospitals: [], specialties: [] });
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchingAutocomplete, setSearchingAutocomplete] = useState(false);
@@ -366,8 +366,8 @@ export const Landing: React.FC = () => {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search hospitals or specialties"
-                    aria-label="Search hospitals or specialties"
+                    placeholder="Search hospitals, specialties, or tests (e.g. Blood test, Sugar test)..."
+                    aria-label="Search hospitals, specialties, or tests"
                     className="w-full bg-transparent border-none focus:ring-0 text-sm sm:text-base px-3 sm:px-4 py-2.5 sm:py-3 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
                   />
                   <button type="submit" className="bg-[#1A3BAA] hover:bg-[#142E86] text-white px-5 sm:px-8 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-colors shrink-0">
@@ -385,15 +385,15 @@ export const Landing: React.FC = () => {
                       </div>
                     ) : autocompleteResults.hospitals.length === 0 && autocompleteResults.specialties.length === 0 ? (
                       <div className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
-                        No matching hospitals or services found in database.
+                        No matching hospitals, tests, or services found in database.
                       </div>
                     ) : (
                       <div className="space-y-4">
                         {/* Specialties/Services Autocomplete results */}
                         {autocompleteResults.specialties.length > 0 && (
                           <div>
-                            <span className="text-sm font-semibold text-[#1A3BAA] block mb-2 px-2">
-                              Services
+                            <span className="text-xs font-bold text-[#1A3BAA] uppercase tracking-wider block mb-2 px-2">
+                              Tests & Services
                             </span>
                             <div className="space-y-1">
                               {autocompleteResults.specialties.map((spec) => (
@@ -401,13 +401,23 @@ export const Landing: React.FC = () => {
                                   key={spec.name}
                                   onClick={() => {
                                     setShowDropdown(false);
-                                    navigate(`/search?specialty=${encodeURIComponent(spec.name)}`);
+                                    if (spec.isTest) {
+                                      const cleanTestName = spec.name.split(' (')[0];
+                                      navigate(`/search?q=${encodeURIComponent(cleanTestName)}${spec.specialty ? `&specialty=${encodeURIComponent(spec.specialty)}` : ''}`);
+                                    } else {
+                                      navigate(`/search?specialty=${encodeURIComponent(spec.name)}`);
+                                    }
                                   }}
                                   className="px-3 py-2.5 rounded-xl text-sm hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer flex items-center justify-between group transition-colors"
                                 >
-                                  <span className="font-medium">{spec.name}</span>
-                                  <span className="text-sm bg-[#EEF2FC] text-[#1A3BAA] px-2.5 py-0.5 rounded-full font-semibold group-hover:bg-[#1A3BAA] group-hover:text-white transition-colors">
-                                    Filter
+                                  <div className="flex flex-col text-left pr-2">
+                                    <span className="font-semibold">{spec.name}</span>
+                                    {spec.category && (
+                                      <span className="text-[11px] text-slate-500 dark:text-slate-400">{spec.category}</span>
+                                    )}
+                                  </div>
+                                  <span className="text-xs bg-[#EEF2FC] text-[#1A3BAA] px-2.5 py-0.5 rounded-full font-semibold group-hover:bg-[#1A3BAA] group-hover:text-white transition-colors shrink-0">
+                                    {spec.isTest ? 'Search Test' : 'Filter'}
                                   </span>
                                 </div>
                               ))}

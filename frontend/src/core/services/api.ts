@@ -352,7 +352,10 @@ export const hospitalAPI = {
     const res = await api.get('/api/hospitals/autocomplete', {
       params: { q, lat, lng, city },
     });
-    return res.data as { hospitals: Array<{ id: string; name: string }>; specialties: Array<{ name: string }> };
+    return res.data as {
+      hospitals: Array<{ id: string; name: string }>;
+      specialties: Array<{ name: string; category?: string; specialty?: string; isTest?: boolean }>;
+    };
   },
   getById: async (id: string, lat?: number, lng?: number, specialty?: string) => {
     const res = await api.get(`/api/hospitals/${id}`, {

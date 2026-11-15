@@ -86,7 +86,7 @@ export function DiscoverScreen({ onTabChange, onHospitalClick, showMap = false, 
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search hospital or specialty name..."
+                placeholder="Search hospitals, specialties, or tests..."
                 className="flex-1 text-sm bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
               />
             </div>

@@ -153,8 +153,8 @@ export const PublicLanding: React.FC = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search hospitals or specialties"
-              aria-label="Search hospitals or specialties"
+              placeholder="Search hospitals, specialties, or tests (e.g. Blood test, Sugar test)..."
+              aria-label="Search hospitals, specialties, or tests"
               className="w-full bg-transparent text-sm sm:text-base text-[#121414] dark:text-white placeholder-[#4B5563] focus:outline-none"
             />
           </div>

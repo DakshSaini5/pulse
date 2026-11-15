@@ -79,7 +79,7 @@ export const Search: React.FC = () => {
   const [mobileTab, setMobileTab] = useState<'list' | 'map'>('list');
   const [autocompleteResults, setAutocompleteResults] = useState<{
     hospitals: Array<{ id: string; name: string }>;
-    specialties: Array<{ name: string }>;
+    specialties: Array<{ name: string; category?: string; specialty?: string; isTest?: boolean }>;
   }>({ hospitals: [], specialties: [] });
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchingAutocomplete, setSearchingAutocomplete] = useState(false);
@@ -355,7 +355,7 @@ export const Search: React.FC = () => {
           {/* Search Query */}
           <div className="md:col-span-5 space-y-1.5 search-container-main relative">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Hospital name or specialty
+              Hospital name, specialty, or test
             </label>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
@@ -366,14 +366,14 @@ export const Search: React.FC = () => {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onFocus={() => { if (query.trim().length >= 2) setShowDropdown(true); }}
-                placeholder="Search hospital or specialty name"
+                placeholder="Search hospitals, specialties, or tests (e.g. Blood test, Sugar test)..."
                 className="w-full h-12 pl-10 pr-4 rounded-lg border border-[#E5E7EB] dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-[#121414] dark:text-white focus:outline-none focus:border-[#1A3BAA]"
               />
             </div>
 
             {/* Autocomplete Dropdown List */}
             {showDropdown && query.trim().length >= 2 && (
-              <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl z-50 p-4 text-left max-h-60 overflow-y-auto">
+              <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl z-50 p-4 text-left max-h-72 overflow-y-auto">
                 {searchingAutocomplete ? (
                   <div className="py-2 text-center text-sm text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
                     <Activity className="animate-spin text-[#1A3BAA] w-4 h-4" />
@@ -385,26 +385,40 @@ export const Search: React.FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {/* Specialties/Services Autocomplete results */}
+                    {/* Specialties & Tests Autocomplete results */}
                     {autocompleteResults.specialties.length > 0 && (
                       <div>
-                        <span className="text-sm font-semibold text-[#1A3BAA] block mb-1 px-1">
-                          Services
+                        <span className="text-xs font-bold text-[#1A3BAA] uppercase tracking-wider block mb-1.5 px-1">
+                          Tests & Services
                         </span>
-                        <div className="space-y-0.5">
+                        <div className="space-y-1">
                           {autocompleteResults.specialties.map((spec) => (
                             <div
                               key={spec.name}
                               onClick={() => {
-                                setSpecialty(spec.name);
-                                setQuery('');
-                                setShowDropdown(false);
+                                if (spec.isTest) {
+                                  const cleanTestName = spec.name.split(' (')[0];
+                                  setQuery(cleanTestName);
+                                  if (spec.specialty) setSpecialty(spec.specialty);
+                                  setShowDropdown(false);
+                                  fetchHospitals(cleanTestName);
+                                } else {
+                                  setSpecialty(spec.name);
+                                  setQuery('');
+                                  setShowDropdown(false);
+                                  fetchHospitals('');
+                                }
                               }}
                               className="px-2.5 py-2 rounded-lg text-sm hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer flex items-center justify-between group transition-colors"
                             >
-                              <span className="font-medium">{spec.name}</span>
-                              <span className="text-sm bg-[#EEF2FC] text-[#1A3BAA] px-2 py-0.5 rounded-full font-semibold group-hover:bg-[#1A3BAA] group-hover:text-white transition-colors">
-                                Filter
+                              <div className="flex flex-col text-left pr-2">
+                                <span className="font-semibold">{spec.name}</span>
+                                {spec.category && (
+                                  <span className="text-[11px] text-slate-500 dark:text-slate-400">{spec.category}</span>
+                                )}
+                              </div>
+                              <span className="text-xs bg-[#EEF2FC] text-[#1A3BAA] px-2 py-0.5 rounded-full font-semibold group-hover:bg-[#1A3BAA] group-hover:text-white transition-colors shrink-0">
+                                {spec.isTest ? 'Search Test' : 'Filter'}
                               </span>
                             </div>
                           ))}
@@ -415,10 +429,10 @@ export const Search: React.FC = () => {
                     {/* Hospitals Autocomplete results */}
                     {autocompleteResults.hospitals.length > 0 && (
                       <div>
-                        <span className="text-sm font-semibold text-[#1A3BAA] block mb-1 px-1">
+                        <span className="text-xs font-bold text-red-500 uppercase tracking-wider block mb-1.5 px-1">
                           Hospitals
                         </span>
-                        <div className="space-y-0.5">
+                        <div className="space-y-1">
                           {autocompleteResults.hospitals.map((hosp) => (
                             <div
                               key={hosp.id}
@@ -430,7 +444,7 @@ export const Search: React.FC = () => {
                               className="px-2.5 py-2 rounded-lg text-sm hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer flex items-center justify-between group transition-colors"
                             >
                               <span className="font-medium">{hosp.name}</span>
-                              <span className="text-sm bg-slate-100 dark:bg-slate-800 text-slate-600 px-2 py-0.5 rounded-full group-hover:bg-[#1A3BAA] group-hover:text-white transition-colors">
+                              <span className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 px-2 py-0.5 rounded-full group-hover:bg-[#1A3BAA] group-hover:text-white transition-colors shrink-0">
                                 Select
                               </span>
                             </div>
@@ -491,7 +505,7 @@ export const Search: React.FC = () => {
 
         {/* Second Row: 36px 24×7 emergency chip & Radius Slider */}
         <div className="pt-2 border-t border-[#E5E7EB] dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setEmergencyOnly(!emergencyOnly)}
@@ -503,6 +517,36 @@ export const Search: React.FC = () => {
             >
               <AlertCircle className="w-4 h-4 text-[#1A3BAA]" />
               <span>24×7 emergency</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setQuery('Blood Test');
+                setSpecialty('General Medicine');
+                fetchHospitals('Blood Test');
+              }}
+              className={`h-9 px-3.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                query.toLowerCase().includes('blood')
+                  ? 'bg-[#EEF2FC] text-[#1A3BAA] border border-[#1A3BAA]'
+                  : 'border border-[#E5E7EB] dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:border-[#1A3BAA]'
+              }`}
+            >
+              <span>🧪 Blood test</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setQuery('Sugar Test');
+                setSpecialty('General Medicine');
+                fetchHospitals('Sugar Test');
+              }}
+              className={`h-9 px-3.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                query.toLowerCase().includes('sugar')
+                  ? 'bg-[#EEF2FC] text-[#1A3BAA] border border-[#1A3BAA]'
+                  : 'border border-[#E5E7EB] dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:border-[#1A3BAA]'
+              }`}
+            >
+              <span>🩸 Sugar test</span>
             </button>
           </div>
 

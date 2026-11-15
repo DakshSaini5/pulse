@@ -4,7 +4,7 @@ import { scoreHospital, calculateDistance } from '../services/recommendation';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { generalLimiter } from '../middleware/rateLimiter';
 import { hospitalService } from '../services/HospitalService';
-import { findMappedSpecialty } from '../utils/intentMapper';
+import { findMappedSpecialty, findMatchingTests } from '../utils/intentMapper';
 import { z } from 'zod';
 import https from 'https';
 
@@ -153,21 +153,31 @@ router.get('/', generalLimiter, async (req: AuthenticatedRequest, res: Response)
       }
     } else if (query) {
       if (querySpecialty) {
-        andConditions.push({
-          OR: [
-            { name: { contains: query as string, mode: 'insensitive' } },
-            { address: { contains: query as string, mode: 'insensitive' } },
-            {
-              specialties: {
-                some: {
-                  specialty: {
-                    name: { equals: querySpecialty, mode: 'insensitive' }
-                  }
+        const queryConditions: any[] = [
+          { name: { contains: query as string, mode: 'insensitive' } },
+          { address: { contains: query as string, mode: 'insensitive' } },
+          {
+            specialties: {
+              some: {
+                specialty: {
+                  name: { equals: querySpecialty, mode: 'insensitive' }
                 }
               }
             }
-          ]
-        });
+          }
+        ];
+
+        // If the query is mapped to General Medicine or diagnostic tests, also match diagnostic centers, labs & general medical facilities
+        if (querySpecialty === 'General Medicine') {
+          const testFacilityKeywords = ['diagnostic', 'lab', 'pathology', 'hospital', 'clinic', 'multispeciality', 'multi specialty', 'healthcare'];
+          for (const kw of testFacilityKeywords) {
+            queryConditions.push({
+              name: { contains: kw, mode: 'insensitive' }
+            });
+          }
+        }
+
+        andConditions.push({ OR: queryConditions });
       } else {
         andConditions.push({
           OR: [
@@ -389,22 +399,29 @@ router.get('/autocomplete', async (req: Request, res: Response) => {
       take: 5
     });
 
-    // 2. Search matching specialties (top 5 — global, not city-scoped)
+    // 2. Search matching tests & specialties (top 6 — global, not city-scoped)
+    const matchingTests = findMatchingTests(queryText).slice(0, 4).map(t => ({
+      name: t.name,
+      category: t.category,
+      specialty: t.specialty,
+      isTest: true
+    }));
+
     const dbSpecialties = await prisma.specialty.findMany({
       where: {
         name: { contains: queryText, mode: 'insensitive' }
       },
       select: { name: true },
-      take: 5
+      take: 4
     });
 
-    const specialties = [...dbSpecialties];
+    const specialties: any[] = [...matchingTests, ...dbSpecialties];
     const mappedSpecialtyName = findMappedSpecialty(queryText);
     if (mappedSpecialtyName && !specialties.some(s => s.name.toLowerCase() === mappedSpecialtyName.toLowerCase())) {
       specialties.unshift({ name: mappedSpecialtyName });
     }
 
-    return res.json({ hospitals, specialties: specialties.slice(0, 5) });
+    return res.json({ hospitals, specialties: specialties.slice(0, 6) });
   } catch (err) {
     console.error('Error in autocomplete route:', err);
     return res.status(500).json({ message: 'Error performing autocomplete search.' });
