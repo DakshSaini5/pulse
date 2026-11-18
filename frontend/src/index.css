@@ -201,3 +201,82 @@ body {
   --input: 215 28% 17%;
   --ring: 226 73% 38%;
 }
+
+/* ========================================================
+   HERO & PHONE MOCKUP ENTRANCE / MOTION EFFECTS
+   Only animates transform & opacity (GPU-accelerated, 60fps)
+   ======================================================== */
+
+@keyframes pulseFloat1 {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes pulseFloat2 {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(8px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes pulseFloat3 {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes mockPhoneListScroll {
+  0%, 15% {
+    transform: translateY(0);
+  }
+  45%, 65% {
+    transform: translateY(-90px);
+  }
+  90%, 100% {
+    transform: translateY(0);
+  }
+}
+
+.animate-mock-list {
+  animation: mockPhoneListScroll 9s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+
+.animate-float-1 {
+  animation: pulseFloat1 4.5s ease-in-out infinite;
+}
+
+.animate-float-2 {
+  animation: pulseFloat2 5.2s ease-in-out infinite;
+}
+
+.animate-float-3 {
+  animation: pulseFloat3 4.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-mock-list,
+  .animate-float-1,
+  .animate-float-2,
+  .animate-float-3 {
+    animation: none !important;
+    transform: none !important;
+  }
+}
