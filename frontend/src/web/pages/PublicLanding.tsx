@@ -161,7 +161,7 @@ export const PublicLanding: React.FC = () => {
     <div className="w-full text-[#121414] dark:text-slate-100">
       
       {/* 1. HERO SECTION WITH SEARCH */}
-      <section className="pt-8 pb-12 sm:pt-14 sm:pb-16 text-center max-w-[900px] mx-auto overflow-visible">
+      <section className="pt-8 pb-12 sm:pt-14 sm:pb-16 text-center max-w-[900px] mx-auto overflow-x-clip">
         {/* Headline fade-up */}
         <h1
           className={`text-[28px] sm:text-[40px] font-bold text-[#121414] dark:text-white leading-[1.2] tracking-[-0.02em] [text-wrap:balance] transition-all duration-700 ease-out transform ${
