@@ -207,39 +207,39 @@ body {
    Only animates transform & opacity (GPU-accelerated, 60fps)
    ======================================================== */
 
-@keyframes pulseFloat1 {
-  0% {
+@keyframes pulsePhoneFloat {
+  0%, 100% {
     transform: translateY(0px);
   }
   50% {
     transform: translateY(-8px);
   }
-  100% {
+}
+
+@keyframes pulseFloat1 {
+  0%, 100% {
     transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-13px);
   }
 }
 
 @keyframes pulseFloat2 {
-  0% {
+  0%, 100% {
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(8px);
-  }
-  100% {
-    transform: translateY(0px);
+    transform: translateY(13px);
   }
 }
 
 @keyframes pulseFloat3 {
-  0% {
+  0%, 100% {
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(-6px);
-  }
-  100% {
-    transform: translateY(0px);
+    transform: translateY(-11px);
   }
 }
 
@@ -248,15 +248,19 @@ body {
     transform: translateY(0);
   }
   45%, 65% {
-    transform: translateY(-90px);
+    transform: translateY(-120px);
   }
   90%, 100% {
     transform: translateY(0);
   }
 }
 
+.animate-phone-float {
+  animation: pulsePhoneFloat 6s ease-in-out infinite;
+}
+
 .animate-mock-list {
-  animation: mockPhoneListScroll 9s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+  animation: mockPhoneListScroll 9.5s cubic-bezier(0.45, 0, 0.25, 1) infinite;
 }
 
 .animate-float-1 {
@@ -272,6 +276,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .animate-phone-float,
   .animate-mock-list,
   .animate-float-1,
   .animate-float-2,

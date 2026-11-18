@@ -268,7 +268,7 @@ export const PublicLanding: React.FC = () => {
         {/* 2. PHONE MOCKUP SECTION WITH HORIZONTAL ECG LINE & 3 FLOATING CARDS */}
         <div
           ref={phoneRef}
-          className="relative w-full max-w-[1040px] mx-auto my-12 sm:my-16 flex justify-center items-center select-none overflow-visible"
+          className="relative w-full max-w-[1040px] xl:max-w-[1120px] mx-auto my-12 sm:my-16 flex justify-center items-center select-none overflow-visible"
         >
           {/* Thin red heartbeat/ECG line running horizontally behind the phone (stroke-dashoffset animated left to right) */}
           <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 w-full pointer-events-none z-0 overflow-hidden">
@@ -281,14 +281,14 @@ export const PublicLanding: React.FC = () => {
               <path
                 d="M 0 40 L 380 40 L 396 40 L 406 12 L 416 68 L 426 26 L 436 54 L 446 40 L 754 40 L 764 12 L 774 68 L 784 26 L 794 54 L 804 40 L 1200 40"
                 stroke="#E7373A"
-                strokeWidth="2"
+                strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 style={{
                   strokeDasharray: 1400,
                   strokeDashoffset: phoneInView ? 0 : 1400,
                   transition: 'stroke-dashoffset 1.8s cubic-bezier(0.25, 1, 0.5, 1)',
-                  opacity: 0.35,
+                  opacity: 0.75,
                 }}
               />
             </svg>
@@ -345,7 +345,7 @@ export const PublicLanding: React.FC = () => {
 
           {/* Mobile version of Compare Table */}
           <div
-            className={`md:hidden absolute z-20 -left-2 top-32 w-[175px] origin-top-left transition-all duration-700 ease-out transform pointer-events-auto ${
+            className={`md:hidden absolute z-20 -left-1 sm:left-1 top-32 w-[170px] origin-top-left transition-all duration-700 ease-out transform pointer-events-auto ${
               phoneInView ? 'opacity-100 scale-90 translate-y-0' : 'opacity-0 scale-75 translate-y-4'
             }`}
             style={{ transitionDelay: '420ms' }}
@@ -397,7 +397,7 @@ export const PublicLanding: React.FC = () => {
               phoneInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-9'
             }`}
           >
-            <div className="w-[280px] sm:w-[320px] rounded-[36px] p-2.5 bg-slate-900 shadow-2xl border-4 border-slate-800 ring-1 ring-slate-700">
+            <div className="animate-phone-float w-[295px] min-[390px]:w-[325px] sm:w-[360px] md:w-[390px] lg:w-[415px] rounded-[36px] sm:rounded-[42px] p-2.5 sm:p-3 bg-slate-900 shadow-2xl border-4 border-slate-800 ring-1 ring-slate-700">
               {/* Notch / Speaker bar */}
               <div className="flex justify-center mb-1.5">
                 <div className="w-20 h-4 bg-slate-950 rounded-full flex items-center justify-end px-2">
@@ -406,7 +406,7 @@ export const PublicLanding: React.FC = () => {
               </div>
 
               {/* Inner Phone Screen */}
-              <div className="bg-white dark:bg-slate-900 rounded-[28px] overflow-hidden text-left border border-slate-200 dark:border-slate-800 shadow-inner">
+              <div className="bg-white dark:bg-slate-900 rounded-[28px] sm:rounded-[32px] overflow-hidden text-left border border-slate-200 dark:border-slate-800 shadow-inner">
                 {/* App Status & Header */}
                 <div className="px-3.5 pt-3 pb-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                   <PulseLogo size={22} showTagline={false} />
@@ -417,7 +417,7 @@ export const PublicLanding: React.FC = () => {
                 </div>
 
                 {/* In-App Mock Search */}
-                <div className="p-3 space-y-2.5">
+                <div className="p-3 sm:p-3.5 space-y-2.5">
                   <div className="flex items-center gap-2 bg-[#F5F7FA] dark:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-[#E5E7EB] dark:border-slate-700 text-slate-400">
                     <Search className="w-3.5 h-3.5 text-[#1A3BAA]" />
                     <span className="text-xs text-slate-500 font-medium truncate">Search hospitals or specialties</span>
@@ -448,7 +448,7 @@ export const PublicLanding: React.FC = () => {
                   </div>
 
                   {/* Scrolling Mock Hospital List (reveals more hospitals slowly) */}
-                  <div className="h-[175px] overflow-hidden relative">
+                  <div className="h-[210px] sm:h-[240px] overflow-hidden relative">
                     <div className="animate-mock-list space-y-2">
                       {/* Hospital 1: Manipal Hospital */}
                       <div className="bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-xl p-2.5 shadow-sm space-y-1">
@@ -555,7 +555,7 @@ export const PublicLanding: React.FC = () => {
           {/* Floating Card 1: "Nearest 24x7" (Top Right of phone on desktop, overlapping right edge on mobile) */}
           {/* Desktop version */}
           <div
-            className={`hidden md:block absolute z-20 right-0 lg:-right-6 xl:-right-16 top-4 w-[275px] lg:w-[290px] transition-all duration-700 ease-out transform pointer-events-auto ${
+            className={`hidden md:block absolute z-20 right-0 lg:-right-6 xl:-right-14 top-4 w-[280px] lg:w-[295px] transition-all duration-700 ease-out transform pointer-events-auto ${
               phoneInView ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 translate-y-4'
             }`}
             style={{ transitionDelay: '300ms' }}
@@ -602,7 +602,7 @@ export const PublicLanding: React.FC = () => {
 
           {/* Mobile version of Nearest 24x7 */}
           <div
-            className={`md:hidden absolute z-20 -right-2 top-4 w-[210px] origin-top-right transition-all duration-700 ease-out transform pointer-events-auto ${
+            className={`md:hidden absolute z-20 -right-1 sm:right-1 top-3 w-[205px] origin-top-right transition-all duration-700 ease-out transform pointer-events-auto ${
               phoneInView ? 'opacity-100 scale-90 translate-y-0' : 'opacity-0 scale-75 translate-y-4'
             }`}
             style={{ transitionDelay: '300ms' }}
@@ -645,7 +645,7 @@ export const PublicLanding: React.FC = () => {
           {/* Floating Card 3: "Your report, explained" (Bottom Right on desktop, overlapping bottom-right on mobile) */}
           {/* Desktop version */}
           <div
-            className={`hidden md:block absolute z-20 right-2 lg:-right-4 xl:-right-12 bottom-2 w-[265px] lg:w-[280px] transition-all duration-700 ease-out transform pointer-events-auto ${
+            className={`hidden md:block absolute z-20 right-0 lg:-right-4 xl:-right-10 bottom-2 w-[270px] lg:w-[285px] transition-all duration-700 ease-out transform pointer-events-auto ${
               phoneInView ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 translate-y-4'
             }`}
             style={{ transitionDelay: '580ms' }}
@@ -689,7 +689,7 @@ export const PublicLanding: React.FC = () => {
 
           {/* Mobile version of Your Report, Explained */}
           <div
-            className={`md:hidden absolute z-20 -right-2 bottom-6 w-[215px] origin-bottom-right transition-all duration-700 ease-out transform pointer-events-auto ${
+            className={`md:hidden absolute z-20 -right-1 sm:right-1 bottom-6 w-[210px] origin-bottom-right transition-all duration-700 ease-out transform pointer-events-auto ${
               phoneInView ? 'opacity-100 scale-90 translate-y-0' : 'opacity-0 scale-75 translate-y-4'
             }`}
             style={{ transitionDelay: '580ms' }}
