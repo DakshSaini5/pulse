@@ -39,12 +39,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   // Nav per developer brief: Find hospitals, Compare hospitals, Understand a report, Prescriptions, Medical terms, How it works
   const publicNavItems = [
-    { name: 'Find hospitals', path: '/search', icon: Search },
-    { name: 'Compare hospitals', path: '/compare', icon: ArrowLeftRight },
-    { name: 'Understand a report', path: '/reports', icon: FileText },
-    { name: 'Prescriptions', path: '/prescriptions', icon: ClipboardList },
-    { name: 'Medical terms', path: '/medical-terms', icon: HelpCircle },
-    { name: 'How it works', path: '/how-it-works', icon: Activity },
+    { name: 'Find hospitals', shortName: 'Hospitals', path: '/search', icon: Search },
+    { name: 'Compare hospitals', shortName: 'Compare', path: '/compare', icon: ArrowLeftRight },
+    { name: 'Understand a report', shortName: 'Reports', path: '/reports', icon: FileText },
+    { name: 'Prescriptions', shortName: 'Prescriptions', path: '/prescriptions', icon: ClipboardList },
+    { name: 'Medical terms', shortName: 'Terms', path: '/medical-terms', icon: HelpCircle },
+    { name: 'How it works', shortName: 'How it works', path: '/how-it-works', icon: Activity },
   ];
 
   return (
@@ -67,13 +67,14 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   key={item.path}
                   to={item.path}
                   aria-label={`Navigate to ${item.name}`}
-                  className={`px-3 py-1.5 rounded-lg text-xs xl:text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
+                  className={`px-2 xl:px-3 py-1.5 rounded-lg text-xs xl:text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
                     isActive(item.path)
                       ? 'text-[#1A3BAA] bg-[#EEF2FC] font-semibold'
                       : 'text-[#4B5563] hover:text-[#121414] hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
-                  {item.name}
+                  <span className="hidden xl:inline">{item.name}</span>
+                  <span className="xl:hidden">{item.shortName || item.name}</span>
                 </Link>
               ))}
               {user && (

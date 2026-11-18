@@ -27,10 +27,10 @@
   }
 }
 
-/* Strict Typography Guardrail per Developer Brief: Nothing under 14px anywhere on the site */
-.text-\[8px\], .text-\[9px\], .text-\[10px\], .text-\[11px\], .text-\[12px\], .text-\[13px\], .text-xs {
-  font-size: 0.875rem !important; /* 14px minimum */
-  line-height: 1.25rem !important;
+/* Typography: Base body text is 14px (0.875rem) minimum with Inter font */
+body {
+  font-size: 0.875rem;
+  line-height: 1.5;
 }
 
 /* Logo Tagline - Proportional scaling directly under the logo wordmark */

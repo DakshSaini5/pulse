@@ -340,7 +340,7 @@ export const PrescriptionCenter: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
         {/* Left Column: Upload & History Listing */}
         <div className="lg:col-span-4 space-y-6">
           {/* Upload Card */}

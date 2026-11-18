@@ -122,7 +122,7 @@ export const Comparison: React.FC = () => {
       ) : hospitals.length > 0 ? (
         /* Side-by-side Table */
         <div className="overflow-x-auto rounded-xl border border-[#E5E7EB] dark:border-slate-800 shadow-[0_1px_3px_rgba(0,0,0,0.06)] bg-white dark:bg-slate-900">
-          <table className="w-full text-left text-sm border-collapse">
+          <table className="w-full min-w-[620px] text-left text-sm border-collapse">
             <thead>
               <tr className="border-b border-[#E5E7EB] dark:border-slate-800 bg-[#F5F7FA] dark:bg-slate-800/60">
                 <th className="p-4 sm:p-5 font-bold text-[#121414] dark:text-white uppercase tracking-wider w-1/4 text-xs">

@@ -47,8 +47,8 @@ export const MobileBottomNav: React.FC = () => {
                 : 'text-[#4B5563] dark:text-slate-400 hover:text-[#121414]'
             }`}
           >
-            <Icon className={`w-5 h-5 ${active ? 'stroke-[2.5]' : 'stroke-2'}`} />
-            <span className="text-[11px] font-medium leading-tight mt-1">{tab.label}</span>
+            <Icon className={`w-5 h-5 shrink-0 ${active ? 'stroke-[2.5]' : 'stroke-2'}`} />
+            <span className="text-[11px] font-medium leading-none mt-1 tracking-tight truncate max-w-full">{tab.label}</span>
           </Link>
         );
       })}

@@ -203,8 +203,8 @@ export const PublicLanding: React.FC = () => {
           </button>
         </form>
 
-        {/* Real Mobile App Screenshot in Modern Phone Frame (Item 37) */}
-        <div className="my-10 sm:my-12 flex justify-center">
+        {/* Real Mobile App Screenshot in Modern Phone Frame (Item 37) - Hidden on phones since mobile visitors are already on a phone */}
+        <div className="hidden sm:flex my-10 sm:my-12 justify-center">
           <div className="w-[280px] sm:w-[320px] rounded-[36px] p-2.5 bg-slate-900 shadow-2xl border-4 border-slate-800 ring-1 ring-slate-700">
             {/* Notch / Speaker bar */}
             <div className="flex justify-center mb-1.5">

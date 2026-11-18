@@ -128,8 +128,8 @@ export const Forgot: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-surface dark:bg-slate-950">
-      <div className="max-w-md w-full space-y-6 bg-white border border-pulseBorder dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-sm dark:bg-slate-900">
+    <div className="min-h-[70vh] flex items-center justify-center py-6 sm:py-12">
+      <div className="max-w-md w-full space-y-6 bg-white border border-pulseBorder dark:border-slate-800 rounded-2xl p-5 sm:p-8 shadow-sm dark:bg-slate-900">
         <div className="flex flex-col items-center space-y-2">
           <PulseLogo size={48} variant="vertical" showTagline={false} />
           <h1 className="text-xl font-bold text-slate-900 dark:text-white pt-2">Password Recovery</h1>

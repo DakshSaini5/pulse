@@ -597,7 +597,7 @@ export const Search: React.FC = () => {
           {/* Main Map + List workspace */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
             {/* Left Side: Hospital List */}
-            <div className={`lg:col-span-5 space-y-4 max-h-[600px] overflow-y-auto pr-1 sm:pr-2 text-left ${mobileTab === 'list' ? 'block' : 'hidden lg:block'}`}>
+            <div className={`lg:col-span-5 space-y-4 lg:max-h-[600px] lg:overflow-y-auto pr-1 sm:pr-2 text-left ${mobileTab === 'list' ? 'block' : 'hidden lg:block'}`}>
               {/* Active Specialty Filter Header */}
               {specialty && (
                 <div className="glass-panel border border-primary/20 bg-primary/5 p-4 rounded-2xl flex items-center justify-between animate-in slide-in-from-top duration-300">
@@ -673,8 +673,8 @@ export const Search: React.FC = () => {
                             <img src={hosp.photoUrl} alt={hosp.name} className="w-full h-full object-cover" />
                           </div>
                         )}
-                        <div className="flex justify-between items-start gap-4">
-                          <div>
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-4">
+                          <div className="flex-1 min-w-0">
                             <h3 className="font-bold text-slate-900 dark:text-white text-base leading-snug">{getHospitalDisplayName(hosp.name, hosp.address)}</h3>
                             <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-1 leading-normal">
                               <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
@@ -710,7 +710,7 @@ export const Search: React.FC = () => {
                             )}
                           </div>
 
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
                             {/* Bookmark Button */}
                             <button
                               type="button"
@@ -884,8 +884,8 @@ export const Search: React.FC = () => {
 
           {/* Floating comparison dock at the bottom */}
           {compareIds.length > 0 && (
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[2000] w-full max-w-lg px-4 animate-slide-up">
-              <div className="glass-panel border border-primary/30 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-xl p-4 rounded-2xl flex items-center justify-between shadow-2xl">
+            <div className="fixed bottom-[72px] sm:bottom-6 left-1/2 -translate-x-1/2 z-[2000] w-full max-w-lg px-4 animate-slide-up">
+              <div className="glass-panel border border-primary/30 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-xl p-3.5 sm:p-4 rounded-2xl flex items-center justify-between shadow-2xl">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center text-primary">
                     <Layers className="w-5 h-5 animate-pulse" />

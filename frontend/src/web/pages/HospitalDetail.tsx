@@ -115,14 +115,14 @@ export const HospitalDetail: React.FC = () => {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-16 text-left px-4 sm:px-6">
+    <div className="w-full max-w-5xl mx-auto space-y-6 pb-16 text-left">
       <Link to="/search" className="inline-flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors text-sm font-medium">
         <ArrowLeft className="w-4 h-4" />
         Back to hospital list
       </Link>
 
       {/* Hospital Hero Card */}
-      <div className="rounded-2xl p-6 sm:p-8 border border-pulseBorder dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-4">
+      <div className="rounded-2xl p-4 sm:p-6 md:p-8 border border-pulseBorder dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="space-y-2">
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
@@ -178,7 +178,7 @@ export const HospitalDetail: React.FC = () => {
         {/* Left column: Specialties & Reviews */}
         <div className="md:col-span-8 space-y-6">
           {/* Specialties */}
-          <div className="rounded-2xl p-6 sm:p-8 border border-pulseBorder dark:border-slate-800 bg-white dark:bg-slate-900 space-y-5">
+          <div className="rounded-2xl p-4 sm:p-6 md:p-8 border border-pulseBorder dark:border-slate-800 bg-white dark:bg-slate-900 space-y-5">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white border-b border-pulseBorder dark:border-slate-800 pb-3">
               Departments and specialties
             </h2>
@@ -206,7 +206,7 @@ export const HospitalDetail: React.FC = () => {
           </div>
 
           {/* Reviews section - "Patient" word banned */}
-          <div className="rounded-2xl p-6 sm:p-8 border border-pulseBorder dark:border-slate-800 bg-white dark:bg-slate-900 space-y-6">
+          <div className="rounded-2xl p-4 sm:p-6 md:p-8 border border-pulseBorder dark:border-slate-800 bg-white dark:bg-slate-900 space-y-6">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white border-b border-pulseBorder dark:border-slate-800 pb-3">
               {totalReviews > 0 ? `Hospital reviews (${totalReviews})` : 'Hospital reviews'}
             </h2>

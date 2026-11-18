@@ -170,7 +170,7 @@ export const SavedHospitals: React.FC = () => {
               <div
                 key={hosp.id}
                 onClick={() => navigate(`/hospitals/${hosp.id}`)}
-                className="glass-panel glass-panel-hover rounded-3xl p-6 border border-slate-200 dark:border-slate-700 flex flex-col justify-between cursor-pointer text-left relative bg-white dark:bg-slate-900/[0.005]"
+                className="glass-panel glass-panel-hover rounded-2xl p-5 border border-slate-200 dark:border-slate-700 flex flex-col justify-between cursor-pointer text-left relative bg-white dark:bg-slate-900/[0.005]"
               >
                 <div className="space-y-3">
                   <div className="flex justify-between items-start gap-4">

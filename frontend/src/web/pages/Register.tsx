@@ -141,8 +141,8 @@ export const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[75vh] flex items-center justify-center py-10 px-4 sm:px-6 lg:px-8 bg-surface dark:bg-slate-950">
-      <div className="max-w-md w-full space-y-6 bg-white dark:bg-slate-900 border border-pulseBorder dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-sm">
+    <div className="min-h-[70vh] flex items-center justify-center py-6 sm:py-10">
+      <div className="max-w-md w-full space-y-6 bg-white dark:bg-slate-900 border border-pulseBorder dark:border-slate-800 rounded-2xl p-5 sm:p-8 shadow-sm">
         
         <div className="flex flex-col items-center text-center space-y-2">
           <PulseLogo size={48} variant="vertical" showTagline={false} />

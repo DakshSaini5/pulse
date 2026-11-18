@@ -362,7 +362,7 @@ export const ReportCenter: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
         {/* Left column: upload & history listing */}
         <div className="lg:col-span-4 space-y-6">
           {/* Upload card */}
@@ -440,7 +440,7 @@ export const ReportCenter: React.FC = () => {
           </div>
 
           {/* Historical Listing */}
-          <div className="glass-panel rounded-3xl p-6 border border-slate-200 dark:border-slate-700 space-y-4">
+          <div className="glass-panel rounded-xl p-5 border border-slate-200 dark:border-slate-700 space-y-4">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Report Scan History</h3>
 
             {loading ? (
@@ -498,7 +498,7 @@ export const ReportCenter: React.FC = () => {
             <>
               {/* Dual-Pane Editor for Verification */}
               {activeReport.status === 'PENDING' || activeReport.status === 'OCR_COMPLETED' ? (
-                <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-700 space-y-6">
+                <div className="glass-panel rounded-xl p-4 sm:p-6 md:p-8 border border-slate-200 dark:border-slate-700 space-y-6">
                   <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
                     <div>
                       <h2 className="text-lg font-bold text-slate-900 dark:text-white">Report Verification Desk</h2>
