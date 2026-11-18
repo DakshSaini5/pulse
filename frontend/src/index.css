@@ -212,7 +212,7 @@ body {
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(-8px);
+    transform: translateY(-6px);
   }
 }
 
@@ -221,7 +221,7 @@ body {
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(-13px);
+    transform: translateY(-8px);
   }
 }
 
@@ -230,7 +230,7 @@ body {
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(13px);
+    transform: translateY(8px);
   }
 }
 
@@ -239,7 +239,7 @@ body {
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(-11px);
+    transform: translateY(-7px);
   }
 }
 
@@ -248,7 +248,7 @@ body {
     transform: translateY(0);
   }
   45%, 65% {
-    transform: translateY(-120px);
+    transform: translateY(-92px);
   }
   90%, 100% {
     transform: translateY(0);
@@ -260,7 +260,7 @@ body {
 }
 
 .animate-mock-list {
-  animation: mockPhoneListScroll 9.5s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+  animation: mockPhoneListScroll 9s cubic-bezier(0.45, 0, 0.25, 1) infinite;
 }
 
 .animate-float-1 {

@@ -268,7 +268,7 @@ export const PublicLanding: React.FC = () => {
         {/* 2. PHONE MOCKUP SECTION WITH HORIZONTAL ECG LINE & 3 FLOATING CARDS */}
         <div
           ref={phoneRef}
-          className="relative w-full max-w-[1040px] xl:max-w-[1120px] mx-auto my-12 sm:my-16 flex justify-center items-center select-none overflow-visible"
+          className="relative w-full max-w-[1040px] mx-auto my-8 sm:my-16 flex justify-center items-center select-none overflow-visible"
         >
           {/* Thin red heartbeat/ECG line running horizontally behind the phone (stroke-dashoffset animated left to right) */}
           <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 w-full pointer-events-none z-0 overflow-hidden">
@@ -297,7 +297,7 @@ export const PublicLanding: React.FC = () => {
           {/* Floating Card 2: "Compare" Mini Table (Left of phone on desktop, overlapping left edge on mobile) */}
           {/* Desktop version */}
           <div
-            className={`hidden md:block absolute z-20 left-0 lg:-left-6 xl:-left-16 top-16 w-[235px] lg:w-[250px] transition-all duration-700 ease-out transform pointer-events-auto ${
+            className={`hidden md:block absolute z-20 left-2 lg:-left-6 xl:-left-12 top-20 w-[240px] lg:w-[250px] transition-all duration-700 ease-out transform pointer-events-auto ${
               phoneInView ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 translate-y-4'
             }`}
             style={{ transitionDelay: '420ms' }}
@@ -343,26 +343,26 @@ export const PublicLanding: React.FC = () => {
             </div>
           </div>
 
-          {/* Mobile version of Compare Table */}
+          {/* Mobile version of Compare Table - compact pill card that fits phone screens without overflow */}
           <div
-            className={`md:hidden absolute z-20 -left-1 sm:left-1 top-32 w-[170px] origin-top-left transition-all duration-700 ease-out transform pointer-events-auto ${
-              phoneInView ? 'opacity-100 scale-90 translate-y-0' : 'opacity-0 scale-75 translate-y-4'
+            className={`md:hidden absolute z-20 -left-2 min-[380px]:-left-5 top-28 w-[138px] min-[380px]:w-[146px] origin-top-left transition-all duration-700 ease-out transform pointer-events-auto ${
+              phoneInView ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-85 translate-y-3'
             }`}
             style={{ transitionDelay: '420ms' }}
           >
-            <div className="animate-float-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-2.5 shadow-xl text-left">
-              <div className="flex items-center gap-1 mb-1.5">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-[#1A3BAA] bg-[#EEF2FC] px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                  <ArrowLeftRight className="w-2.5 h-2.5" />
+            <div className="animate-float-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-2 shadow-lg text-left">
+              <div className="flex items-center gap-1 mb-1">
+                <span className="text-[8px] font-bold uppercase tracking-wider text-[#1A3BAA] bg-[#EEF2FC] px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                  <ArrowLeftRight className="w-2 h-2" />
                   COMPARE
                 </span>
               </div>
-              <table className="w-full text-left border-collapse text-[10px]">
+              <table className="w-full text-left border-collapse text-[8.5px]">
                 <thead>
-                  <tr className="border-b border-[#E5E7EB] text-[9px] text-[#4B5563]">
-                    <th className="pb-1 font-medium"></th>
-                    <th className="pb-1 font-bold text-[#121414]">Manipal</th>
-                    <th className="pb-1 font-bold text-[#121414]">Aster</th>
+                  <tr className="border-b border-[#E5E7EB] text-[8px] text-[#4B5563]">
+                    <th className="pb-0.5 font-medium"></th>
+                    <th className="pb-0.5 font-bold text-[#121414]">Manipal</th>
+                    <th className="pb-0.5 font-bold text-[#121414]">Aster</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E7EB]/50">
@@ -372,17 +372,17 @@ export const PublicLanding: React.FC = () => {
                     <td className="py-0.5 font-bold text-[#B45309]">4.5</td>
                   </tr>
                   <tr>
-                    <td className="py-0.5 text-[#4B5563]">Distance</td>
+                    <td className="py-0.5 text-[#4B5563]">Dist.</td>
                     <td className="py-0.5 font-semibold text-[#121414]">1.8 km</td>
                     <td className="py-0.5 font-semibold text-[#121414]">6.2 km</td>
                   </tr>
                   <tr>
-                    <td className="py-0.5 text-[#4B5563]">Consult</td>
+                    <td className="py-0.5 text-[#4B5563]">Fee</td>
                     <td className="py-0.5 font-semibold text-[#121414]">₹1,000</td>
                     <td className="py-0.5 font-semibold text-[#121414]">₹1,200</td>
                   </tr>
                   <tr>
-                    <td className="py-0.5 text-[#4B5563]">24×7 ER</td>
+                    <td className="py-0.5 text-[#4B5563]">24×7</td>
                     <td className="py-0.5 font-bold text-[#12805C]">Yes</td>
                     <td className="py-0.5 font-bold text-[#12805C]">Yes</td>
                   </tr>
@@ -391,148 +391,148 @@ export const PublicLanding: React.FC = () => {
             </div>
           </div>
 
-          {/* Phone Frame Mockup - scrolls up into view and settles with subtle float */}
+          {/* Phone Frame Mockup - sleek, slender flagship smartphone body (ratio ~1:2) */}
           <div
             className={`relative z-10 transition-all duration-800 ease-out transform ${
               phoneInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-9'
             }`}
           >
-            <div className="animate-phone-float w-[295px] min-[390px]:w-[325px] sm:w-[360px] md:w-[390px] lg:w-[415px] rounded-[36px] sm:rounded-[42px] p-2.5 sm:p-3 bg-slate-900 shadow-2xl border-4 border-slate-800 ring-1 ring-slate-700">
-              {/* Notch / Speaker bar */}
-              <div className="flex justify-center mb-1.5">
-                <div className="w-20 h-4 bg-slate-950 rounded-full flex items-center justify-end px-2">
-                  <div className="w-2 h-2 rounded-full bg-slate-800" />
+            <div className="animate-phone-float w-[235px] min-[380px]:w-[250px] sm:w-[280px] md:w-[315px] lg:w-[325px] rounded-[38px] sm:rounded-[44px] p-2 sm:p-2.5 bg-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.25),0_0_0_1px_rgba(255,255,255,0.06)] border-[3.5px] border-slate-700/80">
+              {/* Dynamic Island / Pill notch */}
+              <div className="flex justify-center mb-1 sm:mb-1.5">
+                <div className="w-14 sm:w-18 h-3.5 sm:h-4 bg-slate-950 rounded-full flex items-center justify-end px-1.5 sm:px-2">
+                  <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-slate-800" />
                 </div>
               </div>
 
               {/* Inner Phone Screen */}
-              <div className="bg-white dark:bg-slate-900 rounded-[28px] sm:rounded-[32px] overflow-hidden text-left border border-slate-200 dark:border-slate-800 shadow-inner">
+              <div className="bg-white dark:bg-slate-900 rounded-[30px] sm:rounded-[36px] overflow-hidden text-left border border-slate-200 dark:border-slate-800 shadow-inner">
                 {/* App Status & Header */}
-                <div className="px-3.5 pt-3 pb-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <PulseLogo size={22} showTagline={false} />
-                  <span className="text-[11px] font-semibold text-[#1A3BAA] bg-[#EEF2FC] px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <MapPin className="w-3 h-3" />
+                <div className="px-2.5 sm:px-3.5 pt-2 sm:pt-3 pb-1.5 sm:pb-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <PulseLogo size={20} showTagline={false} />
+                  <span className="text-[10px] sm:text-[11px] font-semibold text-[#1A3BAA] bg-[#EEF2FC] px-1.5 sm:px-2 py-0.5 rounded-full flex items-center gap-0.5 sm:gap-1">
+                    <MapPin className="w-2.5 sm:w-3 h-2.5 sm:h-3" />
                     Bengaluru
                   </span>
                 </div>
 
                 {/* In-App Mock Search */}
-                <div className="p-3 sm:p-3.5 space-y-2.5">
-                  <div className="flex items-center gap-2 bg-[#F5F7FA] dark:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-[#E5E7EB] dark:border-slate-700 text-slate-400">
-                    <Search className="w-3.5 h-3.5 text-[#1A3BAA]" />
-                    <span className="text-xs text-slate-500 font-medium truncate">Search hospitals or specialties</span>
+                <div className="p-2 sm:p-3 space-y-2 sm:space-y-2.5">
+                  <div className="flex items-center gap-1.5 sm:gap-2 bg-[#F5F7FA] dark:bg-slate-800 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg border border-[#E5E7EB] dark:border-slate-700 text-slate-400">
+                    <Search className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#1A3BAA] shrink-0" />
+                    <span className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Search hospitals or specialties</span>
                   </div>
 
                   {/* Emergency banner in mock app */}
-                  <div className="bg-red-50 text-[#C62828] border border-red-200 px-2 py-1 rounded-md text-[10px] font-medium flex items-center justify-between">
+                  <div className="bg-red-50 text-[#C62828] border border-red-200 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md text-[9px] sm:text-[10px] font-medium flex items-center justify-between">
                     <span>Emergency? Call 112</span>
                     <span className="font-semibold text-[#1A3BAA] underline">24×7 hospitals</span>
                   </div>
 
                   {/* Mock Feature Pills */}
-                  <div className="grid grid-cols-2 gap-1.5 pt-0.5">
-                    <div className="bg-[#EEF2FC] text-[#1A3BAA] p-2 rounded-lg text-center">
-                      <span className="block text-[11px] font-bold">Compare</span>
-                      <span className="text-[9px] text-slate-500">2-3 facilities</span>
+                  <div className="grid grid-cols-2 gap-1 sm:gap-1.5 pt-0.5">
+                    <div className="bg-[#EEF2FC] text-[#1A3BAA] p-1.5 sm:p-2 rounded-lg text-center">
+                      <span className="block text-[10px] sm:text-[11px] font-bold">Compare</span>
+                      <span className="text-[8.5px] sm:text-[9px] text-slate-500">2-3 facilities</span>
                     </div>
-                    <div className="bg-[#EEF2FC] text-[#1A3BAA] p-2 rounded-lg text-center">
-                      <span className="block text-[11px] font-bold">Lab Reports</span>
-                      <span className="text-[9px] text-slate-500">Plain English</span>
+                    <div className="bg-[#EEF2FC] text-[#1A3BAA] p-1.5 sm:p-2 rounded-lg text-center">
+                      <span className="block text-[10px] sm:text-[11px] font-bold">Lab Reports</span>
+                      <span className="text-[8.5px] sm:text-[9px] text-slate-500">Plain English</span>
                     </div>
                   </div>
 
                   {/* Subhead: Near you / See all */}
-                  <div className="flex justify-between items-center pt-1 text-[11px]">
+                  <div className="flex justify-between items-center pt-0.5 text-[10px] sm:text-[11px]">
                     <span className="font-bold text-[#121414] dark:text-white">Near you</span>
                     <span className="text-[#1A3BAA] font-semibold">See all</span>
                   </div>
 
                   {/* Scrolling Mock Hospital List (reveals more hospitals slowly) */}
-                  <div className="h-[210px] sm:h-[240px] overflow-hidden relative">
-                    <div className="animate-mock-list space-y-2">
+                  <div className="h-[160px] sm:h-[185px] md:h-[200px] overflow-hidden relative">
+                    <div className="animate-mock-list space-y-1.5 sm:space-y-2">
                       {/* Hospital 1: Manipal Hospital */}
-                      <div className="bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-xl p-2.5 shadow-sm space-y-1">
+                      <div className="bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-xl p-2 sm:p-2.5 shadow-sm space-y-0.5 sm:space-y-1">
                         <div className="flex justify-between items-start">
                           <div>
-                            <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-tight">Manipal Hospital</h4>
-                            <p className="text-[10px] text-slate-500 flex items-center gap-0.5 mt-0.5">
+                            <h4 className="text-[11px] sm:text-xs font-bold text-slate-900 dark:text-white leading-tight">Manipal Hospital</h4>
+                            <p className="text-[9px] sm:text-[10px] text-slate-500 flex items-center gap-0.5 mt-0.5">
                               <MapPin className="w-2.5 h-2.5" />
                               Old Airport Rd, Bengaluru
                             </p>
                           </div>
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                          <span className="text-[9px] sm:text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
                             24×7
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] font-semibold pt-1 border-t border-slate-100 dark:border-slate-700 text-slate-600">
+                        <div className="flex items-center gap-2 text-[9px] sm:text-[10px] font-semibold pt-1 border-t border-slate-100 dark:border-slate-700 text-slate-600">
                           <span className="text-[#B45309] flex items-center gap-0.5">
-                            <Star className="w-3 h-3 fill-[#B45309]" /> 4.6 (420)
+                            <Star className="w-2.5 sm:w-3 h-2.5 sm:h-3 fill-[#B45309]" /> 4.6 (420)
                           </span>
                           <span className="text-[#1A3BAA]">1.8 km from you</span>
                         </div>
                       </div>
 
                       {/* Hospital 2: Aster CMI Hospital */}
-                      <div className="bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-xl p-2.5 shadow-sm space-y-1">
+                      <div className="bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-xl p-2 sm:p-2.5 shadow-sm space-y-0.5 sm:space-y-1">
                         <div className="flex justify-between items-start">
                           <div>
-                            <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-tight">Aster CMI Hospital</h4>
-                            <p className="text-[10px] text-slate-500 flex items-center gap-0.5 mt-0.5">
+                            <h4 className="text-[11px] sm:text-xs font-bold text-slate-900 dark:text-white leading-tight">Aster CMI Hospital</h4>
+                            <p className="text-[9px] sm:text-[10px] text-slate-500 flex items-center gap-0.5 mt-0.5">
                               <MapPin className="w-2.5 h-2.5" />
                               Hebbal, Bengaluru
                             </p>
                           </div>
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                          <span className="text-[9px] sm:text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
                             24×7
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] font-semibold pt-1 border-t border-slate-100 dark:border-slate-700 text-slate-600">
+                        <div className="flex items-center gap-2 text-[9px] sm:text-[10px] font-semibold pt-1 border-t border-slate-100 dark:border-slate-700 text-slate-600">
                           <span className="text-[#B45309] flex items-center gap-0.5">
-                            <Star className="w-3 h-3 fill-[#B45309]" /> 4.5 (380)
+                            <Star className="w-2.5 sm:w-3 h-2.5 sm:h-3 fill-[#B45309]" /> 4.5 (380)
                           </span>
                           <span className="text-[#1A3BAA]">6.2 km from you</span>
                         </div>
                       </div>
 
                       {/* Hospital 3: Sakra World Hospital */}
-                      <div className="bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-xl p-2.5 shadow-sm space-y-1">
+                      <div className="bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-xl p-2 sm:p-2.5 shadow-sm space-y-0.5 sm:space-y-1">
                         <div className="flex justify-between items-start">
                           <div>
-                            <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-tight">Sakra World Hospital</h4>
-                            <p className="text-[10px] text-slate-500 flex items-center gap-0.5 mt-0.5">
+                            <h4 className="text-[11px] sm:text-xs font-bold text-slate-900 dark:text-white leading-tight">Sakra World Hospital</h4>
+                            <p className="text-[9px] sm:text-[10px] text-slate-500 flex items-center gap-0.5 mt-0.5">
                               <MapPin className="w-2.5 h-2.5" />
                               Bellandur, Bengaluru
                             </p>
                           </div>
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                          <span className="text-[9px] sm:text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
                             24×7
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] font-semibold pt-1 border-t border-slate-100 dark:border-slate-700 text-slate-600">
+                        <div className="flex items-center gap-2 text-[9px] sm:text-[10px] font-semibold pt-1 border-t border-slate-100 dark:border-slate-700 text-slate-600">
                           <span className="text-[#B45309] flex items-center gap-0.5">
-                            <Star className="w-3 h-3 fill-[#B45309]" /> 4.5 (330)
+                            <Star className="w-2.5 sm:w-3 h-2.5 sm:h-3 fill-[#B45309]" /> 4.5 (330)
                           </span>
                           <span className="text-[#1A3BAA]">7.1 km from you</span>
                         </div>
                       </div>
 
                       {/* Hospital 4: Fortis Hospital */}
-                      <div className="bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-xl p-2.5 shadow-sm space-y-1">
+                      <div className="bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-xl p-2 sm:p-2.5 shadow-sm space-y-0.5 sm:space-y-1">
                         <div className="flex justify-between items-start">
                           <div>
-                            <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-tight">Fortis Hospital</h4>
-                            <p className="text-[10px] text-slate-500 flex items-center gap-0.5 mt-0.5">
+                            <h4 className="text-[11px] sm:text-xs font-bold text-slate-900 dark:text-white leading-tight">Fortis Hospital</h4>
+                            <p className="text-[9px] sm:text-[10px] text-slate-500 flex items-center gap-0.5 mt-0.5">
                               <MapPin className="w-2.5 h-2.5" />
                               Bannerghatta Rd, Bengaluru
                             </p>
                           </div>
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                          <span className="text-[9px] sm:text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
                             24×7
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] font-semibold pt-1 border-t border-slate-100 dark:border-slate-700 text-slate-600">
+                        <div className="flex items-center gap-2 text-[9px] sm:text-[10px] font-semibold pt-1 border-t border-slate-100 dark:border-slate-700 text-slate-600">
                           <span className="text-[#B45309] flex items-center gap-0.5">
-                            <Star className="w-3 h-3 fill-[#B45309]" /> 4.3 (290)
+                            <Star className="w-2.5 sm:w-3 h-2.5 sm:h-3 fill-[#B45309]" /> 4.3 (290)
                           </span>
                           <span className="text-[#1A3BAA]">9.5 km from you</span>
                         </div>
@@ -542,11 +542,11 @@ export const PublicLanding: React.FC = () => {
                 </div>
 
                 {/* Bottom Nav Mock Tab Bar */}
-                <div className="border-t border-slate-200 dark:border-slate-800 px-4 py-2 flex justify-between text-slate-400 bg-white dark:bg-slate-900">
-                  <span className="text-[10px] font-bold text-[#1A3BAA]">Discover</span>
-                  <span className="text-[10px] font-medium">Compare</span>
-                  <span className="text-[10px] font-medium">Reports</span>
-                  <span className="text-[10px] font-medium">Profile</span>
+                <div className="border-t border-slate-200 dark:border-slate-800 px-3 sm:px-4 py-1.5 sm:py-2 flex justify-between text-slate-400 bg-white dark:bg-slate-900">
+                  <span className="text-[9px] sm:text-[10px] font-bold text-[#1A3BAA]">Discover</span>
+                  <span className="text-[9px] sm:text-[10px] font-medium">Compare</span>
+                  <span className="text-[9px] sm:text-[10px] font-medium">Reports</span>
+                  <span className="text-[9px] sm:text-[10px] font-medium">Profile</span>
                 </div>
               </div>
             </div>
@@ -555,7 +555,7 @@ export const PublicLanding: React.FC = () => {
           {/* Floating Card 1: "Nearest 24x7" (Top Right of phone on desktop, overlapping right edge on mobile) */}
           {/* Desktop version */}
           <div
-            className={`hidden md:block absolute z-20 right-0 lg:-right-6 xl:-right-14 top-4 w-[280px] lg:w-[295px] transition-all duration-700 ease-out transform pointer-events-auto ${
+            className={`hidden md:block absolute z-20 right-2 lg:-right-6 xl:-right-12 top-4 w-[275px] lg:w-[290px] transition-all duration-700 ease-out transform pointer-events-auto ${
               phoneInView ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 translate-y-4'
             }`}
             style={{ transitionDelay: '300ms' }}
@@ -600,42 +600,38 @@ export const PublicLanding: React.FC = () => {
             </div>
           </div>
 
-          {/* Mobile version of Nearest 24x7 */}
+          {/* Mobile version of Nearest 24x7 - compact badge */}
           <div
-            className={`md:hidden absolute z-20 -right-1 sm:right-1 top-3 w-[205px] origin-top-right transition-all duration-700 ease-out transform pointer-events-auto ${
-              phoneInView ? 'opacity-100 scale-90 translate-y-0' : 'opacity-0 scale-75 translate-y-4'
+            className={`md:hidden absolute z-20 -right-2 min-[380px]:-right-5 top-2 w-[150px] min-[380px]:w-[160px] origin-top-right transition-all duration-700 ease-out transform pointer-events-auto ${
+              phoneInView ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-85 translate-y-3'
             }`}
             style={{ transitionDelay: '300ms' }}
           >
-            <div className="animate-float-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-3 shadow-xl text-left">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-[#1A3BAA] bg-[#EEF2FC] px-1.5 py-0.5 rounded-full">
+            <div className="animate-float-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-2 shadow-lg text-left">
+              <div className="flex justify-between items-center mb-0.5">
+                <span className="text-[8px] font-bold uppercase tracking-wider text-[#1A3BAA] bg-[#EEF2FC] px-1 py-0.5 rounded-full">
                   NEAREST 24×7
                 </span>
-                <span className="text-[9px] font-semibold text-[#12805C] bg-emerald-50 px-1.5 py-0.5 rounded-full">
-                  Open now
+                <span className="text-[8px] font-semibold text-[#12805C] bg-emerald-50 px-1 py-0.5 rounded-full">
+                  Open
                 </span>
               </div>
-              <h4 className="text-xs font-bold text-[#121414] dark:text-white leading-tight">
+              <h4 className="text-[10px] font-bold text-[#121414] dark:text-white leading-tight">
                 Manipal Hospital
               </h4>
-              <p className="text-[10px] text-[#4B5563] mt-0.5">Old Airport Rd · 1.8 km</p>
-              <div className="flex flex-wrap gap-1 mt-1.5">
-                <span className="text-[9px] text-[#4B5563] bg-[#F5F7FA] px-1.5 py-0.5 rounded">Cardiology</span>
-                <span className="text-[9px] text-[#4B5563] bg-[#F5F7FA] px-1.5 py-0.5 rounded">Orthopaedics</span>
-              </div>
-              <div className="grid grid-cols-2 gap-1.5 mt-2 pt-1.5 border-t border-[#E5E7EB]">
+              <p className="text-[8.5px] text-[#4B5563] mt-0.5">1.8 km · Old Airport Rd</p>
+              <div className="grid grid-cols-2 gap-1 mt-1.5 pt-1 border-t border-[#E5E7EB]">
                 <Link
                   to="/search?q=Manipal+Hospital"
-                  className="h-6 text-[10px] font-semibold text-[#121414] bg-white border border-[#E5E7EB] rounded-md flex items-center justify-center"
+                  className="h-5 text-[8.5px] font-semibold text-[#121414] bg-white border border-[#E5E7EB] rounded flex items-center justify-center"
                 >
                   Directions
                 </Link>
                 <a
                   href="tel:08025024444"
-                  className="h-6 text-[10px] font-semibold text-white bg-[#1A3BAA] rounded-md flex items-center justify-center gap-0.5"
+                  className="h-5 text-[8.5px] font-semibold text-white bg-[#1A3BAA] rounded flex items-center justify-center gap-0.5"
                 >
-                  <Phone className="w-2.5 h-2.5" />
+                  <Phone className="w-2 h-2" />
                   Call
                 </a>
               </div>
@@ -645,7 +641,7 @@ export const PublicLanding: React.FC = () => {
           {/* Floating Card 3: "Your report, explained" (Bottom Right on desktop, overlapping bottom-right on mobile) */}
           {/* Desktop version */}
           <div
-            className={`hidden md:block absolute z-20 right-0 lg:-right-4 xl:-right-10 bottom-2 w-[270px] lg:w-[285px] transition-all duration-700 ease-out transform pointer-events-auto ${
+            className={`hidden md:block absolute z-20 right-2 lg:-right-4 xl:-right-10 bottom-2 w-[265px] lg:w-[280px] transition-all duration-700 ease-out transform pointer-events-auto ${
               phoneInView ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 translate-y-4'
             }`}
             style={{ transitionDelay: '580ms' }}
@@ -687,46 +683,41 @@ export const PublicLanding: React.FC = () => {
             </div>
           </div>
 
-          {/* Mobile version of Your Report, Explained */}
+          {/* Mobile version of Your Report, Explained - compact pill card */}
           <div
-            className={`md:hidden absolute z-20 -right-1 sm:right-1 bottom-6 w-[210px] origin-bottom-right transition-all duration-700 ease-out transform pointer-events-auto ${
-              phoneInView ? 'opacity-100 scale-90 translate-y-0' : 'opacity-0 scale-75 translate-y-4'
+            className={`md:hidden absolute z-20 -right-2 min-[380px]:-right-5 bottom-2 w-[152px] min-[380px]:w-[165px] origin-bottom-right transition-all duration-700 ease-out transform pointer-events-auto ${
+              phoneInView ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-85 translate-y-3'
             }`}
             style={{ transitionDelay: '580ms' }}
           >
-            <div className="animate-float-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-3 shadow-xl text-left">
-              <div className="flex items-center gap-1 mb-1">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-[#1A3BAA] bg-[#EEF2FC] px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                  <FileText className="w-2.5 h-2.5" />
-                  YOUR REPORT, EXPLAINED
+            <div className="animate-float-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-2 shadow-lg text-left">
+              <div className="flex items-center gap-0.5 mb-0.5">
+                <span className="text-[8px] font-bold uppercase tracking-wider text-[#1A3BAA] bg-[#EEF2FC] px-1 py-0.5 rounded-full flex items-center gap-0.5">
+                  <FileText className="w-2 h-2" />
+                  YOUR REPORT
                 </span>
               </div>
-              <div className="flex items-baseline justify-between mt-1">
+              <div className="flex items-baseline justify-between mt-0.5">
                 <div>
-                  <span className="text-[10px] text-[#4B5563] block">Hemoglobin</span>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-base font-bold text-[#121414] leading-none">11.2</span>
-                    <span className="text-[10px] text-[#4B5563]">g/dL</span>
+                  <span className="text-[8.5px] text-[#4B5563] block">Hemoglobin</span>
+                  <div className="flex items-baseline gap-0.5">
+                    <span className="text-sm font-bold text-[#121414] leading-none">11.2</span>
+                    <span className="text-[8.5px] text-[#4B5563]">g/dL</span>
                   </div>
                 </div>
-                <span className="text-[9px] font-semibold text-[#B45309] bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 rounded-full">
-                  Slightly low
+                <span className="text-[8px] font-semibold text-[#B45309] bg-amber-50 border border-amber-200/60 px-1 py-0.5 rounded-full">
+                  Low
                 </span>
               </div>
 
               {/* Spectrum Bar */}
-              <div className="mt-2">
-                <div className="h-1.5 w-full rounded-full bg-gradient-to-r from-amber-400 via-emerald-400 to-rose-400 relative">
-                  <div className="absolute top-1/2 -translate-y-1/2 left-[24%] w-2.5 h-2.5 rounded-full bg-white border-2 border-slate-900 shadow-sm" />
-                </div>
-                <div className="flex justify-between text-[8px] text-[#4B5563] mt-0.5">
-                  <span>Low</span>
-                  <span>Normal 12–15</span>
-                  <span>High</span>
+              <div className="mt-1">
+                <div className="h-1 w-full rounded-full bg-gradient-to-r from-amber-400 via-emerald-400 to-rose-400 relative">
+                  <div className="absolute top-1/2 -translate-y-1/2 left-[24%] w-2 h-2 rounded-full bg-white border border-slate-900 shadow-sm" />
                 </div>
               </div>
-              <p className="text-[10px] text-[#4B5563] mt-1.5 leading-snug border-t border-[#E5E7EB] pt-1.5">
-                A little below the normal range. Often linked to low iron.
+              <p className="text-[8.5px] text-[#4B5563] mt-1 leading-tight border-t border-[#E5E7EB] pt-1 line-clamp-2">
+                A little below normal range. Often linked to low iron.
               </p>
             </div>
           </div>
