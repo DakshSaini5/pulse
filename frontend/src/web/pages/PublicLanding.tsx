@@ -346,23 +346,23 @@ export const PublicLanding: React.FC = () => {
               </div>
             </div>
 
-            {/* Mobile Compare Card - compact pill card that floats outside the left bezel */}
+            {/* Mobile Compare Card - positioned entirely to the left of the phone */}
             <div
-              className={`md:hidden absolute z-20 -left-11 min-[380px]:-left-13 top-16 w-[106px] min-[380px]:w-[114px] origin-top-left transition-all duration-700 ease-out transform pointer-events-auto ${
+              className={`md:hidden absolute z-20 right-[calc(100%+4px)] min-[380px]:right-[calc(100%+6px)] top-16 w-[94px] min-[380px]:w-[102px] origin-top-right transition-all duration-700 ease-out transform pointer-events-auto ${
                 phoneInView ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-85 translate-y-3'
               }`}
               style={{ transitionDelay: '420ms' }}
             >
               <div className="animate-float-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-1.5 min-[380px]:p-2 shadow-lg text-left">
                 <div className="flex items-center gap-1 mb-0.5">
-                  <span className="text-[7.5px] min-[380px]:text-[8px] font-bold uppercase tracking-wider text-[#1A3BAA] bg-[#EEF2FC] px-1 py-0.5 rounded-full flex items-center gap-0.5">
+                  <span className="text-[7px] min-[380px]:text-[7.5px] font-bold uppercase tracking-wider text-[#1A3BAA] bg-[#EEF2FC] px-1 py-0.5 rounded-full flex items-center gap-0.5">
                     <ArrowLeftRight className="w-2 h-2" />
                     COMPARE
                   </span>
                 </div>
-                <table className="w-full text-left border-collapse text-[7.5px] min-[380px]:text-[8px]">
+                <table className="w-full text-left border-collapse text-[6.5px] min-[380px]:text-[7.5px]">
                   <thead>
-                    <tr className="border-b border-[#E5E7EB] text-[7px] min-[380px]:text-[7.5px] text-[#4B5563]">
+                    <tr className="border-b border-[#E5E7EB] text-[6.5px] min-[380px]:text-[7px] text-[#4B5563]">
                       <th className="pb-0.5 font-medium"></th>
                       <th className="pb-0.5 font-bold text-[#121414]">Manipal</th>
                       <th className="pb-0.5 font-bold text-[#121414]">Aster</th>
@@ -400,7 +400,7 @@ export const PublicLanding: React.FC = () => {
                 phoneInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-9'
               }`}
             >
-              <div className="animate-phone-float w-[180px] min-[380px]:w-[195px] sm:w-[245px] md:w-[280px] lg:w-[295px] rounded-[30px] sm:rounded-[42px] p-1.5 sm:p-2.5 bg-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.25),0_0_0_1px_rgba(255,255,255,0.06)] border-[3px] sm:border-[3.5px] border-slate-700/80">
+              <div className="animate-phone-float w-[150px] min-[380px]:w-[165px] sm:w-[245px] md:w-[280px] lg:w-[295px] rounded-[28px] sm:rounded-[42px] p-1.5 sm:p-2.5 bg-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.25),0_0_0_1px_rgba(255,255,255,0.06)] border-[3px] sm:border-[3.5px] border-slate-700/80">
                 {/* Dynamic Island / Pill notch */}
                 <div className="flex justify-center mb-1 sm:mb-1.5">
                   <div className="w-11 sm:w-16 h-2.5 sm:h-3.5 bg-slate-950 rounded-full flex items-center justify-end px-1.5 sm:px-2">
@@ -602,36 +602,36 @@ export const PublicLanding: React.FC = () => {
               </div>
             </div>
 
-            {/* Mobile Nearest 24x7 Card - compact badge floating outside right bezel */}
+            {/* Mobile Nearest 24x7 Card - positioned entirely to the right of the phone */}
             <div
-              className={`md:hidden absolute z-20 -right-10 min-[380px]:-right-12 top-1 w-[108px] min-[380px]:w-[116px] origin-top-right transition-all duration-700 ease-out transform pointer-events-auto ${
+              className={`md:hidden absolute z-20 left-[calc(100%+4px)] min-[380px]:left-[calc(100%+6px)] top-1 w-[96px] min-[380px]:w-[104px] origin-top-left transition-all duration-700 ease-out transform pointer-events-auto ${
                 phoneInView ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-85 translate-y-3'
               }`}
               style={{ transitionDelay: '300ms' }}
             >
               <div className="animate-float-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-1.5 min-[380px]:p-2 shadow-lg text-left">
                 <div className="flex justify-between items-center mb-0.5">
-                  <span className="text-[7px] min-[380px]:text-[7.5px] font-bold uppercase tracking-wider text-[#1A3BAA] bg-[#EEF2FC] px-1 py-0.5 rounded-full">
+                  <span className="text-[6.5px] min-[380px]:text-[7px] font-bold uppercase tracking-wider text-[#1A3BAA] bg-[#EEF2FC] px-1 py-0.5 rounded-full">
                     NEAREST 24×7
                   </span>
-                  <span className="text-[7px] min-[380px]:text-[7.5px] font-semibold text-[#12805C] bg-emerald-50 px-1 py-0.5 rounded-full">
+                  <span className="text-[6.5px] min-[380px]:text-[7px] font-semibold text-[#12805C] bg-emerald-50 px-1 py-0.5 rounded-full">
                     Open
                   </span>
                 </div>
-                <h4 className="text-[9px] min-[380px]:text-[9.5px] font-bold text-[#121414] dark:text-white leading-tight">
+                <h4 className="text-[8.5px] min-[380px]:text-[9px] font-bold text-[#121414] dark:text-white leading-tight">
                   Manipal Hospital
                 </h4>
-                <p className="text-[7.5px] min-[380px]:text-[8px] text-[#4B5563] mt-0.5">1.8 km · Old Airport Rd</p>
+                <p className="text-[7px] min-[380px]:text-[7.5px] text-[#4B5563] mt-0.5">1.8 km · Old Airport Rd</p>
                 <div className="grid grid-cols-2 gap-1 mt-1 pt-0.5 border-t border-[#E5E7EB]">
                   <Link
                     to="/search?q=Manipal+Hospital"
-                    className="h-4.5 text-[7.5px] min-[380px]:text-[8px] font-semibold text-[#121414] bg-white border border-[#E5E7EB] rounded flex items-center justify-center"
+                    className="h-4 text-[7px] min-[380px]:text-[7.5px] font-semibold text-[#121414] bg-white border border-[#E5E7EB] rounded flex items-center justify-center"
                   >
                     Directions
                   </Link>
                   <a
                     href="tel:08025024444"
-                    className="h-4.5 text-[7.5px] min-[380px]:text-[8px] font-semibold text-white bg-[#1A3BAA] rounded flex items-center justify-center gap-0.5"
+                    className="h-4 text-[7px] min-[380px]:text-[7.5px] font-semibold text-white bg-[#1A3BAA] rounded flex items-center justify-center gap-0.5"
                   >
                     <Phone className="w-1.5 h-1.5" />
                     Call
@@ -684,29 +684,29 @@ export const PublicLanding: React.FC = () => {
               </div>
             </div>
 
-            {/* Mobile Report Card - compact pill card floating outside right bezel */}
+            {/* Mobile Report Card - positioned entirely to the right of the phone */}
             <div
-              className={`md:hidden absolute z-20 -right-10 min-[380px]:-right-12 bottom-1 w-[110px] min-[380px]:w-[118px] origin-bottom-right transition-all duration-700 ease-out transform pointer-events-auto ${
+              className={`md:hidden absolute z-20 left-[calc(100%+4px)] min-[380px]:left-[calc(100%+6px)] bottom-1 w-[98px] min-[380px]:w-[106px] origin-bottom-left transition-all duration-700 ease-out transform pointer-events-auto ${
                 phoneInView ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-85 translate-y-3'
               }`}
               style={{ transitionDelay: '580ms' }}
             >
               <div className="animate-float-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-1.5 min-[380px]:p-2 shadow-lg text-left">
                 <div className="flex items-center gap-0.5 mb-0.5">
-                  <span className="text-[7px] min-[380px]:text-[7.5px] font-bold uppercase tracking-wider text-[#1A3BAA] bg-[#EEF2FC] px-1 py-0.5 rounded-full flex items-center gap-0.5">
+                  <span className="text-[6.5px] min-[380px]:text-[7px] font-bold uppercase tracking-wider text-[#1A3BAA] bg-[#EEF2FC] px-1 py-0.5 rounded-full flex items-center gap-0.5">
                     <FileText className="w-1.5 h-1.5" />
                     YOUR REPORT
                   </span>
                 </div>
                 <div className="flex items-baseline justify-between mt-0.5">
                   <div>
-                    <span className="text-[7.5px] min-[380px]:text-[8px] text-[#4B5563] block">Hemoglobin</span>
+                    <span className="text-[7px] min-[380px]:text-[7.5px] text-[#4B5563] block">Hemoglobin</span>
                     <div className="flex items-baseline gap-0.5">
                       <span className="text-xs font-bold text-[#121414] leading-none">11.2</span>
-                      <span className="text-[7px] min-[380px]:text-[7.5px] text-[#4B5563]">g/dL</span>
+                      <span className="text-[6.5px] min-[380px]:text-[7px] text-[#4B5563]">g/dL</span>
                     </div>
                   </div>
-                  <span className="text-[7px] min-[380px]:text-[7.5px] font-semibold text-[#B45309] bg-amber-50 border border-amber-200/60 px-1 py-0.5 rounded-full">
+                  <span className="text-[6.5px] min-[380px]:text-[7px] font-semibold text-[#B45309] bg-amber-50 border border-amber-200/60 px-1 py-0.5 rounded-full">
                     Low
                   </span>
                 </div>
@@ -717,7 +717,7 @@ export const PublicLanding: React.FC = () => {
                     <div className="absolute top-1/2 -translate-y-1/2 left-[24%] w-1.5 h-1.5 rounded-full bg-white border border-slate-900 shadow-sm" />
                   </div>
                 </div>
-                <p className="text-[7.5px] min-[380px]:text-[8px] text-[#4B5563] mt-0.5 leading-tight border-t border-[#E5E7EB] pt-0.5 line-clamp-2">
+                <p className="text-[6.5px] min-[380px]:text-[7px] text-[#4B5563] mt-0.5 leading-tight border-t border-[#E5E7EB] pt-0.5 line-clamp-2">
                   A little below normal range. Often linked to low iron.
                 </p>
               </div>
