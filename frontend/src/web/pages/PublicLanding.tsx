@@ -280,7 +280,7 @@ export const PublicLanding: React.FC = () => {
               preserveAspectRatio="none"
             >
               <path
-                d="M 0 40 L 380 40 L 396 40 L 406 12 L 416 68 L 426 26 L 436 54 L 446 40 L 754 40 L 764 12 L 774 68 L 784 26 L 794 54 L 804 40 L 1200 40"
+                d="M 0 40 L 60 40 L 70 38 L 78 40 L 86 44 L 96 8 L 106 72 L 114 40 L 126 30 Q 140 26 154 40 L 220 40 L 230 38 L 238 40 L 246 44 L 256 8 L 266 72 L 274 40 L 286 30 Q 300 26 314 40 L 380 40 L 820 40 L 886 40 L 896 38 L 904 40 L 912 44 L 922 8 L 932 72 L 940 40 L 952 30 Q 966 26 980 40 L 1046 40 L 1056 38 L 1064 40 L 1072 44 L 1082 8 L 1092 72 L 1100 40 L 1112 30 Q 1126 26 1140 40 L 1200 40"
                 stroke="#E7373A"
                 strokeWidth="2.5"
                 strokeLinecap="round"
@@ -346,51 +346,30 @@ export const PublicLanding: React.FC = () => {
               </div>
             </div>
 
-            {/* Mobile Compare Card - positioned entirely to the left of the phone */}
+            {/* Mobile Compare Card - compact widget card outside the left bezel */}
             <div
-              className={`md:hidden absolute z-20 right-[calc(100%+4px)] min-[380px]:right-[calc(100%+6px)] top-16 w-[94px] min-[380px]:w-[102px] origin-top-right transition-all duration-700 ease-out transform pointer-events-auto ${
+              className={`md:hidden absolute z-20 right-[calc(100%+6px)] min-[380px]:right-[calc(100%+8px)] top-12 w-[80px] min-[380px]:w-[86px] origin-top-right transition-all duration-700 ease-out transform pointer-events-auto ${
                 phoneInView ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-85 translate-y-3'
               }`}
               style={{ transitionDelay: '420ms' }}
             >
-              <div className="animate-float-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-1.5 min-[380px]:p-2 shadow-lg text-left">
-                <div className="flex items-center gap-1 mb-0.5">
-                  <span className="text-[7px] min-[380px]:text-[7.5px] font-bold uppercase tracking-wider text-[#1A3BAA] bg-[#EEF2FC] px-1 py-0.5 rounded-full flex items-center gap-0.5">
-                    <ArrowLeftRight className="w-2 h-2" />
-                    COMPARE
-                  </span>
+              <div className="animate-float-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-1.5 shadow-md text-left">
+                <span className="text-[6.5px] font-bold uppercase tracking-wider text-[#1A3BAA] bg-[#EEF2FC] px-1 py-0.5 rounded flex items-center gap-0.5 w-fit mb-1">
+                  <ArrowLeftRight className="w-1.5 h-1.5" />
+                  COMPARE
+                </span>
+                <div className="space-y-1 text-[6.5px] leading-tight">
+                  <div className="border-b border-slate-100 dark:border-slate-800 pb-0.5">
+                    <span className="font-bold text-[#121414] dark:text-white block">Manipal</span>
+                    <span className="text-[#B45309] font-semibold">★ 4.6</span>
+                    <span className="text-[#4B5563] ml-1">1.8km</span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-[#121414] dark:text-white block">Aster</span>
+                    <span className="text-[#B45309] font-semibold">★ 4.5</span>
+                    <span className="text-[#4B5563] ml-1">6.2km</span>
+                  </div>
                 </div>
-                <table className="w-full text-left border-collapse text-[6.5px] min-[380px]:text-[7.5px]">
-                  <thead>
-                    <tr className="border-b border-[#E5E7EB] text-[6.5px] min-[380px]:text-[7px] text-[#4B5563]">
-                      <th className="pb-0.5 font-medium"></th>
-                      <th className="pb-0.5 font-bold text-[#121414]">Manipal</th>
-                      <th className="pb-0.5 font-bold text-[#121414]">Aster</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#E5E7EB]/50">
-                    <tr>
-                      <td className="py-0.5 text-[#4B5563]">Rating</td>
-                      <td className="py-0.5 font-bold text-[#B45309]">4.6</td>
-                      <td className="py-0.5 font-bold text-[#B45309]">4.5</td>
-                    </tr>
-                    <tr>
-                      <td className="py-0.5 text-[#4B5563]">Dist.</td>
-                      <td className="py-0.5 font-semibold text-[#121414]">1.8 km</td>
-                      <td className="py-0.5 font-semibold text-[#121414]">6.2 km</td>
-                    </tr>
-                    <tr>
-                      <td className="py-0.5 text-[#4B5563]">Fee</td>
-                      <td className="py-0.5 font-semibold text-[#121414]">₹1,000</td>
-                      <td className="py-0.5 font-semibold text-[#121414]">₹1,200</td>
-                    </tr>
-                    <tr>
-                      <td className="py-0.5 text-[#4B5563]">24×7</td>
-                      <td className="py-0.5 font-bold text-[#12805C]">Yes</td>
-                      <td className="py-0.5 font-bold text-[#12805C]">Yes</td>
-                    </tr>
-                  </tbody>
-                </table>
               </div>
             </div>
 
@@ -400,7 +379,7 @@ export const PublicLanding: React.FC = () => {
                 phoneInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-9'
               }`}
             >
-              <div className="animate-phone-float w-[150px] min-[380px]:w-[165px] sm:w-[245px] md:w-[280px] lg:w-[295px] rounded-[28px] sm:rounded-[42px] p-1.5 sm:p-2.5 bg-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.25),0_0_0_1px_rgba(255,255,255,0.06)] border-[3px] sm:border-[3.5px] border-slate-700/80">
+              <div className="animate-phone-float w-[176px] min-[380px]:w-[188px] sm:w-[245px] md:w-[280px] lg:w-[295px] rounded-[32px] sm:rounded-[42px] p-1.5 sm:p-2.5 bg-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.25),0_0_0_1px_rgba(255,255,255,0.06)] border-[3px] sm:border-[3.5px] border-slate-700/80">
                 {/* Dynamic Island / Pill notch */}
                 <div className="flex justify-center mb-1 sm:mb-1.5">
                   <div className="w-11 sm:w-16 h-2.5 sm:h-3.5 bg-slate-950 rounded-full flex items-center justify-end px-1.5 sm:px-2">
@@ -409,11 +388,11 @@ export const PublicLanding: React.FC = () => {
                 </div>
 
                 {/* Inner Phone Screen */}
-                <div className="bg-white dark:bg-slate-900 rounded-[24px] sm:rounded-[34px] overflow-hidden text-left border border-slate-200 dark:border-slate-800 shadow-inner">
+                <div className="bg-white dark:bg-slate-900 rounded-[26px] sm:rounded-[34px] overflow-hidden text-left border border-slate-200 dark:border-slate-800 shadow-inner">
                   {/* App Status & Header */}
                   <div className="px-2 sm:px-3 pt-1.5 sm:pt-2.5 pb-1 sm:pb-1.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                    <PulseLogo size={17} showTagline={false} />
-                    <span className="text-[8.5px] sm:text-[10px] font-semibold text-[#1A3BAA] bg-[#EEF2FC] px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                    <PulseLogo size={16} showTagline={false} />
+                    <span className="text-[8px] sm:text-[10px] font-semibold text-[#1A3BAA] bg-[#EEF2FC] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shrink-0">
                       <MapPin className="w-2.5 h-2.5" />
                       Bengaluru
                     </span>
@@ -545,11 +524,11 @@ export const PublicLanding: React.FC = () => {
                   </div>
 
                   {/* Bottom Nav Mock Tab Bar */}
-                  <div className="border-t border-slate-200 dark:border-slate-800 px-2.5 sm:px-3 py-1 sm:py-1.5 flex justify-between text-slate-400 bg-white dark:bg-slate-900">
-                    <span className="text-[7.5px] sm:text-[9px] font-bold text-[#1A3BAA]">Discover</span>
-                    <span className="text-[7.5px] sm:text-[9px] font-medium">Compare</span>
-                    <span className="text-[7.5px] sm:text-[9px] font-medium">Reports</span>
-                    <span className="text-[7.5px] sm:text-[9px] font-medium">Profile</span>
+                  <div className="border-t border-slate-200 dark:border-slate-800 py-1.5 px-1 flex items-center justify-around text-slate-400 bg-white dark:bg-slate-900">
+                    <span className="flex-1 text-center text-[7.5px] sm:text-[9px] font-bold text-[#1A3BAA]">Discover</span>
+                    <span className="flex-1 text-center text-[7.5px] sm:text-[9px] font-medium text-slate-500">Compare</span>
+                    <span className="flex-1 text-center text-[7.5px] sm:text-[9px] font-medium text-slate-500">Reports</span>
+                    <span className="flex-1 text-center text-[7.5px] sm:text-[9px] font-medium text-slate-500">Profile</span>
                   </div>
                 </div>
               </div>
@@ -602,41 +581,33 @@ export const PublicLanding: React.FC = () => {
               </div>
             </div>
 
-            {/* Mobile Nearest 24x7 Card - positioned entirely to the right of the phone */}
+            {/* Mobile Nearest 24x7 Card - compact badge outside right bezel */}
             <div
-              className={`md:hidden absolute z-20 left-[calc(100%+4px)] min-[380px]:left-[calc(100%+6px)] top-1 w-[96px] min-[380px]:w-[104px] origin-top-left transition-all duration-700 ease-out transform pointer-events-auto ${
+              className={`md:hidden absolute z-20 left-[calc(100%+6px)] min-[380px]:left-[calc(100%+8px)] top-2 w-[84px] min-[380px]:w-[90px] origin-top-left transition-all duration-700 ease-out transform pointer-events-auto ${
                 phoneInView ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-85 translate-y-3'
               }`}
               style={{ transitionDelay: '300ms' }}
             >
-              <div className="animate-float-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-1.5 min-[380px]:p-2 shadow-lg text-left">
+              <div className="animate-float-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-1.5 shadow-md text-left">
                 <div className="flex justify-between items-center mb-0.5">
-                  <span className="text-[6.5px] min-[380px]:text-[7px] font-bold uppercase tracking-wider text-[#1A3BAA] bg-[#EEF2FC] px-1 py-0.5 rounded-full">
-                    NEAREST 24×7
+                  <span className="text-[6px] font-bold uppercase tracking-wider text-[#1A3BAA] bg-[#EEF2FC] px-1 py-0.5 rounded">
+                    24×7
                   </span>
-                  <span className="text-[6.5px] min-[380px]:text-[7px] font-semibold text-[#12805C] bg-emerald-50 px-1 py-0.5 rounded-full">
+                  <span className="text-[6px] font-semibold text-[#12805C] bg-emerald-50 px-1 py-0.5 rounded">
                     Open
                   </span>
                 </div>
-                <h4 className="text-[8.5px] min-[380px]:text-[9px] font-bold text-[#121414] dark:text-white leading-tight">
-                  Manipal Hospital
+                <h4 className="text-[8px] font-bold text-[#121414] dark:text-white leading-tight">
+                  Manipal Hosp.
                 </h4>
-                <p className="text-[7px] min-[380px]:text-[7.5px] text-[#4B5563] mt-0.5">1.8 km · Old Airport Rd</p>
-                <div className="grid grid-cols-2 gap-1 mt-1 pt-0.5 border-t border-[#E5E7EB]">
-                  <Link
-                    to="/search?q=Manipal+Hospital"
-                    className="h-4 text-[7px] min-[380px]:text-[7.5px] font-semibold text-[#121414] bg-white border border-[#E5E7EB] rounded flex items-center justify-center"
-                  >
-                    Directions
-                  </Link>
-                  <a
-                    href="tel:08025024444"
-                    className="h-4 text-[7px] min-[380px]:text-[7.5px] font-semibold text-white bg-[#1A3BAA] rounded flex items-center justify-center gap-0.5"
-                  >
-                    <Phone className="w-1.5 h-1.5" />
-                    Call
-                  </a>
-                </div>
+                <p className="text-[6.5px] text-[#4B5563]">1.8 km · Airport Rd</p>
+                <a
+                  href="tel:08025024444"
+                  className="mt-1 h-4 text-[7px] font-semibold text-white bg-[#1A3BAA] rounded flex items-center justify-center gap-0.5 w-full"
+                >
+                  <Phone className="w-1.5 h-1.5" />
+                  Call
+                </a>
               </div>
             </div>
 
@@ -684,42 +655,28 @@ export const PublicLanding: React.FC = () => {
               </div>
             </div>
 
-            {/* Mobile Report Card - positioned entirely to the right of the phone */}
+            {/* Mobile Report Card - compact pill card outside right bezel */}
             <div
-              className={`md:hidden absolute z-20 left-[calc(100%+4px)] min-[380px]:left-[calc(100%+6px)] bottom-1 w-[98px] min-[380px]:w-[106px] origin-bottom-left transition-all duration-700 ease-out transform pointer-events-auto ${
+              className={`md:hidden absolute z-20 left-[calc(100%+6px)] min-[380px]:left-[calc(100%+8px)] bottom-2 w-[84px] min-[380px]:w-[90px] origin-bottom-left transition-all duration-700 ease-out transform pointer-events-auto ${
                 phoneInView ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-85 translate-y-3'
               }`}
               style={{ transitionDelay: '580ms' }}
             >
-              <div className="animate-float-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-1.5 min-[380px]:p-2 shadow-lg text-left">
-                <div className="flex items-center gap-0.5 mb-0.5">
-                  <span className="text-[6.5px] min-[380px]:text-[7px] font-bold uppercase tracking-wider text-[#1A3BAA] bg-[#EEF2FC] px-1 py-0.5 rounded-full flex items-center gap-0.5">
-                    <FileText className="w-1.5 h-1.5" />
-                    YOUR REPORT
-                  </span>
+              <div className="animate-float-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border border-[#E5E7EB] dark:border-slate-800 rounded-xl p-1.5 shadow-md text-left">
+                <span className="text-[6px] font-bold uppercase tracking-wider text-[#1A3BAA] bg-[#EEF2FC] px-1 py-0.5 rounded flex items-center gap-0.5 w-fit mb-0.5">
+                  <FileText className="w-1.5 h-1.5" />
+                  REPORT
+                </span>
+                <div className="flex items-baseline justify-between">
+                  <span className="text-[6.5px] text-[#4B5563]">Hemoglobin</span>
+                  <span className="text-[6px] font-semibold text-[#B45309] bg-amber-50 px-1 py-0.5 rounded">Low</span>
                 </div>
-                <div className="flex items-baseline justify-between mt-0.5">
-                  <div>
-                    <span className="text-[7px] min-[380px]:text-[7.5px] text-[#4B5563] block">Hemoglobin</span>
-                    <div className="flex items-baseline gap-0.5">
-                      <span className="text-xs font-bold text-[#121414] leading-none">11.2</span>
-                      <span className="text-[6.5px] min-[380px]:text-[7px] text-[#4B5563]">g/dL</span>
-                    </div>
-                  </div>
-                  <span className="text-[6.5px] min-[380px]:text-[7px] font-semibold text-[#B45309] bg-amber-50 border border-amber-200/60 px-1 py-0.5 rounded-full">
-                    Low
-                  </span>
-                </div>
-
-                {/* Spectrum Bar */}
-                <div className="mt-1">
+                <div className="text-[10px] font-bold text-[#121414] leading-tight">11.2 <span className="text-[6.5px] font-normal text-[#4B5563]">g/dL</span></div>
+                <div className="mt-0.5">
                   <div className="h-1 w-full rounded-full bg-gradient-to-r from-amber-400 via-emerald-400 to-rose-400 relative">
                     <div className="absolute top-1/2 -translate-y-1/2 left-[24%] w-1.5 h-1.5 rounded-full bg-white border border-slate-900 shadow-sm" />
                   </div>
                 </div>
-                <p className="text-[6.5px] min-[380px]:text-[7px] text-[#4B5563] mt-0.5 leading-tight border-t border-[#E5E7EB] pt-0.5 line-clamp-2">
-                  A little below normal range. Often linked to low iron.
-                </p>
               </div>
             </div>
 
