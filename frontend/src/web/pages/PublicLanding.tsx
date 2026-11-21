@@ -346,9 +346,9 @@ export const PublicLanding: React.FC = () => {
               </div>
             </div>
 
-            {/* Mobile Compare Card - compact pill card that peeks slightly over the left bezel */}
+            {/* Mobile Compare Card - compact pill card that floats outside the left bezel */}
             <div
-              className={`md:hidden absolute z-20 -left-1.5 min-[380px]:-left-2.5 top-20 w-[112px] min-[380px]:w-[120px] origin-top-left transition-all duration-700 ease-out transform pointer-events-auto ${
+              className={`md:hidden absolute z-20 -left-11 min-[380px]:-left-13 top-16 w-[106px] min-[380px]:w-[114px] origin-top-left transition-all duration-700 ease-out transform pointer-events-auto ${
                 phoneInView ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-85 translate-y-3'
               }`}
               style={{ transitionDelay: '420ms' }}
@@ -400,20 +400,20 @@ export const PublicLanding: React.FC = () => {
                 phoneInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-9'
               }`}
             >
-              <div className="animate-phone-float w-[195px] min-[380px]:w-[210px] sm:w-[250px] md:w-[285px] lg:w-[295px] rounded-[32px] sm:rounded-[42px] p-1.5 sm:p-2.5 bg-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.25),0_0_0_1px_rgba(255,255,255,0.06)] border-[3px] sm:border-[3.5px] border-slate-700/80">
+              <div className="animate-phone-float w-[180px] min-[380px]:w-[195px] sm:w-[245px] md:w-[280px] lg:w-[295px] rounded-[30px] sm:rounded-[42px] p-1.5 sm:p-2.5 bg-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.25),0_0_0_1px_rgba(255,255,255,0.06)] border-[3px] sm:border-[3.5px] border-slate-700/80">
                 {/* Dynamic Island / Pill notch */}
                 <div className="flex justify-center mb-1 sm:mb-1.5">
-                  <div className="w-12 sm:w-16 h-3 sm:h-3.5 bg-slate-950 rounded-full flex items-center justify-end px-1.5 sm:px-2">
+                  <div className="w-11 sm:w-16 h-2.5 sm:h-3.5 bg-slate-950 rounded-full flex items-center justify-end px-1.5 sm:px-2">
                     <div className="w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full bg-slate-800" />
                   </div>
                 </div>
 
                 {/* Inner Phone Screen */}
-                <div className="bg-white dark:bg-slate-900 rounded-[26px] sm:rounded-[34px] overflow-hidden text-left border border-slate-200 dark:border-slate-800 shadow-inner">
+                <div className="bg-white dark:bg-slate-900 rounded-[24px] sm:rounded-[34px] overflow-hidden text-left border border-slate-200 dark:border-slate-800 shadow-inner">
                   {/* App Status & Header */}
                   <div className="px-2 sm:px-3 pt-1.5 sm:pt-2.5 pb-1 sm:pb-1.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                    <PulseLogo size={18} showTagline={false} />
-                    <span className="text-[9px] sm:text-[10px] font-semibold text-[#1A3BAA] bg-[#EEF2FC] px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                    <PulseLogo size={17} showTagline={false} />
+                    <span className="text-[8.5px] sm:text-[10px] font-semibold text-[#1A3BAA] bg-[#EEF2FC] px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                       <MapPin className="w-2.5 h-2.5" />
                       Bengaluru
                     </span>
@@ -423,11 +423,11 @@ export const PublicLanding: React.FC = () => {
                   <div className="p-1.5 sm:p-2.5 space-y-1.5 sm:space-y-2">
                     <div className="flex items-center gap-1 sm:gap-1.5 bg-[#F5F7FA] dark:bg-slate-800 px-1.5 sm:px-2 py-1 rounded-lg border border-[#E5E7EB] dark:border-slate-700 text-slate-400">
                       <Search className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#1A3BAA] shrink-0" />
-                      <span className="text-[9px] sm:text-[10px] text-slate-500 font-medium truncate">Search hospitals or specialties</span>
+                      <span className="text-[8.5px] sm:text-[10px] text-slate-500 font-medium truncate">Search hospitals or specialties</span>
                     </div>
 
                     {/* Emergency banner in mock app */}
-                    <div className="bg-red-50 text-[#C62828] border border-red-200 px-1.5 py-0.5 rounded-md text-[8px] sm:text-[9px] font-medium flex items-center justify-between">
+                    <div className="bg-red-50 text-[#C62828] border border-red-200 px-1.5 py-0.5 rounded-md text-[7.5px] sm:text-[9px] font-medium flex items-center justify-between">
                       <span>Emergency? Call 112</span>
                       <span className="font-semibold text-[#1A3BAA] underline">24×7 hospitals</span>
                     </div>
@@ -435,41 +435,41 @@ export const PublicLanding: React.FC = () => {
                     {/* Mock Feature Pills */}
                     <div className="grid grid-cols-2 gap-1 pt-0.5">
                       <div className="bg-[#EEF2FC] text-[#1A3BAA] p-1 sm:p-1.5 rounded-lg text-center">
-                        <span className="block text-[9px] sm:text-[10px] font-bold">Compare</span>
-                        <span className="text-[7.5px] sm:text-[8.5px] text-slate-500">2-3 facilities</span>
+                        <span className="block text-[8.5px] sm:text-[10px] font-bold">Compare</span>
+                        <span className="text-[7px] sm:text-[8.5px] text-slate-500">2-3 facilities</span>
                       </div>
                       <div className="bg-[#EEF2FC] text-[#1A3BAA] p-1 sm:p-1.5 rounded-lg text-center">
-                        <span className="block text-[9px] sm:text-[10px] font-bold">Lab Reports</span>
-                        <span className="text-[7.5px] sm:text-[8.5px] text-slate-500">Plain English</span>
+                        <span className="block text-[8.5px] sm:text-[10px] font-bold">Lab Reports</span>
+                        <span className="text-[7px] sm:text-[8.5px] text-slate-500">Plain English</span>
                       </div>
                     </div>
 
                     {/* Subhead: Near you / See all */}
-                    <div className="flex justify-between items-center pt-0.5 text-[9px] sm:text-[10px]">
+                    <div className="flex justify-between items-center pt-0.5 text-[8.5px] sm:text-[10px]">
                       <span className="font-bold text-[#121414] dark:text-white">Near you</span>
                       <span className="text-[#1A3BAA] font-semibold">See all</span>
                     </div>
 
                     {/* Scrolling Mock Hospital List (reveals more hospitals slowly) */}
-                    <div className="h-[135px] min-[380px]:h-[150px] sm:h-[175px] md:h-[190px] overflow-hidden relative">
+                    <div className="h-[120px] min-[380px]:h-[135px] sm:h-[165px] md:h-[190px] overflow-hidden relative">
                       <div className="animate-mock-list space-y-1 sm:space-y-1.5">
                         {/* Hospital 1: Manipal Hospital */}
                         <div className="bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-xl p-1.5 sm:p-2 shadow-sm space-y-0.5">
                           <div className="flex justify-between items-start">
                             <div>
-                              <h4 className="text-[10px] sm:text-[11px] font-bold text-slate-900 dark:text-white leading-tight">Manipal Hospital</h4>
-                              <p className="text-[8px] sm:text-[9px] text-slate-500 flex items-center gap-0.5 mt-0.5">
+                              <h4 className="text-[9.5px] sm:text-[11px] font-bold text-slate-900 dark:text-white leading-tight">Manipal Hospital</h4>
+                              <p className="text-[7.5px] sm:text-[9px] text-slate-500 flex items-center gap-0.5 mt-0.5">
                                 <MapPin className="w-2 h-2" />
                                 Old Airport Rd, Bengaluru
                               </p>
                             </div>
-                            <span className="text-[8px] sm:text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded">
+                            <span className="text-[7.5px] sm:text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded">
                               24×7
                             </span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-[8px] sm:text-[9px] font-semibold pt-0.5 border-t border-slate-100 dark:border-slate-700 text-slate-600">
+                          <div className="flex items-center gap-1.5 text-[7.5px] sm:text-[9px] font-semibold pt-0.5 border-t border-slate-100 dark:border-slate-700 text-slate-600">
                             <span className="text-[#B45309] flex items-center gap-0.5">
-                              <Star className="w-2.5 h-2.5 fill-[#B45309]" /> 4.6 (420)
+                              <Star className="w-2 h-2 fill-[#B45309]" /> 4.6 (420)
                             </span>
                             <span className="text-[#1A3BAA]">1.8 km from you</span>
                           </div>
@@ -479,19 +479,19 @@ export const PublicLanding: React.FC = () => {
                         <div className="bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-xl p-1.5 sm:p-2 shadow-sm space-y-0.5">
                           <div className="flex justify-between items-start">
                             <div>
-                              <h4 className="text-[10px] sm:text-[11px] font-bold text-slate-900 dark:text-white leading-tight">Aster CMI Hospital</h4>
-                              <p className="text-[8px] sm:text-[9px] text-slate-500 flex items-center gap-0.5 mt-0.5">
+                              <h4 className="text-[9.5px] sm:text-[11px] font-bold text-slate-900 dark:text-white leading-tight">Aster CMI Hospital</h4>
+                              <p className="text-[7.5px] sm:text-[9px] text-slate-500 flex items-center gap-0.5 mt-0.5">
                                 <MapPin className="w-2 h-2" />
                                 Hebbal, Bengaluru
                               </p>
                             </div>
-                            <span className="text-[8px] sm:text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded">
+                            <span className="text-[7.5px] sm:text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded">
                               24×7
                             </span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-[8px] sm:text-[9px] font-semibold pt-0.5 border-t border-slate-100 dark:border-slate-700 text-slate-600">
+                          <div className="flex items-center gap-1.5 text-[7.5px] sm:text-[9px] font-semibold pt-0.5 border-t border-slate-100 dark:border-slate-700 text-slate-600">
                             <span className="text-[#B45309] flex items-center gap-0.5">
-                              <Star className="w-2.5 h-2.5 fill-[#B45309]" /> 4.5 (380)
+                              <Star className="w-2 h-2 fill-[#B45309]" /> 4.5 (380)
                             </span>
                             <span className="text-[#1A3BAA]">6.2 km from you</span>
                           </div>
@@ -501,19 +501,19 @@ export const PublicLanding: React.FC = () => {
                         <div className="bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-xl p-1.5 sm:p-2 shadow-sm space-y-0.5">
                           <div className="flex justify-between items-start">
                             <div>
-                              <h4 className="text-[10px] sm:text-[11px] font-bold text-slate-900 dark:text-white leading-tight">Sakra World Hospital</h4>
-                              <p className="text-[8px] sm:text-[9px] text-slate-500 flex items-center gap-0.5 mt-0.5">
+                              <h4 className="text-[9.5px] sm:text-[11px] font-bold text-slate-900 dark:text-white leading-tight">Sakra World Hospital</h4>
+                              <p className="text-[7.5px] sm:text-[9px] text-slate-500 flex items-center gap-0.5 mt-0.5">
                                 <MapPin className="w-2 h-2" />
                                 Bellandur, Bengaluru
                               </p>
                             </div>
-                            <span className="text-[8px] sm:text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded">
+                            <span className="text-[7.5px] sm:text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded">
                               24×7
                             </span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-[8px] sm:text-[9px] font-semibold pt-0.5 border-t border-slate-100 dark:border-slate-700 text-slate-600">
+                          <div className="flex items-center gap-1.5 text-[7.5px] sm:text-[9px] font-semibold pt-0.5 border-t border-slate-100 dark:border-slate-700 text-slate-600">
                             <span className="text-[#B45309] flex items-center gap-0.5">
-                              <Star className="w-2.5 h-2.5 fill-[#B45309]" /> 4.5 (330)
+                              <Star className="w-2 h-2 fill-[#B45309]" /> 4.5 (330)
                             </span>
                             <span className="text-[#1A3BAA]">7.1 km from you</span>
                           </div>
@@ -523,19 +523,19 @@ export const PublicLanding: React.FC = () => {
                         <div className="bg-white dark:bg-slate-800 border border-[#E5E7EB] dark:border-slate-700 rounded-xl p-1.5 sm:p-2 shadow-sm space-y-0.5">
                           <div className="flex justify-between items-start">
                             <div>
-                              <h4 className="text-[10px] sm:text-[11px] font-bold text-slate-900 dark:text-white leading-tight">Fortis Hospital</h4>
-                              <p className="text-[8px] sm:text-[9px] text-slate-500 flex items-center gap-0.5 mt-0.5">
+                              <h4 className="text-[9.5px] sm:text-[11px] font-bold text-slate-900 dark:text-white leading-tight">Fortis Hospital</h4>
+                              <p className="text-[7.5px] sm:text-[9px] text-slate-500 flex items-center gap-0.5 mt-0.5">
                                 <MapPin className="w-2 h-2" />
                                 Bannerghatta Rd, Bengaluru
                               </p>
                             </div>
-                            <span className="text-[8px] sm:text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded">
+                            <span className="text-[7.5px] sm:text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded">
                               24×7
                             </span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-[8px] sm:text-[9px] font-semibold pt-0.5 border-t border-slate-100 dark:border-slate-700 text-slate-600">
+                          <div className="flex items-center gap-1.5 text-[7.5px] sm:text-[9px] font-semibold pt-0.5 border-t border-slate-100 dark:border-slate-700 text-slate-600">
                             <span className="text-[#B45309] flex items-center gap-0.5">
-                              <Star className="w-2.5 h-2.5 fill-[#B45309]" /> 4.3 (290)
+                              <Star className="w-2 h-2 fill-[#B45309]" /> 4.3 (290)
                             </span>
                             <span className="text-[#1A3BAA]">9.5 km from you</span>
                           </div>
@@ -546,10 +546,10 @@ export const PublicLanding: React.FC = () => {
 
                   {/* Bottom Nav Mock Tab Bar */}
                   <div className="border-t border-slate-200 dark:border-slate-800 px-2.5 sm:px-3 py-1 sm:py-1.5 flex justify-between text-slate-400 bg-white dark:bg-slate-900">
-                    <span className="text-[8px] sm:text-[9px] font-bold text-[#1A3BAA]">Discover</span>
-                    <span className="text-[8px] sm:text-[9px] font-medium">Compare</span>
-                    <span className="text-[8px] sm:text-[9px] font-medium">Reports</span>
-                    <span className="text-[8px] sm:text-[9px] font-medium">Profile</span>
+                    <span className="text-[7.5px] sm:text-[9px] font-bold text-[#1A3BAA]">Discover</span>
+                    <span className="text-[7.5px] sm:text-[9px] font-medium">Compare</span>
+                    <span className="text-[7.5px] sm:text-[9px] font-medium">Reports</span>
+                    <span className="text-[7.5px] sm:text-[9px] font-medium">Profile</span>
                   </div>
                 </div>
               </div>
@@ -602,9 +602,9 @@ export const PublicLanding: React.FC = () => {
               </div>
             </div>
 
-            {/* Mobile Nearest 24x7 Card - compact badge */}
+            {/* Mobile Nearest 24x7 Card - compact badge floating outside right bezel */}
             <div
-              className={`md:hidden absolute z-20 -right-1.5 min-[380px]:-right-2.5 top-1 w-[116px] min-[380px]:w-[124px] origin-top-right transition-all duration-700 ease-out transform pointer-events-auto ${
+              className={`md:hidden absolute z-20 -right-10 min-[380px]:-right-12 top-1 w-[108px] min-[380px]:w-[116px] origin-top-right transition-all duration-700 ease-out transform pointer-events-auto ${
                 phoneInView ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-85 translate-y-3'
               }`}
               style={{ transitionDelay: '300ms' }}
@@ -684,9 +684,9 @@ export const PublicLanding: React.FC = () => {
               </div>
             </div>
 
-            {/* Mobile Report Card - compact pill card */}
+            {/* Mobile Report Card - compact pill card floating outside right bezel */}
             <div
-              className={`md:hidden absolute z-20 -right-1.5 min-[380px]:-right-2.5 bottom-1 w-[118px] min-[380px]:w-[126px] origin-bottom-right transition-all duration-700 ease-out transform pointer-events-auto ${
+              className={`md:hidden absolute z-20 -right-10 min-[380px]:-right-12 bottom-1 w-[110px] min-[380px]:w-[118px] origin-bottom-right transition-all duration-700 ease-out transform pointer-events-auto ${
                 phoneInView ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-85 translate-y-3'
               }`}
               style={{ transitionDelay: '580ms' }}

@@ -108,6 +108,7 @@ router.get('/', generalLimiter, async (req: AuthenticatedRequest, res: Response)
 
     const targetSpecialty = specialty ? (findMappedSpecialty(specialty as string) || specialty as string) : null;
     const querySpecialty = query ? findMappedSpecialty(query as string) : null;
+    const isTestOrSymptomQuery = !!query && (findMatchingTests(query as string).length > 0 || !!querySpecialty);
 
     if (targetSpecialty) {
       const specialtyKeywords: { [key: string]: string[] } = {
@@ -141,9 +142,19 @@ router.get('/', generalLimiter, async (req: AuthenticatedRequest, res: Response)
         });
       }
 
+      if (targetSpecialty === 'General Medicine' || isTestOrSymptomQuery) {
+        const testFacilityKeywords = ['diagnostic', 'lab', 'pathology', 'hospital', 'clinic', 'multispeciality', 'multi specialty', 'healthcare'];
+        for (const kw of testFacilityKeywords) {
+          specConditions.push({
+            name: { contains: kw, mode: 'insensitive' }
+          });
+        }
+      }
+
       andConditions.push({ OR: specConditions });
 
-      if (query) {
+      // Only filter by hospital brand name if query is NOT a medical test or symptom
+      if (query && !isTestOrSymptomQuery) {
         andConditions.push({
           OR: [
             { name: { contains: query as string, mode: 'insensitive' } },
