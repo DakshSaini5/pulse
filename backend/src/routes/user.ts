@@ -3,6 +3,7 @@ import { prisma } from '../db';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { validate, updateProfileSchema, changePasswordSchema } from '../middleware/validate';
 import * as bcrypt from 'bcryptjs';
+import { extractPublicId, destroyCloudinaryAsset } from '../utils/fileSecurity';
 
 const router = express.Router();
 
@@ -203,39 +204,59 @@ router.delete('/account', authenticateToken, async (req: AuthenticatedRequest, r
   try {
     const userId = req.user!.id;
 
-    // Clean up all Cloudinary files before deleting the user from DB
+    // Clean up all Cloudinary files using exact stored public IDs or verified fallback
     const [prescriptions, reports] = await Promise.all([
-      prisma.prescription.findMany({ where: { userId }, select: { fileUrl: true } }),
-      prisma.medicalReport.findMany({ where: { userId }, select: { fileUrl: true } }),
+      prisma.prescription.findMany({
+        where: { userId },
+        select: { id: true, fileUrl: true, publicId: true, deliveryType: true, resourceType: true },
+      }),
+      prisma.medicalReport.findMany({
+        where: { userId },
+        select: { id: true, fileUrl: true, publicId: true, deliveryType: true, resourceType: true },
+      }),
     ]);
 
-    const allFileUrls = [
-      ...prescriptions.map(p => p.fileUrl),
-      ...reports.map(r => r.fileUrl),
-    ].filter(Boolean);
+    const allAssets = [
+      ...prescriptions.map(p => ({
+        publicId: p.publicId || extractPublicId(p.fileUrl),
+        deliveryType: p.deliveryType || 'authenticated',
+        resourceType: p.resourceType || 'image',
+      })),
+      ...reports.map(r => ({
+        publicId: r.publicId || extractPublicId(r.fileUrl),
+        deliveryType: r.deliveryType || 'authenticated',
+        resourceType: r.resourceType || 'image',
+      })),
+    ].filter((a): a is { publicId: string; deliveryType: string; resourceType: string } => Boolean(a.publicId));
 
-    if (allFileUrls.length > 0) {
-      try {
-        const cloudinary = (await import('../config/cloudinary')).default;
-        // Extract Cloudinary public IDs from URLs (format: .../folder/public_id.ext)
-        const publicIds = allFileUrls.map(url => {
-          const parts = url.split('/');
-          const fileWithExt = parts.slice(-2).join('/'); // folder/filename
-          return fileWithExt.replace(/\.[^.]+$/, ''); // remove extension
+    if (allAssets.length > 0) {
+      const failedAssetIds: string[] = [];
+      for (const asset of allAssets) {
+        const cleanup = await destroyCloudinaryAsset(asset.publicId, asset.deliveryType, asset.resourceType);
+        if (!cleanup.success) {
+          failedAssetIds.push(asset.publicId);
+          console.error(`[Account Delete] Failed to destroy asset ${asset.publicId}:`, cleanup.result);
+        }
+      }
+      if (failedAssetIds.length > 0) {
+        console.error(`[Account Delete] Aborting account deletion: ${failedAssetIds.length} of ${allAssets.length} assets failed Cloudinary cleanup.`);
+        return res.status(502).json({
+          message: 'Account deletion could not be completed because some stored files could not be safely removed from cloud storage. Your account and records have been preserved to prevent orphaned data. Please try again.',
         });
-        await cloudinary.api.delete_resources(publicIds);
-        console.log(`[Account Delete] Cleaned up ${publicIds.length} Cloudinary files for user ${userId}`);
-      } catch (cloudinaryErr) {
-        // Non-fatal: log but continue with account deletion
-        console.error('[Account Delete] Cloudinary cleanup failed (continuing with delete):', cloudinaryErr);
+      } else {
+        console.log(`[Account Delete] Cleaned up all ${allAssets.length} Cloudinary files for user ${userId}`);
       }
     }
 
-    // Prisma will cascade delete all related DB records
+    // Prisma will cascade delete all related DB records only after all assets are cleaned up
     await prisma.user.delete({ where: { id: userId } });
     
-    res.json({ success: true, message: 'Account deleted successfully' });
+    res.json({
+      success: true,
+      message: 'Account deleted successfully',
+    });
   } catch (error) {
+    console.error('Account delete error:', error);
     res.status(500).json({ message: 'Failed to delete account. Please contact support.' });
   }
 });

@@ -104,15 +104,6 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '1mb' }));
 app.use(generalLimiter);
 
-// Ensure local uploads directory exists
-const uploadsDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Serve uploaded prescription and report files statically
-app.use('/uploads', express.static(uploadsDir));
-
 // Register REST API endpoints
 app.use('/api/auth', authRouter);
 app.use('/api/auth', googleAuthRouter);
@@ -226,7 +217,6 @@ if (process.env.NODE_ENV !== 'test') {
     console.log(`====================================================`);
     console.log(`  💖 PULSE CORE SERVICE RUNNING ON PORT ${PORT}      `);
     console.log(`  🚀 API gateway: http://localhost:${PORT}/api        `);
-    console.log(`  📂 Static assets hosted at: /uploads               `);
     console.log(`====================================================`);
   });
 }

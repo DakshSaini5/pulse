@@ -142,6 +142,9 @@ model Prescription {
   id                   String                 @id @default(uuid())
   userId               String
   fileUrl              String
+  publicId             String?
+  resourceType         String?                @default("image")
+  deliveryType         String?                @default("authenticated")
   rawText              String?
   status               String                 @default("PENDING") // PENDING, OCR_COMPLETED, ANALYZED
   createdAt            DateTime               @default(now())
@@ -157,6 +160,9 @@ model MedicalReport {
   id             String                     @id @default(uuid())
   userId         String
   fileUrl        String
+  publicId       String?
+  resourceType   String?                    @default("image")
+  deliveryType   String?                    @default("authenticated")
   reportType     String                     @default("GENERAL") // CBC, HBA1C, THYROID, LIPID, LFT, KFT, VITAMIN, GENERAL
   rawText        String?
   status         String                     @default("PENDING")

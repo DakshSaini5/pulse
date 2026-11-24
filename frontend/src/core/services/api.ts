@@ -169,6 +169,9 @@ export interface PrescriptionAnalysis {
 export interface Prescription {
   id: string;
   fileUrl: string;
+  publicId?: string | null;
+  resourceType?: string | null;
+  deliveryType?: string | null;
   status: string;
   createdAt: string;
   ocrResult?: {
@@ -199,6 +202,9 @@ export interface SpecialistRecommendation {
 export interface MedicalReport {
   id: string;
   fileUrl: string;
+  publicId?: string | null;
+  resourceType?: string | null;
+  deliveryType?: string | null;
   reportType: string;
   status: string;
   reportDate: string;
@@ -215,6 +221,32 @@ export interface MedicalReport {
     overallStatus: string;
   };
   specialists: SpecialistRecommendation[];
+}
+
+/**
+ * Safely resolves a medical fileUrl for client viewing/download.
+ * Strictly blocks raw public Cloudinary URLs from being loaded directly by the browser.
+ * Only permits secure relative backend API proxy routes or verified backend host URLs.
+ */
+export function resolveFileUrl(fileUrl: string | null | undefined): string {
+  if (!fileUrl) return '';
+
+  // Block any raw direct Cloudinary delivery URLs to prevent public exposure
+  if (fileUrl.includes('res.cloudinary.com') || fileUrl.includes('api.cloudinary.com')) {
+    if (import.meta.env.DEV) {
+      console.warn('[Security Warning] Attempted to load raw Cloudinary URL directly in client. Blocked for patient privacy:', fileUrl);
+    }
+    return '';
+  }
+
+  // If already an absolute URL (e.g. backend host)
+  if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+    return fileUrl;
+  }
+
+  // Valid relative backend API path (e.g. /api/prescriptions/:id/file?token=...)
+  const base = VITE_API_URL ? VITE_API_URL.replace(/\/+$/, '') : '';
+  return fileUrl.startsWith('/') ? `${base}${fileUrl}` : `${base}/${fileUrl}`;
 }
 
 export interface HealthTrend {

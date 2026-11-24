@@ -1,14 +1,22 @@
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
+import jwt from 'jsonwebtoken';
 import { prisma } from '../db';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { performOCR } from '../services/ocr';
 import { parsePrescriptionWithGemini, enrichMedicinesWithGemini, checkDrugInteractionsWithGemini } from '../services/ai';
 import { documentAiLimiter, generalLimiter } from '../middleware/rateLimiter';
 import cloudinary from '../config/cloudinary';
+import {
+  buildSecureFileUrl,
+  extractPublicId,
+  destroyCloudinaryAsset,
+  streamCloudinaryAsset,
+  verifyFileAccessToken,
+} from '../utils/fileSecurity';
 
 const router = Router();
 
@@ -53,8 +61,13 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
       prisma.prescription.count({ where: { userId } }),
     ]);
 
+    const sanitizedList = list.map((p) => ({
+      ...p,
+      fileUrl: buildSecureFileUrl('prescriptions', p.id, userId),
+    }));
+
     return res.json({
-      data: list,
+      data: sanitizedList,
       pagination: {
         page,
         limit,
@@ -127,10 +140,68 @@ router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Res
       return res.status(404).json({ message: 'Prescription file not found.' });
     }
 
-    return res.json(item);
+    return res.json({
+      ...item,
+      fileUrl: buildSecureFileUrl('prescriptions', item.id, userId),
+    });
   } catch (err) {
     console.error('Error:', err instanceof Error ? err.message : 'Unknown error');
     return res.status(500).json({ message: 'Error loading prescription data.' });
+  }
+});
+
+// GET /api/prescriptions/:id/file (Guarded - secure streaming access)
+// Supports either Authorization Bearer header OR ?token=<fileAccessToken>
+router.get('/:id/file', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const tokenQuery = req.query.token as string | undefined;
+  let userId: string | null = null;
+
+  if (tokenQuery) {
+    const verified = verifyFileAccessToken(tokenQuery, id);
+    if (!verified) {
+      return res.status(403).json({ message: 'Invalid or expired file access token.' });
+    }
+    userId = verified.userId;
+  } else {
+    const authHeader = req.headers['authorization'];
+    const bearer = authHeader && authHeader.split(' ')[1];
+    if (!bearer) {
+      return res.status(401).json({ message: 'Authentication required. Missing token.' });
+    }
+    try {
+      const decoded: any = jwt.verify(bearer, process.env.JWT_SECRET!);
+      userId = decoded.id;
+    } catch {
+      return res.status(403).json({ message: 'Access denied. Expired or invalid token.' });
+    }
+  }
+
+  try {
+    const item = await prisma.prescription.findFirst({
+      where: { id, userId: userId! },
+      select: { id: true, fileUrl: true, publicId: true, deliveryType: true, resourceType: true },
+    });
+
+    if (!item) {
+      return res.status(404).json({ message: 'Prescription document not found.' });
+    }
+
+    const publicId = item.publicId || extractPublicId(item.fileUrl);
+    if (!publicId) {
+      return res.status(404).json({ message: 'Storage asset not associated with this prescription.' });
+    }
+
+    streamCloudinaryAsset(
+      publicId,
+      item.deliveryType || (item.publicId ? 'authenticated' : 'upload'),
+      item.resourceType || 'image',
+      res,
+      `prescription-${id}.jpg`
+    );
+  } catch (err) {
+    console.error('Error fetching prescription file:', err);
+    return res.status(500).json({ message: 'Failed to retrieve prescription file.' });
   }
 });
 
@@ -146,52 +217,79 @@ router.post('/upload', authenticateToken, documentAiLimiter, upload.single('file
     const tempFilePath = path.join(os.tmpdir(), `upload-${Date.now()}-${Math.random().toString(36).substring(7)}${path.extname(req.file.originalname)}`);
     fs.writeFileSync(tempFilePath, req.file.buffer);
 
+    let ocr: any;
+    let uploadResult: any;
+
     try {
-      // Run OCR and Cloudinary upload in parallel
+      // Run OCR and Cloudinary upload in parallel with authenticated access
       const ocrPromise = performOCR(tempFilePath);
-      const cloudinaryPromise = new Promise<string>((resolve, reject) => {
+      const cloudinaryPromise = new Promise<any>((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-          { folder: 'pulse_prescriptions', format: 'jpg' },
+          {
+            folder: 'pulse_prescriptions',
+            type: 'authenticated', // Secure, authenticated storage
+            resource_type: 'image',
+            format: 'jpg',
+          },
           (error, result) => {
             if (error) reject(error);
-            else resolve(result!.secure_url);
+            else resolve(result);
           }
         );
         stream.end(req.file!.buffer);
       });
 
-      const [ocr, fileUrl] = await Promise.all([ocrPromise, cloudinaryPromise]);
+      [ocr, uploadResult] = await Promise.all([ocrPromise, cloudinaryPromise]);
 
-      // Save record to database
-      const prescription = await prisma.prescription.create({
-        data: {
-          userId,
-          fileUrl,
-          status: 'OCR_COMPLETED',
-          ocrResult: {
-            create: {
-              rawText: ocr.text,
-              confidence: ocr.confidence,
+      try {
+        // Save record to database
+        const prescription = await prisma.prescription.create({
+          data: {
+            userId,
+            fileUrl: uploadResult.secure_url,
+            publicId: uploadResult.public_id,
+            resourceType: uploadResult.resource_type || 'image',
+            deliveryType: 'authenticated',
+            status: 'OCR_COMPLETED',
+            ocrResult: {
+              create: {
+                rawText: ocr.text,
+                confidence: ocr.confidence,
+              },
             },
           },
-        },
-        include: {
-          ocrResult: true,
-          prescriptionAnalysis: true,
-        },
-      });
+          include: {
+            ocrResult: true,
+            prescriptionAnalysis: true,
+          },
+        });
 
-      // Logging AI usage diagnostics
-      await prisma.aIUsage.create({
-        data: {
-          userId,
-          feature: 'PRESCRIPTION_OCR',
-          tokensUsed: ocr.tokensUsed || 150,
-          modelName: ocr.modelName || 'Tesseract.js OCR'
+        // Logging AI usage diagnostics
+        await prisma.aIUsage.create({
+          data: {
+            userId,
+            feature: 'PRESCRIPTION_OCR',
+            tokensUsed: ocr.tokensUsed || 150,
+            modelName: ocr.modelName || 'Tesseract.js OCR'
+          }
+        });
+
+        return res.status(201).json({
+          ...prescription,
+          fileUrl: buildSecureFileUrl('prescriptions', prescription.id, userId),
+        });
+      } catch (dbErr) {
+        // Cleanup Cloudinary asset if DB operation fails to avoid orphaned files
+        console.error('DB insert failed after Cloudinary upload; cleaning up asset:', dbErr);
+        if (uploadResult?.public_id) {
+          try {
+            await destroyCloudinaryAsset(uploadResult.public_id, 'authenticated', uploadResult.resource_type || 'image');
+          } catch (cleanupErr) {
+            console.error('Failed to cleanup orphaned prescription asset:', cleanupErr);
+          }
         }
-      });
-
-      return res.status(201).json(prescription);
+        throw dbErr;
+      }
     } finally {
       // Always clean up temp file, even if OCR or Cloudinary upload fails
       if (fs.existsSync(tempFilePath)) {
@@ -299,22 +397,43 @@ router.post('/:id/verify', authenticateToken, documentAiLimiter, async (req: Aut
       }
     });
 
-    return res.json(updated);
+    return res.json({
+      ...updated,
+      fileUrl: buildSecureFileUrl('prescriptions', updated.id, userId),
+    });
   } catch (err) {
     console.error('Verification failed:', err instanceof Error ? err.message : 'Unknown error');
     return res.status(500).json({ message: 'Error processing Gemini structured parameters.' });
   }
 });
 
-// BUG-20 FIX: DELETE /api/prescriptions/:id
+// BUG-20 FIX: DELETE /api/prescriptions/:id (Secure Cloudinary & Database deletion)
 router.delete('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
   const { id } = req.params;
 
   try {
-    const item = await prisma.prescription.findFirst({ where: { id, userId } });
+    const item = await prisma.prescription.findFirst({
+      where: { id, userId },
+      select: { id: true, fileUrl: true, publicId: true, deliveryType: true, resourceType: true },
+    });
     if (!item) {
       return res.status(404).json({ message: 'Prescription not found.' });
+    }
+
+    const publicId = item.publicId || extractPublicId(item.fileUrl);
+    if (publicId) {
+      const cleanup = await destroyCloudinaryAsset(
+        publicId,
+        item.deliveryType || 'authenticated',
+        item.resourceType || 'image'
+      );
+      if (!cleanup.success) {
+        console.error(`[Prescription Delete] Cloudinary destruction failed for ${publicId}: ${cleanup.result}`);
+        return res.status(502).json({
+          message: 'Unable to safely delete prescription document from secure storage. Operation aborted to prevent orphaned data. Please try again.',
+        });
+      }
     }
 
     // Delete child records first (cascade not guaranteed by all DBs without explicit setup)

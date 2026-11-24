@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { PulseNav } from "./PulseNav"
 import { cn } from "@/utils/utils"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { prescriptionAPI } from "@/core/services/api"
+import { prescriptionAPI, resolveFileUrl } from "@/core/services/api"
 
 interface RecordsScreenProps {
   onTabChange?: (tab: "discover" | "records" | "panic" | "trends" | "compare" | "more") => void
@@ -121,7 +121,7 @@ export function RecordsScreen({ onTabChange, activeScreen, onNavigate, onPanic }
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-foreground truncate">
-                        <a href={scan.fileUrl} target="_blank" rel="noreferrer" className="hover:underline">
+                        <a href={resolveFileUrl(scan.fileUrl)} target="_blank" rel="noreferrer" className="hover:underline">
                           Scan #{scan.id.substring(0, 8)}
                         </a>
                       </p>

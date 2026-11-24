@@ -1,14 +1,22 @@
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
+import jwt from 'jsonwebtoken';
 import { prisma } from '../db';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { performOCR } from '../services/ocr';
 import { parseMedicalReportWithGemini, assessHealthRiskWithGemini } from '../services/ai';
 import { documentAiLimiter, riskScoreLimiter } from '../middleware/rateLimiter';
 import cloudinary from '../config/cloudinary';
+import {
+  buildSecureFileUrl,
+  extractPublicId,
+  destroyCloudinaryAsset,
+  streamCloudinaryAsset,
+  verifyFileAccessToken,
+} from '../utils/fileSecurity';
 
 const router = Router();
 
@@ -54,8 +62,13 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
       prisma.medicalReport.count({ where: { userId } }),
     ]);
 
+    const sanitizedList = list.map((r) => ({
+      ...r,
+      fileUrl: buildSecureFileUrl('reports', r.id, userId),
+    }));
+
     return res.json({
-      data: list,
+      data: sanitizedList,
       pagination: {
         page,
         limit,
@@ -127,10 +140,68 @@ router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Res
       return res.status(404).json({ message: 'Medical report file not found.' });
     }
 
-    return res.json(report);
+    return res.json({
+      ...report,
+      fileUrl: buildSecureFileUrl('reports', report.id, userId),
+    });
   } catch (err) {
     console.error('Error:', err instanceof Error ? err.message : 'Unknown error');
     return res.status(500).json({ message: 'Error loading report metrics.' });
+  }
+});
+
+// GET /api/reports/:id/file (Guarded - secure streaming access)
+// Supports either Authorization Bearer header OR ?token=<fileAccessToken>
+router.get('/:id/file', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const tokenQuery = req.query.token as string | undefined;
+  let userId: string | null = null;
+
+  if (tokenQuery) {
+    const verified = verifyFileAccessToken(tokenQuery, id);
+    if (!verified) {
+      return res.status(403).json({ message: 'Invalid or expired file access token.' });
+    }
+    userId = verified.userId;
+  } else {
+    const authHeader = req.headers['authorization'];
+    const bearer = authHeader && authHeader.split(' ')[1];
+    if (!bearer) {
+      return res.status(401).json({ message: 'Authentication required. Missing token.' });
+    }
+    try {
+      const decoded: any = jwt.verify(bearer, process.env.JWT_SECRET!);
+      userId = decoded.id;
+    } catch {
+      return res.status(403).json({ message: 'Access denied. Expired or invalid token.' });
+    }
+  }
+
+  try {
+    const report = await prisma.medicalReport.findFirst({
+      where: { id, userId: userId! },
+      select: { id: true, fileUrl: true, publicId: true, deliveryType: true, resourceType: true },
+    });
+
+    if (!report) {
+      return res.status(404).json({ message: 'Medical report document not found.' });
+    }
+
+    const publicId = report.publicId || extractPublicId(report.fileUrl);
+    if (!publicId) {
+      return res.status(404).json({ message: 'Storage asset not associated with this report.' });
+    }
+
+    streamCloudinaryAsset(
+      publicId,
+      report.deliveryType || (report.publicId ? 'authenticated' : 'upload'),
+      report.resourceType || 'image',
+      res,
+      `report-${id}.jpg`
+    );
+  } catch (err) {
+    console.error('Error fetching medical report file:', err);
+    return res.status(500).json({ message: 'Failed to retrieve report file.' });
   }
 });
 
@@ -147,23 +218,28 @@ router.post('/upload', authenticateToken, documentAiLimiter, upload.single('file
     fs.writeFileSync(tempFilePath, req.file.buffer);
 
     let ocr: any;
-    let fileUrl: string;
+    let uploadResult: any;
 
     try {
-      // Run OCR and Cloudinary upload in parallel
+      // Run OCR and Cloudinary upload in parallel with authenticated access
       const ocrPromise = performOCR(tempFilePath);
-      const cloudinaryPromise = new Promise<string>((resolve, reject) => {
+      const cloudinaryPromise = new Promise<any>((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-          { folder: 'pulse_reports', format: 'jpg' },
+          {
+            folder: 'pulse_reports',
+            type: 'authenticated', // Secure, authenticated storage - no public direct delivery
+            resource_type: 'image',
+            format: 'jpg',
+          },
           (error, result) => {
             if (error) reject(error);
-            else resolve(result!.secure_url);
+            else resolve(result);
           }
         );
         stream.end(req.file!.buffer);
       });
 
-      [ocr, fileUrl] = await Promise.all([ocrPromise, cloudinaryPromise]);
+      [ocr, uploadResult] = await Promise.all([ocrPromise, cloudinaryPromise]);
     } finally {
       if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
     }
@@ -184,28 +260,47 @@ router.post('/upload', authenticateToken, documentAiLimiter, upload.single('file
       detectedType = 'IMAGING';
     }
 
-    const report = await prisma.medicalReport.create({
-      data: {
-        userId,
-        fileUrl,
-        reportType: detectedType,
-        status: 'OCR_COMPLETED',
-        ocrResult: {
-          create: {
-            rawText: ocr.text,
-            confidence: ocr.confidence,
+    try {
+      const report = await prisma.medicalReport.create({
+        data: {
+          userId,
+          fileUrl: uploadResult.secure_url,
+          publicId: uploadResult.public_id,
+          resourceType: uploadResult.resource_type || 'image',
+          deliveryType: 'authenticated',
+          reportType: detectedType,
+          status: 'OCR_COMPLETED',
+          ocrResult: {
+            create: {
+              rawText: ocr.text,
+              confidence: ocr.confidence,
+            },
           },
         },
-      },
-      include: {
-        ocrResult: true,
-        values: true,
-        summary: true,
-        specialists: true,
-      },
-    });
+        include: {
+          ocrResult: true,
+          values: true,
+          summary: true,
+          specialists: true,
+        },
+      });
 
-    return res.status(201).json(report);
+      return res.status(201).json({
+        ...report,
+        fileUrl: buildSecureFileUrl('reports', report.id, userId),
+      });
+    } catch (dbErr) {
+      // Cleanup Cloudinary asset if DB operation fails to avoid orphaned files
+      console.error('DB insert failed after Cloudinary upload; cleaning up asset:', dbErr);
+      if (uploadResult?.public_id) {
+        try {
+          await destroyCloudinaryAsset(uploadResult.public_id, 'authenticated', uploadResult.resource_type || 'image');
+        } catch (cleanupErr) {
+          console.error('Failed to cleanup orphaned asset after DB failure:', cleanupErr);
+        }
+      }
+      throw dbErr;
+    }
   } catch (err) {
     console.error('Report upload failed:', err instanceof Error ? err.message : 'Unknown error');
     return res.status(500).json({ message: 'Error parsing document character sets.' });
@@ -360,22 +455,43 @@ router.post('/:id/verify', authenticateToken, documentAiLimiter, async (req: Aut
       }
     });
 
-    return res.json(updated);
+    return res.json({
+      ...updated,
+      fileUrl: buildSecureFileUrl('reports', updated.id, userId),
+    });
   } catch (err) {
     console.error('Verification failed:', err instanceof Error ? err.message : 'Unknown error');
     return res.status(500).json({ message: 'Error processing Gemini structured report.' });
   }
 });
 
-// BUG-20 FIX: DELETE /api/reports/:id
+// BUG-20 FIX: DELETE /api/reports/:id (Secure Cloudinary & Database deletion)
 router.delete('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
   const { id } = req.params;
 
   try {
-    const report = await prisma.medicalReport.findFirst({ where: { id, userId } });
+    const report = await prisma.medicalReport.findFirst({
+      where: { id, userId },
+      select: { id: true, fileUrl: true, publicId: true, deliveryType: true, resourceType: true },
+    });
     if (!report) {
       return res.status(404).json({ message: 'Report not found.' });
+    }
+
+    const publicId = report.publicId || extractPublicId(report.fileUrl);
+    if (publicId) {
+      const cleanup = await destroyCloudinaryAsset(
+        publicId,
+        report.deliveryType || 'authenticated',
+        report.resourceType || 'image'
+      );
+      if (!cleanup.success) {
+        console.error(`[Report Delete] Cloudinary destruction failed for ${publicId}: ${cleanup.result}`);
+        return res.status(502).json({
+          message: 'Unable to safely delete report document from secure storage. Operation aborted to prevent orphaned data. Please try again.',
+        });
+      }
     }
 
     // Delete child records first
