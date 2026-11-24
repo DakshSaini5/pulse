@@ -40,7 +40,7 @@ router.post('/register/send-otp', authLimiter, async (req: Request, res: Respons
     await prisma.oTPVerification.deleteMany({ where: { email: emailLower } });
 
     // Store in DB
-    await prisma.oTPVerification.create({
+    const otpRecord = await prisma.oTPVerification.create({
       data: {
         email: emailLower,
         code,
@@ -48,7 +48,11 @@ router.post('/register/send-otp', authLimiter, async (req: Request, res: Respons
       }
     });
 
-    console.log(`✉️ [REGISTRATION OTP] Sent to ${emailLower}: ${code}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`✉️ [REGISTRATION OTP] Sent to ${emailLower}: ${code}`);
+    } else {
+      console.log(`✉️ [REGISTRATION OTP] Generated for ${emailLower}`);
+    }
 
     const resendApiKey = process.env.RESEND_API_KEY;
     let sentViaResend = false;
@@ -90,11 +94,14 @@ router.post('/register/send-otp', authLimiter, async (req: Request, res: Respons
 
     if (!sentViaResend) {
       console.warn(`[WARNING] Resend API failed. Email was not delivered to ${emailLower}`);
+      await prisma.oTPVerification.deleteMany({ where: { id: otpRecord.id } });
+      return res.status(502).json({
+        message: 'Failed to deliver verification email. Please try again later.'
+      });
     }
 
     return res.json({ 
-      message: 'Verification OTP has been sent to your email.',
-      devOtpFallback: code // ALWAYS RETURN IN DEV OR PROD FOR FALLBACK
+      message: 'Verification OTP has been sent to your email.'
     });
   } catch (err: any) {
     console.error('Request registration email OTP error:', err);
@@ -312,7 +319,7 @@ router.post('/forgot-password/request-email', authLimiter, async (req: Request, 
     await prisma.oTPVerification.deleteMany({ where: { email: email.toLowerCase() } });
 
     // Store in DB
-    await prisma.oTPVerification.create({
+    const otpRecord = await prisma.oTPVerification.create({
       data: {
         email: email.toLowerCase(),
         code,
@@ -321,7 +328,11 @@ router.post('/forgot-password/request-email', authLimiter, async (req: Request, 
     });
 
     // Send email using Resend API (or fallback to console log for local dev)
-    console.log(`✉️ [EMAIL OTP] Sent to ${email}: ${code}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`✉️ [EMAIL OTP] Sent to ${email}: ${code}`);
+    } else {
+      console.log(`✉️ [EMAIL OTP] Generated for ${email}`);
+    }
 
     const resendApiKey = process.env.RESEND_API_KEY;
     let sentViaResend = false;
@@ -363,11 +374,14 @@ router.post('/forgot-password/request-email', authLimiter, async (req: Request, 
 
     if (!sentViaResend) {
       console.warn(`[WARNING] Resend API failed. Email was not delivered to ${email}`);
+      await prisma.oTPVerification.deleteMany({ where: { id: otpRecord.id } });
+      return res.status(502).json({
+        message: 'Failed to deliver verification email. Please try again later.'
+      });
     }
 
     return res.json({ 
-      message: 'Verification OTP has been sent to your email.',
-      devOtpFallback: code
+      message: 'Verification OTP has been sent to your email.'
     });
   } catch (err: any) {
     console.error('Request email OTP error:', err);
