@@ -5,6 +5,43 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/**
+ * Strict URL validator for markdown links.
+ * Only allows:
+ * 1. Safe internal paths starting with single '/' (strictly excluding protocol-relative '//')
+ * 2. Absolute external URLs with explicitly whitelisted protocols: https:, http:, mailto:
+ * Strictly rejects javascript:, data:, vbscript:, protocol-relative (//evil.com), and malformed URLs.
+ */
+export const validateSafeMarkdownUrl = (
+  url: string | undefined | null
+): { isInternal: boolean; isExternal: boolean; safeHref: string } | null => {
+  if (!url || typeof url !== 'string') return null;
+  const trimmed = url.trim();
+
+  // Strictly reject protocol-relative URLs (e.g. //evil.com)
+  if (trimmed.startsWith('//')) {
+    return null;
+  }
+
+  // Safe internal path: starts with single / followed by path characters
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
+    return { isInternal: true, isExternal: false, safeHref: trimmed };
+  }
+
+  // Verify external URL protocol against strict whitelist
+  try {
+    const parsed = new URL(trimmed);
+    const protocol = parsed.protocol.toLowerCase();
+    if (protocol === 'https:' || protocol === 'http:' || protocol === 'mailto:') {
+      return { isInternal: false, isExternal: true, safeHref: trimmed };
+    }
+  } catch {
+    // Malformed or invalid URL
+  }
+
+  return null;
+};
+
 export const getHospitalDisplayName = (name: string, address: string): string => {
   if (!name) return '';
   // If the name already has a branch differentiator, just return it

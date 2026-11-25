@@ -13,18 +13,26 @@ export async function getWorkingModelName(genAI: GoogleGenerativeAI): Promise<st
   if (cachedActiveModel) return cachedActiveModel;
   
   for (const modelName of CANDIDATE_MODELS) {
+    let timeoutHandle: NodeJS.Timeout | undefined;
+    const controller = new AbortController();
     try {
       console.log(`[Gemini Selector] Probing model availability for: ${modelName}`);
       const model = genAI.getGenerativeModel({ model: modelName });
       
-      // 2-second timeout for the probe request to prevent hangs
-      const probePromise = model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
-        generationConfig: { maxOutputTokens: 5 }
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutHandle = setTimeout(() => {
+          controller.abort();
+          reject(new Error('Probe timed out'));
+        }, 2000);
       });
 
-      const timeoutPromise = new Promise<any>((_, reject) => 
-        setTimeout(() => reject(new Error('Probe timed out')), 2000)
+      // 2-second timeout for the probe request to prevent hangs
+      const probePromise = model.generateContent(
+        {
+          contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
+          generationConfig: { maxOutputTokens: 5 }
+        },
+        { signal: controller.signal, timeout: 2000 }
       );
 
       await Promise.race([probePromise, timeoutPromise]);
@@ -33,6 +41,8 @@ export async function getWorkingModelName(genAI: GoogleGenerativeAI): Promise<st
       return modelName;
     } catch (err: any) {
       console.warn(`[Gemini Selector] Model ${modelName} probe failed:`, err.message || err);
+    } finally {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
     }
   }
   
@@ -43,7 +53,9 @@ export async function getWorkingModelName(genAI: GoogleGenerativeAI): Promise<st
 export async function generateContentWithFallback(
   genAI: GoogleGenerativeAI,
   promptOrParts: any,
-  generationConfig: any = {}
+  generationConfig: any = {},
+  systemInstruction?: any,
+  timeoutMs: number = 30000
 ) {
   let lastError: any = null;
   
@@ -53,21 +65,43 @@ export async function generateContentWithFallback(
     : CANDIDATE_MODELS;
 
   const safetySettings = [
-    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
+    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE }
   ];
 
   for (const modelName of preferredModels) {
+    const controller = new AbortController();
+    let timeoutHandle: NodeJS.Timeout | undefined;
+
     try {
       console.log(`[Gemini Fallback] Attempting generateContent with ${modelName}...`);
-      const model = genAI.getGenerativeModel({
+      const modelOptions: any = {
         model: modelName,
         generationConfig,
         safetySettings
+      };
+      if (systemInstruction) {
+        modelOptions.systemInstruction = systemInstruction;
+      }
+      const model = genAI.getGenerativeModel(modelOptions);
+
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutHandle = setTimeout(() => {
+          controller.abort();
+          reject(new Error(`Gemini request to ${modelName} timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
       });
-      const result = await model.generateContent(promptOrParts);
+
+      // Pass AbortSignal and timeout into SDK SingleRequestOptions
+      const generatePromise = model.generateContent(promptOrParts, {
+        signal: controller.signal,
+        timeout: timeoutMs
+      });
+
+      const result = await Promise.race([generatePromise, timeoutPromise]);
+
       // Ensure it returned a valid response text
       result.response.text();
       
@@ -79,6 +113,8 @@ export async function generateContentWithFallback(
     } catch (err: any) {
       console.warn(`[Gemini Fallback] Model ${modelName} failed:`, err.message || err);
       lastError = err;
+    } finally {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
     }
   }
   throw lastError || new Error("All candidate Gemini models failed.");

@@ -323,20 +323,15 @@ router.post('/:id/verify', authenticateToken, documentAiLimiter, async (req: Aut
       return res.status(404).json({ message: 'Report record not found.' });
     }
 
-    const textToAnalyze = verifiedData?.rawText || report.ocrResult?.rawText || '';
-    const activeType = verifiedData?.reportType || report.reportType;
+    const textToAnalyze = String(verifiedData?.rawText || report.ocrResult?.rawText || '').substring(0, 15000);
+    const rawType = verifiedData?.reportType || report.reportType;
+    const activeType = String(rawType || 'GENERAL').replace(/[^a-zA-Z0-9_\-\s]/g, '').trim().substring(0, 30) || 'GENERAL';
 
     // Run Gemini analysis (simulates results gracefully if no key is stored)
     const parseResult = await parseMedicalReportWithGemini(textToAnalyze, activeType);
     const analysis = parseResult.result;
     const totalTokensUsed = parseResult.tokensUsed;
 
-    // Clean up past database references
-    await prisma.medicalReportValue.deleteMany({ where: { medicalReportId: id } });
-    await prisma.medicalReportSummary.deleteMany({ where: { medicalReportId: id } });
-    await prisma.specialistRecommendation.deleteMany({ where: { medicalReportId: id } });
-
-    // 1. Insert parsed values
     const normalCount = analysis.values.filter((v: any) => !v.isAbnormal).length;
     const abnormalCount = analysis.values.filter((v: any) => v.isAbnormal).length;
 
@@ -351,22 +346,6 @@ router.post('/:id/verify', authenticateToken, documentAiLimiter, async (req: Aut
       category: activeType,
     }));
 
-    await prisma.medicalReportValue.createMany({
-      data: valuesData
-    });
-
-    // 2. Insert summary analysis block
-    await prisma.medicalReportSummary.create({
-      data: {
-        medicalReportId: id,
-        healthSummary: analysis.summary,
-        normalFindingsCount: normalCount,
-        abnormalFindingsCount: abnormalCount,
-        overallStatus: analysis.status || 'STABLE',
-      },
-    });
-
-    // 3. Insert specialist routing recommendations
     const specialistsData = analysis.specialists.map((s: any) => ({
       medicalReportId: id,
       specialtyName: s.specialtyName,
@@ -375,91 +354,121 @@ router.post('/:id/verify', authenticateToken, documentAiLimiter, async (req: Aut
       recommendedHospitalsJson: JSON.stringify([]),
     }));
 
-    await prisma.specialistRecommendation.createMany({
-      data: specialistsData
-    });
-
-    // 4. Save to HealthTrends timeline for tracking
-    const trendPromises = analysis.values.map((v: any) => {
-      // Clean up index key to support simplified tracking maps
-      let markerName = v.key;
-      if (v.key.toLowerCase().includes('hemoglobin') || v.key.toLowerCase() === 'hb') {
-        markerName = 'Hemoglobin';
-      } else if (v.key.toLowerCase().includes('hba1c') || v.key.toLowerCase() === 'a1c') {
-        markerName = 'HbA1c';
-      } else if (v.key.toLowerCase().includes('tsh')) {
-        markerName = 'TSH';
-      } else if (v.key.toLowerCase().includes('cholesterol')) {
-        markerName = 'Cholesterol';
+    // Atomic transaction: lock report row FOR UPDATE to serialize concurrent verifications,
+    // then delete prior verification records, insert replacements, and update status & usage.
+    const updated = await prisma.$transaction(async (tx) => {
+      const owned = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id" FROM "MedicalReport" WHERE "id" = ${id} AND "userId" = ${userId} FOR UPDATE;
+      `;
+      if (!owned || owned.length === 0) {
+        const notFound: any = new Error('Report record not found.');
+        notFound.isNotFound = true;
+        throw notFound;
       }
 
-      // If it's a text-based finding with no numeric value, skip adding to numeric trends
-      if (v.value === undefined || v.value === null || v.value === "") return null;
+      await tx.medicalReportValue.deleteMany({ where: { medicalReportId: id } });
+      await tx.medicalReportSummary.deleteMany({ where: { medicalReportId: id } });
+      await tx.specialistRecommendation.deleteMany({ where: { medicalReportId: id } });
 
-      return prisma.healthTrend.create({
+      if (valuesData.length > 0) {
+        await tx.medicalReportValue.createMany({ data: valuesData });
+      }
+
+      await tx.medicalReportSummary.create({
         data: {
-          userId,
-          markerName,
-          value: parseFloat(v.value) || 0,
-          unit: v.unit || '',
-          recordedAt: new Date()
-        }
+          medicalReportId: id,
+          healthSummary: analysis.summary,
+          normalFindingsCount: normalCount,
+          abnormalFindingsCount: abnormalCount,
+          overallStatus: analysis.status || 'STABLE',
+        },
       });
-    }).filter((v: any) => v !== null);
 
-    await Promise.all(trendPromises);
-
-    // 5. Save generated habits to HealthInsights
-    if (analysis.healthHabits && Array.isArray(analysis.healthHabits)) {
-      const insightsData = analysis.healthHabits.map((habit: string) => ({
-        userId,
-        title: 'Daily Health Habit',
-        description: habit,
-        category: 'HABIT',
-        severity: 'INFO',
-      }));
-      if (insightsData.length > 0) {
-        await prisma.healthInsight.createMany({
-          data: insightsData
-        });
+      if (specialistsData.length > 0) {
+        await tx.specialistRecommendation.createMany({ data: specialistsData });
       }
-    }
 
-    // Pull updated models
-    const updated = await prisma.medicalReport.update({
-      where: { id },
-      data: {
-        status: 'ANALYZED',
-        reportType: activeType,
-        ocrResult: {
-          update: {
-            verifiedData: JSON.stringify(verifiedData),
-            verifiedAt: new Date(),
+      // Save to HealthTrends timeline for tracking
+      const trendPromises = analysis.values.map((v: any) => {
+        let markerName = v.key;
+        if (v.key.toLowerCase().includes('hemoglobin') || v.key.toLowerCase() === 'hb') {
+          markerName = 'Hemoglobin';
+        } else if (v.key.toLowerCase().includes('hba1c') || v.key.toLowerCase() === 'a1c') {
+          markerName = 'HbA1c';
+        } else if (v.key.toLowerCase().includes('tsh')) {
+          markerName = 'TSH';
+        } else if (v.key.toLowerCase().includes('cholesterol')) {
+          markerName = 'Cholesterol';
+        }
+
+        if (v.value === undefined || v.value === null || v.value === "") return null;
+
+        return tx.healthTrend.create({
+          data: {
+            userId,
+            markerName,
+            value: parseFloat(v.value) || 0,
+            unit: v.unit || '',
+            recordedAt: new Date()
+          }
+        });
+      }).filter((v: any) => v !== null);
+
+      await Promise.all(trendPromises);
+
+      if (analysis.healthHabits && Array.isArray(analysis.healthHabits)) {
+        const insightsData = analysis.healthHabits.map((habit: string) => ({
+          userId,
+          title: 'Daily Health Habit',
+          description: habit,
+          category: 'HABIT',
+          severity: 'INFO',
+        }));
+        if (insightsData.length > 0) {
+          await tx.healthInsight.createMany({ data: insightsData });
+        }
+      }
+
+      const updatedReport = await tx.medicalReport.update({
+        where: { id },
+        data: {
+          status: 'ANALYZED',
+          reportType: activeType,
+          ocrResult: {
+            update: {
+              verifiedData: JSON.stringify(verifiedData),
+              verifiedAt: new Date(),
+            },
           },
         },
-      },
-      include: {
-        ocrResult: true,
-        values: true,
-        summary: true,
-        specialists: true,
-      },
-    });
+        include: {
+          ocrResult: true,
+          values: true,
+          summary: true,
+          specialists: true,
+        },
+      });
 
-    await prisma.aIUsage.create({
-      data: {
-        userId,
-        feature: 'REPORT_GEMINI_ANALYSIS',
-        tokensUsed: totalTokensUsed || 840,
-        modelName: 'Gemini 2.5 Flash'
-      }
+      await tx.aIUsage.create({
+        data: {
+          userId,
+          feature: 'REPORT_GEMINI_ANALYSIS',
+          tokensUsed: totalTokensUsed || 840,
+          modelName: 'Gemini 2.5 Flash'
+        }
+      });
+
+      return updatedReport;
     });
 
     return res.json({
       ...updated,
       fileUrl: buildSecureFileUrl('reports', updated.id, userId),
     });
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.isNotFound) {
+      return res.status(404).json({ message: 'Report record not found.' });
+    }
     console.error('Verification failed:', err instanceof Error ? err.message : 'Unknown error');
     return res.status(500).json({ message: 'Error processing Gemini structured report.' });
   }

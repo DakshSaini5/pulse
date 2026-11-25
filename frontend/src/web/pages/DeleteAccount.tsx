@@ -22,12 +22,13 @@ export const DeleteAccount: React.FC = () => {
     setLoading(true);
     try {
       // 1. Verify credentials via login
-      const loginRes = await api.post('/auth/login', { email, password });
+      const loginRes = await api.post('/api/auth/login', { identifier: email, password });
       const token = loginRes.data.token;
 
-      // 2. Proceed with deletion using the token
-      await api.delete('/user/account', {
-        headers: { Authorization: `Bearer ${token}` }
+      // 2. Proceed with deletion using the token and password re-authentication
+      await api.delete('/api/user/account', {
+        headers: { Authorization: `Bearer ${token}` },
+        data: { password },
       });
 
       setSuccess(true);

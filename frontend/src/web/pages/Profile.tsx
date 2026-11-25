@@ -5,6 +5,9 @@ import { User, Mail, Shield, Calendar, Activity, FileText, Lock, Save, Trash2, A
 import EmergencyContactModal from '../components/EmergencyContactModal';
 import toast from 'react-hot-toast';
 import { useNavigate, Link } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
+import { Capacitor } from '@capacitor/core';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 export const Profile: React.FC = () => {
   const { user, logout } = useAuth();
@@ -23,6 +26,8 @@ export const Profile: React.FC = () => {
   const [changingPassword, setChangingPassword] = useState(false);
   
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
   
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [emergencyModalOpen, setEmergencyModalOpen] = useState(false);
@@ -66,14 +71,6 @@ export const Profile: React.FC = () => {
     try {
       const updated = await userAPI.updateProfile({ name });
       setProfile(prev => prev ? { ...prev, ...updated } : null);
-      
-      // Update local storage user data
-      const stored = localStorage.getItem('pulse_user');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        localStorage.setItem('pulse_user', JSON.stringify({ ...parsed, name: updated.name, email: updated.email }));
-      }
-      
       toast.success('Profile updated successfully');
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to update profile');
@@ -102,15 +99,55 @@ export const Profile: React.FC = () => {
     }
   };
 
-  const handleDeleteAccount = async () => {
+  const handleGoogleDeleteReauth = async (googleCredential: string) => {
+    setDeletingAccount(true);
     try {
-      await userAPI.deleteAccount();
+      await userAPI.deleteAccount({ googleCredential });
+      logout();
+      toast.success('Account permanently deleted.');
+      navigate('/login');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Google verification failed or could not delete account');
+      setShowDeleteModal(false);
+    } finally {
+      setDeletingAccount(false);
+    }
+  };
+
+  const handleNativeGoogleDelete = async () => {
+    setDeletingAccount(true);
+    try {
+      GoogleAuth.initialize({
+        clientId: '367526945989-ebnif0f9q0s080kab2clgd42d10qqhok.apps.googleusercontent.com',
+        scopes: ['profile', 'email'],
+        grantOfflineAccess: true,
+      });
+      const googleUser = await GoogleAuth.signIn();
+      await handleGoogleDeleteReauth(googleUser.authentication.idToken);
+    } catch (err: any) {
+      toast.error(err.message || 'Google re-authentication failed.');
+      setDeletingAccount(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      toast.error('Please enter your password to confirm account deletion.');
+      return;
+    }
+
+    setDeletingAccount(true);
+    try {
+      await userAPI.deleteAccount({ password: deletePassword });
       logout();
       toast.success('Account permanently deleted.');
       navigate('/login');
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to delete account');
       setShowDeleteModal(false);
+      setDeletePassword('');
+    } finally {
+      setDeletingAccount(false);
     }
   };
 
@@ -384,19 +421,69 @@ export const Profile: React.FC = () => {
               <li className="flex items-center gap-2"><span className="text-red-500">✕</span> All AI chat history and health trend records</li>
               <li className="flex items-center gap-2"><span className="text-red-500">✕</span> All emergency contacts and notifications</li>
             </ul>
+            <div className="mb-5">
+              {profile?.authProvider === 'GOOGLE' ? (
+                <div className="space-y-2 text-center">
+                  <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    Re-authenticate with Google to permanently delete your account
+                  </p>
+                  {!Capacitor.isNativePlatform() ? (
+                    <div className="flex justify-center pt-1">
+                      <GoogleLogin
+                        onSuccess={(res) => {
+                          if (res.credential) {
+                            handleGoogleDeleteReauth(res.credential);
+                          }
+                        }}
+                        onError={() => toast.error('Google re-authentication failed.')}
+                        text="continue_with"
+                      />
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={deletingAccount}
+                      onClick={handleNativeGoogleDelete}
+                      className="w-full px-4 py-2.5 bg-danger hover:bg-danger/90 text-white font-bold rounded-xl shadow-lg shadow-danger/20 transition-all disabled:opacity-50"
+                    >
+                      {deletingAccount ? 'Verifying...' : 'Verify with Google & Delete'}
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+                    Enter your current password to confirm
+                  </label>
+                  <input
+                    type="password"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    placeholder="Current password"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-xl text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                  />
+                </div>
+              )}
+            </div>
             <div className="flex gap-3">
               <button
-                onClick={() => setShowDeleteModal(false)}
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeletePassword('');
+                }}
                 className="flex-1 px-4 py-2.5 border border-slate-300 hover:bg-slate-50 dark:bg-slate-800 text-slate-700 font-bold rounded-xl transition-colors"
               >
                 Cancel
               </button>
-              <button
-                onClick={handleDeleteAccount}
-                className="flex-1 px-4 py-2.5 bg-danger hover:bg-danger/90 text-white font-bold rounded-xl shadow-lg shadow-danger/20 transition-all"
-              >
-                Yes, Delete My Account
-              </button>
+              {profile?.authProvider !== 'GOOGLE' && (
+                <button
+                  disabled={deletingAccount}
+                  onClick={handleDeleteAccount}
+                  className="flex-1 px-4 py-2.5 bg-danger hover:bg-danger/90 text-white font-bold rounded-xl shadow-lg shadow-danger/20 transition-all disabled:opacity-50"
+                >
+                  {deletingAccount ? 'Deleting...' : 'Yes, Delete My Account'}
+                </button>
+              )}
             </div>
           </div>
         </div>

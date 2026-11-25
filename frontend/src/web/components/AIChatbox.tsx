@@ -1,18 +1,20 @@
 import React, { useState, useRef, useEffect } from "react"
 import { MessageCircle, X, Send, Sparkles, Bot, Loader2, Flag, MapPin, Plus } from "lucide-react"
 import { PulseLogo } from "./PulseLogo"
-import { cn } from "@core/utils/utils"
+import { cn, validateSafeMarkdownUrl } from "@core/utils/utils"
 import io, { Socket } from 'socket.io-client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import toast from 'react-hot-toast';
 import { useAuth } from "@core/context/AuthContext";
+import { getAccessToken } from "@core/services/api";
 
 interface Message {
   id: string
   role: "user" | "assistant" | "model"
   text: string
   isError?: boolean
+  isStreaming?: boolean
 }
 
 const QUICK_PROMPTS = [
@@ -49,7 +51,7 @@ export const AIChatbox: React.FC = () => {
       if (!url || url === 'undefined' || url.startsWith('/')) {
         url = 'https://pulse-production-f638.up.railway.app';
       }
-      const token = localStorage.getItem('pulse_token');
+      const token = getAccessToken() || undefined;
       const socket = io(url as any, {
         auth: { token }
       });
@@ -68,12 +70,26 @@ export const AIChatbox: React.FC = () => {
 
       socket.on('chat:response', (data: { text: string, isError: boolean }) => {
         setIsTyping(false);
-        setMessages(prev => [...prev, {
-          id: Date.now().toString(),
-          role: 'assistant',
-          text: data.text,
-          isError: data.isError
-        }]);
+        setMessages(prev => {
+          const newMessages = [...prev];
+          const lastIndex = newMessages.length - 1;
+          if (lastIndex >= 0 && (newMessages[lastIndex].role === 'assistant' || newMessages[lastIndex].role === 'model') && newMessages[lastIndex].isStreaming) {
+            newMessages[lastIndex] = {
+              ...newMessages[lastIndex],
+              text: data.text,
+              isStreaming: false,
+              isError: data.isError
+            };
+            return newMessages;
+          }
+          return [...prev, {
+            id: Date.now().toString(),
+            role: 'assistant',
+            text: data.text,
+            isStreaming: false,
+            isError: data.isError
+          }];
+        });
       });
 
       socket.on('chat:response:start', (data: { id: string }) => {
@@ -82,6 +98,7 @@ export const AIChatbox: React.FC = () => {
           id: data.id || Date.now().toString(),
           role: 'assistant',
           text: '',
+          isStreaming: true,
           isError: false
         }]);
       });
@@ -90,7 +107,7 @@ export const AIChatbox: React.FC = () => {
         setMessages(prev => {
           const newMessages = [...prev];
           const lastMsgIndex = newMessages.length - 1;
-          if (lastMsgIndex >= 0 && newMessages[lastMsgIndex].role === 'assistant') {
+          if (lastMsgIndex >= 0 && (newMessages[lastMsgIndex].role === 'assistant' || newMessages[lastMsgIndex].role === 'model')) {
             newMessages[lastMsgIndex] = {
               ...newMessages[lastMsgIndex],
               text: newMessages[lastMsgIndex].text + data.text
@@ -217,9 +234,31 @@ export const AIChatbox: React.FC = () => {
                   >
                     {msg.role === 'user' ? (
                       msg.text
+                    ) : msg.isStreaming ? (
+                      <div className="text-xs whitespace-pre-wrap leading-relaxed">{msg.text}</div>
                     ) : (
                       <div className="prose prose-sm dark:prose-invert max-w-none text-xs">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            a: ({ href, children }) => {
+                              const validation = validateSafeMarkdownUrl(href);
+                              if (validation?.isExternal || validation?.isInternal) {
+                                return (
+                                  <a
+                                    href={validation.safeHref}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary font-bold hover:underline"
+                                  >
+                                    {children}
+                                  </a>
+                                );
+                              }
+                              return <span className="text-muted-foreground font-medium">{children}</span>;
+                            }
+                          }}
+                        >
                           {msg.text}
                         </ReactMarkdown>
                       </div>

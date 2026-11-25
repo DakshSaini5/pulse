@@ -27,6 +27,8 @@ export class ErrorBoundary extends Component<Props, State> {
     // Clear potentially corrupted local storage keys
     localStorage.removeItem('pulse_user');
     localStorage.removeItem('pulse_token');
+    localStorage.removeItem('pulse_refresh_token');
+    localStorage.removeItem('pulse_chat_cache');
     localStorage.removeItem('pulse_theme');
     // Clear all cache storages
     if ('caches' in window) {

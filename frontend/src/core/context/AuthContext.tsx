@@ -28,42 +28,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const initAuth = async () => {
-      const storedToken = localStorage.getItem('pulse_token');
-      if (!storedToken) {
-        // No token at all — nothing to hydrate
-        setLoading(false);
-        return;
-      }
-
-      // --- Optimistic Hydration ---
-      // Instantly paint the UI with the cached user from localStorage (0ms).
-      // This eliminates the blank flash while we wait for a network round trip.
-      const cachedUser = localStorage.getItem('pulse_user');
-      if (cachedUser) {
-        try {
-          setUser(JSON.parse(cachedUser));
-        } catch {
-          // Corrupt cache — clear and proceed to server verify
-          localStorage.removeItem('pulse_user');
-        }
-      }
-      // Unblock the UI immediately — dashboard renders now
-      setLoading(false);
-
-      // --- Silent Background Verification ---
-      // Validate the token with the server in the background.
       try {
-        const freshUser = await authAPI.verifyToken();
-        setUser(freshUser); // Refresh with latest server data (e.g. updated name/role)
+        const freshUser = await authAPI.bootstrapSession();
+        if (freshUser) {
+          setUser(freshUser);
+        }
       } catch (error: any) {
-        // Only force logout if the server specifically rejected the token (401/403)
-        // Network errors or 500s should just keep using the cached optimistic user
         if (error.response?.status === 401 || error.response?.status === 403) {
-          authAPI.logout();
+          await authAPI.logout();
           setUser(null);
         } else {
-          console.warn('[Pulse] Silent token verification failed due to network/server error. Using cached user.');
+          console.warn('[Pulse] Silent session bootstrap failed due to network/server error.');
         }
+      } finally {
+        setLoading(false);
       }
     };
 

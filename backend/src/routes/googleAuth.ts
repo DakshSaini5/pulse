@@ -1,9 +1,12 @@
 import { Router, Request, Response } from 'express';
+import crypto from 'crypto';
 import * as jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import { prisma } from '../db';
 import { validate, googleAuthSchema } from '../middleware/validate';
-import { authLimiter } from '../middleware/rateLimiter';
+import { googleAuthLimiter } from '../middleware/rateLimiter';
+import { getUserTokenVersion, hashToken } from '../utils/accountSecurity';
+import { setRefreshCookie, shouldIncludeRefreshTokenInBody } from './auth';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET!;
@@ -16,7 +19,7 @@ const getGoogleClient = () => {
 };
 
 // POST /api/auth/google — Google OAuth login/register
-router.post('/google', authLimiter, validate(googleAuthSchema), async (req: Request, res: Response) => {
+router.post('/google', googleAuthLimiter, validate(googleAuthSchema), async (req: Request, res: Response) => {
   const { credential } = req.body;
   const { client, clientId } = getGoogleClient();
 
@@ -91,25 +94,32 @@ router.post('/google', authLimiter, validate(googleAuthSchema), async (req: Requ
 
     let userRole = user.role;
 
-    // Issue JWT
+    // Issue JWT with explicit purpose and token version
+    const tokenVersion = await getUserTokenVersion(user.id);
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: userRole },
+      { id: user.id, email: user.email, role: userRole, v: tokenVersion, purpose: 'access' },
       JWT_SECRET,
       { expiresIn: '30d' }
     );
 
-    const refreshToken = jwt.sign({ id: user.id }, JWT_SECRET, {
-      expiresIn: '90d',
-    });
+    const refreshJti = crypto.randomUUID();
+    const familyId = crypto.randomUUID();
+    const refreshToken = jwt.sign(
+      { id: user.id, jti: refreshJti, family: familyId, purpose: 'refresh' },
+      JWT_SECRET,
+      { expiresIn: '90d' }
+    );
 
+    // Store only SHA-256 digest at rest
     await prisma.user.update({
       where: { id: user.id },
-      data: { refreshToken }
+      data: { refreshToken: hashToken(refreshToken) }
     });
 
+    setRefreshCookie(res, refreshToken);
     return res.json({
       token,
-      refreshToken,
+      ...(shouldIncludeRefreshTokenInBody(req) ? { refreshToken } : {}),
       user: {
         id: user.id,
         name: user.name,

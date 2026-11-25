@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect } from "react"
 import { MessageCircle, X, Send, Sparkles, Bot, Flag } from "lucide-react"
-import { cn } from "@/utils/utils"
+import { cn, validateSafeMarkdownUrl } from "@/utils/utils"
 import { io, Socket } from "socket.io-client"
+import { getAccessToken } from "../../core/services/api"
 import ReactMarkdown from "react-markdown"
 import toast from "react-hot-toast"
 
@@ -12,6 +13,7 @@ interface Message {
   role: "user" | "assistant"
   text: string
   isError?: boolean
+  isStreaming?: boolean
 }
 
 const INITIAL_MESSAGES: Message[] = [
@@ -38,7 +40,7 @@ export function AIChatbox() {
       return
     }
 
-    const token = localStorage.getItem('pulse_token')
+    const token = getAccessToken()
     const apiUrl = import.meta.env.VITE_API_URL
     if (!apiUrl) {
       console.error('[AIChatbox] VITE_API_URL is not set. Socket connection will not be established.')
@@ -57,7 +59,7 @@ export function AIChatbox() {
     // Handle incoming streaming chunk initialization
     newSocket.on('chat:response:start', (data: { id: string }) => {
       setIsTyping(false)
-      setMessages(prev => [...prev, { id: data.id, role: "assistant", text: "" }])
+      setMessages(prev => [...prev, { id: data.id, role: "assistant", text: "", isStreaming: true }])
     })
 
     // Handle incoming streaming chunks
@@ -80,12 +82,26 @@ export function AIChatbox() {
     // Handle single complete messages (like errors or fallbacks)
     newSocket.on('chat:response', (data: { text: string, isError?: boolean }) => {
       setIsTyping(false)
-      setMessages(prev => [...prev, { 
-        id: Date.now().toString(), 
-        role: "assistant", 
-        text: data.text,
-        isError: data.isError 
-      }])
+      setMessages(prev => {
+        const newMessages = [...prev]
+        const lastIndex = newMessages.length - 1
+        if (lastIndex >= 0 && newMessages[lastIndex].role === "assistant" && newMessages[lastIndex].isStreaming) {
+          newMessages[lastIndex] = {
+            ...newMessages[lastIndex],
+            text: data.text,
+            isStreaming: false,
+            isError: data.isError
+          }
+          return newMessages
+        }
+        return [...prev, {
+          id: Date.now().toString(),
+          role: "assistant",
+          text: data.text,
+          isStreaming: false,
+          isError: data.isError
+        }]
+      })
     })
 
     setSocket(newSocket)
@@ -148,7 +164,32 @@ export function AIChatbox() {
                     msg.isError && "bg-danger/10 text-danger border border-danger/20"
                   )}>
                     {msg.role === "assistant" ? (
-                      <ReactMarkdown>{msg.text}</ReactMarkdown>
+                      msg.isStreaming ? (
+                        <span className="whitespace-pre-wrap">{msg.text}</span>
+                      ) : (
+                        <ReactMarkdown
+                          components={{
+                            a: ({ href, children }) => {
+                              const validation = validateSafeMarkdownUrl(href);
+                              if (validation?.isExternal || validation?.isInternal) {
+                                return (
+                                  <a
+                                    href={validation.safeHref}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary font-bold hover:underline"
+                                  >
+                                    {children}
+                                  </a>
+                                );
+                              }
+                              return <span className="text-muted-foreground font-medium">{children}</span>;
+                            }
+                          }}
+                        >
+                          {msg.text}
+                        </ReactMarkdown>
+                      )
                     ) : (
                       msg.text
                     )}

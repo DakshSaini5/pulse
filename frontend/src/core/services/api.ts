@@ -1,4 +1,7 @@
 import axios, { AxiosError } from 'axios';
+import { Capacitor } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
+import { SecureStorage, KeychainAccess } from '@aparajita/capacitor-secure-storage';
 import toast from 'react-hot-toast';
 
 const VITE_API_URL = import.meta.env.VITE_API_URL;
@@ -6,8 +9,122 @@ if (!VITE_API_URL) {
   throw new Error('[Pulse] VITE_API_URL is not set. All API calls will fail. Please add it to your .env file.');
 }
 
+// Sensitive legacy localStorage keys that must never persist in plaintext browser storage
+const SENSITIVE_LEGACY_KEYS = [
+  'pulse_refresh_token',
+  'pulse_token',
+  'pulse_user',
+  'pulse_chat_cache',
+  'pulse_latitude',
+  'pulse_longitude',
+  'pulse_location_source',
+  'pulse_location_label',
+  'pulse_city_name',
+] as const;
+
+let inMemoryAccessToken: string | null = null;
+let inMemoryUser: any | null = null;
+
+export function getAccessToken(): string | null {
+  return inMemoryAccessToken;
+}
+
+export function setAccessToken(token: string | null): void {
+  inMemoryAccessToken = token;
+}
+
+export function clearSensitiveLocalStorage(): void {
+  for (const key of SENSITIVE_LEGACY_KEYS) {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Ignore storage unavailability
+    }
+  }
+}
+
+let nativeSecureStorageConfigured = false;
+
+async function ensureNativeSecureStorageConfigured(): Promise<void> {
+  if (!Capacitor.isNativePlatform() || nativeSecureStorageConfigured) return;
+  try {
+    await SecureStorage.setKeyPrefix('pulse_sec_');
+    await SecureStorage.setSynchronize(false);
+    await SecureStorage.setDefaultKeychainAccess(KeychainAccess.afterFirstUnlockThisDeviceOnly);
+    nativeSecureStorageConfigured = true;
+  } catch {
+    // Best-effort native configuration; do not crash if platform plugin is mocked or partially initialized
+  }
+}
+
+async function getNativeRefreshToken(): Promise<string | null> {
+  if (!Capacitor.isNativePlatform()) return null;
+  await ensureNativeSecureStorageConfigured();
+  try {
+    const secureVal = await SecureStorage.getItem('pulse_refresh_token');
+    if (secureVal) {
+      // Ensure any stale legacy plaintext copies are purged
+      await Preferences.remove({ key: 'pulse_refresh_token' }).catch(() => {});
+      try { localStorage.removeItem('pulse_refresh_token'); } catch {}
+      return secureVal;
+    }
+
+    // One-time migration from legacy plaintext @capacitor/preferences on native devices
+    const prefResult = await Preferences.get({ key: 'pulse_refresh_token' }).catch(() => ({ value: null }));
+    if (prefResult?.value) {
+      await SecureStorage.setItem('pulse_refresh_token', prefResult.value);
+      await Preferences.remove({ key: 'pulse_refresh_token' }).catch(() => {});
+      try { localStorage.removeItem('pulse_refresh_token'); } catch {}
+      return prefResult.value;
+    }
+
+    // One-time migration from legacy localStorage on native devices
+    const legacy = (() => {
+      try { return localStorage.getItem('pulse_refresh_token'); } catch { return null; }
+    })();
+    if (legacy) {
+      await SecureStorage.setItem('pulse_refresh_token', legacy);
+      try { localStorage.removeItem('pulse_refresh_token'); } catch {}
+      return legacy;
+    }
+  } catch {
+    // Fail closed on native secure storage errors — never fall back to plaintext storage
+  }
+  return null;
+}
+
+async function setNativeRefreshToken(token: string | null): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return;
+  await ensureNativeSecureStorageConfigured();
+  try {
+    if (token) {
+      await SecureStorage.setItem('pulse_refresh_token', token);
+      await Preferences.remove({ key: 'pulse_refresh_token' }).catch(() => {});
+    } else {
+      await SecureStorage.removeItem('pulse_refresh_token');
+    }
+  } catch {
+    // Never fall back to plaintext storage on error
+  }
+}
+
+export async function clearAllSensitiveStorage(): Promise<void> {
+  inMemoryAccessToken = null;
+  inMemoryUser = null;
+  clearSensitiveLocalStorage();
+  if (Capacitor.isNativePlatform()) {
+    await ensureNativeSecureStorageConfigured();
+    await Promise.allSettled([
+      SecureStorage.removeItem('pulse_refresh_token'),
+      Preferences.remove({ key: 'pulse_refresh_token' }),
+      Preferences.remove({ key: 'pulse_chat_cache' }),
+    ]);
+  }
+}
+
 export const api = axios.create({
   baseURL: VITE_API_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -15,11 +132,13 @@ export const api = axios.create({
 });
 
 
-// Automatic JWT Token Injection Middleware
+// Automatic JWT Token Injection & Client Platform Header Middleware (in-memory access token)
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('pulse_token');
-  if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (config.headers) {
+    config.headers['X-Client-Platform'] = Capacitor.isNativePlatform() ? 'native' : 'web';
+    if (inMemoryAccessToken) {
+      config.headers.Authorization = `Bearer ${inMemoryAccessToken}`;
+    }
   }
   return config;
 });
@@ -45,7 +164,12 @@ api.interceptors.response.use(
     const originalRequest = error.config as any;
 
     // Handle 401 Unauthorized globally
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      const requestUrl = originalRequest.url || '';
+      if (requestUrl.includes('/api/auth/refresh') || requestUrl.includes('/api/auth/logout')) {
+        return Promise.reject(error);
+      }
+
       if (isRefreshing) {
         return new Promise(function(resolve, reject) {
           failedQueue.push({ resolve, reject });
@@ -60,45 +184,61 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refreshToken = localStorage.getItem('pulse_refresh_token');
+      try {
+        const isNative = Capacitor.isNativePlatform();
+        const nativeRefreshToken = isNative ? await getNativeRefreshToken() : null;
 
-      if (refreshToken) {
-        try {
-          const res = await axios.post(`${api.defaults.baseURL}/api/auth/refresh`, { refreshToken });
-          if (res.data.token) {
-            localStorage.setItem('pulse_token', res.data.token);
-            if (res.data.user) {
-              localStorage.setItem('pulse_user', JSON.stringify(res.data.user));
-            }
-            api.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
-            originalRequest.headers.Authorization = `Bearer ${res.data.token}`;
-            
-            processQueue(null, res.data.token);
-            return api(originalRequest);
+        if (isNative && !nativeRefreshToken) {
+          processQueue(error, null);
+          await clearAllSensitiveStorage();
+          if (!window.location.pathname.match(/\/login|\/register/)) {
+            window.location.href = '/login?expired=true';
           }
-        } catch (refreshError: any) {
-          processQueue(refreshError, null);
-          
-          // Only hard-logout if the refresh token is truly rejected (401 or 403)
-          if (refreshError.response?.status === 401 || refreshError.response?.status === 403) {
-            localStorage.removeItem('pulse_token');
-            localStorage.removeItem('pulse_refresh_token');
-            localStorage.removeItem('pulse_user');
-            if (!window.location.pathname.match(/\/login|\/register/)) {
-              window.location.href = '/login?expired=true';
-            }
+          return Promise.reject(error);
+        }
+
+        const res = await axios.post(
+          `${api.defaults.baseURL}/api/auth/refresh`,
+          isNative ? { refreshToken: nativeRefreshToken } : {},
+          {
+            withCredentials: true,
+            headers: {
+              'X-Requested-With': 'PulseClient',
+              'X-Client-Platform': isNative ? 'native' : 'web',
+            },
           }
-          return Promise.reject(refreshError);
-        } finally {
-          isRefreshing = false;
+        );
+
+        if (res.data.token) {
+          inMemoryAccessToken = res.data.token;
+          if (isNative && res.data.refreshToken) {
+            await setNativeRefreshToken(res.data.refreshToken);
+          }
+          if (res.data.user) {
+            inMemoryUser = res.data.user;
+          }
+          clearSensitiveLocalStorage();
+          api.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
+          originalRequest.headers.Authorization = `Bearer ${res.data.token}`;
+
+          processQueue(null, res.data.token);
+          return api(originalRequest);
         }
-      } else {
-        localStorage.removeItem('pulse_token');
-        localStorage.removeItem('pulse_user');
-        if (!window.location.pathname.match(/\/login|\/register/)) {
-          window.location.href = '/login?expired=true';
+
+        throw new Error('Refresh response missing access token');
+      } catch (refreshError: any) {
+        processQueue(refreshError, null);
+
+        // Only hard-logout if the refresh token is truly rejected (401, 403)
+        if (refreshError.response?.status === 401 || refreshError.response?.status === 403) {
+          await clearAllSensitiveStorage();
+          if (!window.location.pathname.match(/\/login|\/register/)) {
+            window.location.href = '/login?expired=true';
+          }
         }
-        return Promise.reject(error);
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
     
@@ -311,9 +451,12 @@ export const authAPI = {
   login: async (identifier: string, password: string) => {
     const res = await api.post('/api/auth/login', { identifier, password });
     if (res.data.token) {
-      localStorage.setItem('pulse_token', res.data.token);
-      if (res.data.refreshToken) localStorage.setItem('pulse_refresh_token', res.data.refreshToken);
-      localStorage.setItem('pulse_user', JSON.stringify(res.data.user));
+      inMemoryAccessToken = res.data.token;
+      inMemoryUser = res.data.user || null;
+      if (Capacitor.isNativePlatform() && res.data.refreshToken) {
+        await setNativeRefreshToken(res.data.refreshToken);
+      }
+      clearSensitiveLocalStorage();
     }
     return res.data;
   },
@@ -324,20 +467,73 @@ export const authAPI = {
   register: async (name: string, email: string, mobileNumber: string, password: string, code: string) => {
     const res = await api.post('/api/auth/register', { name, email, mobileNumber, password, code });
     if (res.data.token) {
-      localStorage.setItem('pulse_token', res.data.token);
-      if (res.data.refreshToken) localStorage.setItem('pulse_refresh_token', res.data.refreshToken);
-      localStorage.setItem('pulse_user', JSON.stringify(res.data.user));
+      inMemoryAccessToken = res.data.token;
+      inMemoryUser = res.data.user || null;
+      if (Capacitor.isNativePlatform() && res.data.refreshToken) {
+        await setNativeRefreshToken(res.data.refreshToken);
+      }
+      clearSensitiveLocalStorage();
     }
     return res.data;
   },
   googleAuth: async (credential: string) => {
     const res = await api.post('/api/auth/google', { credential });
     if (res.data.token) {
-      localStorage.setItem('pulse_token', res.data.token);
-      if (res.data.refreshToken) localStorage.setItem('pulse_refresh_token', res.data.refreshToken);
-      localStorage.setItem('pulse_user', JSON.stringify(res.data.user));
+      inMemoryAccessToken = res.data.token;
+      inMemoryUser = res.data.user || null;
+      if (Capacitor.isNativePlatform() && res.data.refreshToken) {
+        await setNativeRefreshToken(res.data.refreshToken);
+      }
+      clearSensitiveLocalStorage();
     }
     return res.data;
+  },
+  bootstrapSession: async () => {
+    // Migrate/purge any obsolete plaintext sensitive data from localStorage
+    const legacyAccess = (() => {
+      try { return localStorage.getItem('pulse_token'); } catch { return null; }
+    })();
+    const isNative = Capacitor.isNativePlatform();
+    const nativeRefresh = isNative ? await getNativeRefreshToken() : null;
+    clearSensitiveLocalStorage();
+
+    if (!inMemoryAccessToken && legacyAccess) {
+      inMemoryAccessToken = legacyAccess;
+    }
+
+    if (inMemoryAccessToken) {
+      return authAPI.verifyToken();
+    }
+
+    if (isNative && !nativeRefresh) {
+      return null;
+    }
+
+    // Attempt silent session restore via HttpOnly cookie (web) or native Preferences refresh token
+    try {
+      const res = await axios.post(
+        `${api.defaults.baseURL}/api/auth/refresh`,
+        isNative ? { refreshToken: nativeRefresh } : {},
+        {
+          withCredentials: true,
+          headers: {
+            'X-Requested-With': 'PulseClient',
+            'X-Client-Platform': isNative ? 'native' : 'web',
+          },
+        }
+      );
+      if (res.data.token) {
+        inMemoryAccessToken = res.data.token;
+        inMemoryUser = res.data.user || null;
+        if (isNative && res.data.refreshToken) {
+          await setNativeRefreshToken(res.data.refreshToken);
+        }
+        return inMemoryUser;
+      }
+    } catch {
+      // No active session
+    }
+    return null;
   },
   checkMobile: async (mobileNumber: string) => {
     const res = await api.post('/api/auth/check-mobile', { mobileNumber });
@@ -358,18 +554,40 @@ export const authAPI = {
   verifyToken: async () => {
     const res = await api.get('/api/auth/me');
     if (res.data) {
-      localStorage.setItem('pulse_user', JSON.stringify(res.data));
+      inMemoryUser = res.data;
     }
     return res.data;
   },
-  logout: () => {
-    localStorage.removeItem('pulse_token');
-    localStorage.removeItem('pulse_refresh_token');
-    localStorage.removeItem('pulse_user');
+  logout: async () => {
+    try {
+      const token = inMemoryAccessToken;
+      const isNative = Capacitor.isNativePlatform();
+      const nativeRefresh = isNative ? await getNativeRefreshToken() : null;
+      await axios.post(
+        `${api.defaults.baseURL}/api/auth/logout`,
+        nativeRefresh ? { refreshToken: nativeRefresh } : {},
+        {
+          withCredentials: true,
+          headers: {
+            'X-Requested-With': 'PulseClient',
+            'X-Client-Platform': isNative ? 'native' : 'web',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        }
+      ).catch(() => {});
+    } finally {
+      await clearAllSensitiveStorage();
+    }
+  },
+  logoutAll: async () => {
+    try {
+      await api.post('/api/auth/logout-all').catch(() => {});
+    } finally {
+      await clearAllSensitiveStorage();
+    }
   },
   getCurrentUser: () => {
-    const userStr = localStorage.getItem('pulse_user');
-    return userStr ? JSON.parse(userStr) : null;
+    return inMemoryUser;
   },
 };
 
@@ -573,8 +791,8 @@ export const userAPI = {
     const res = await api.post('/api/user/change-password', data);
     return res.data;
   },
-  deleteAccount: async () => {
-    const res = await api.delete('/api/user/account');
+  deleteAccount: async (reauth?: { password?: string; googleCredential?: string; confirmDeletion?: string }) => {
+    const res = await api.delete('/api/user/account', { data: reauth || {} });
     return res.data;
   },
 };

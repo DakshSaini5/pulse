@@ -84,11 +84,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (city && city !== 'Unknown Location') label = city;
       } catch { /* non-critical */ }
 
-      localStorage.setItem('pulse_latitude', lat.toString());
-      localStorage.setItem('pulse_longitude', lng.toString());
-      localStorage.setItem('pulse_location_source', 'gps');
-      localStorage.setItem('pulse_location_label', label);
-      localStorage.setItem('pulse_city_name', label);
+      // Keep precise GPS coordinates in memory-only state; never persist coordinates in localStorage
       localStorage.setItem('pulse_location_disclosure_accepted', 'true');
 
       setState({ latitude: lat, longitude: lng, source: 'gps', label, locationStatus: 'granted' });
@@ -139,66 +135,34 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   // ─────────────────────────────────────────────────────────
-  // On mount: restore saved location ONLY — never auto-GPS
+  // On mount: purge any legacy plaintext coordinates from localStorage; use memory-only state
   // ─────────────────────────────────────────────────────────
   useEffect(() => {
-    const savedLat   = localStorage.getItem('pulse_latitude');
-    const savedLng   = localStorage.getItem('pulse_longitude');
-    const savedSrc   = localStorage.getItem('pulse_location_source');
-    const savedLabel = localStorage.getItem('pulse_location_label') ||
-                       localStorage.getItem('pulse_city_name');
+    try {
+      localStorage.removeItem('pulse_latitude');
+      localStorage.removeItem('pulse_longitude');
+      localStorage.removeItem('pulse_location_source');
+      localStorage.removeItem('pulse_location_label');
+      localStorage.removeItem('pulse_city_name');
+    } catch {}
 
-    if (savedLat && savedLng && savedSrc && savedLabel) {
-      setState({
-        latitude: parseFloat(savedLat),
-        longitude: parseFloat(savedLng),
-        source: savedSrc as any,
-        label: savedLabel,
-        locationStatus: savedSrc === 'gps' || savedSrc === 'manual' ? 'granted' : 'denied',
-      });
-
-      // Silently resolve stale label in background (no GPS re-request)
-      if (savedLabel === 'GPS Location' || savedLabel === 'Unknown Location') {
-        getCityNameFromCoords(parseFloat(savedLat), parseFloat(savedLng))
-          .then(city => {
-            if (city && city !== 'Unknown Location') {
-              localStorage.setItem('pulse_location_label', city);
-              localStorage.setItem('pulse_city_name', city);
-              setState(prev => ({ ...prev, label: city }));
-            }
-          })
-          .catch(() => {});
-      }
-    } else {
-      // No saved location — use default Delhi, wait for user to set one
-      setState({
-        latitude: DEFAULT_LAT,
-        longitude: DEFAULT_LNG,
-        source: 'default',
-        label: DEFAULT_LABEL,
-        locationStatus: 'denied',
-      });
-    }
+    setState({
+      latitude: DEFAULT_LAT,
+      longitude: DEFAULT_LNG,
+      source: 'default',
+      label: DEFAULT_LABEL,
+      locationStatus: 'denied',
+    });
   }, []);
 
   // ─────────────────────────────────────────────────────────
-  // Manual location
+  // Manual location (memory-only)
   // ─────────────────────────────────────────────────────────
   const setManualLocation = (lat: number, lng: number, label: string) => {
-    localStorage.setItem('pulse_latitude', lat.toString());
-    localStorage.setItem('pulse_longitude', lng.toString());
-    localStorage.setItem('pulse_location_source', 'manual');
-    localStorage.setItem('pulse_location_label', label);
-    localStorage.setItem('pulse_city_name', label);
     setState({ latitude: lat, longitude: lng, source: 'manual', label, locationStatus: 'granted' });
   };
 
   const clearManualLocation = () => {
-    localStorage.removeItem('pulse_latitude');
-    localStorage.removeItem('pulse_longitude');
-    localStorage.removeItem('pulse_location_source');
-    localStorage.removeItem('pulse_location_label');
-    localStorage.removeItem('pulse_city_name');
     setState({ latitude: DEFAULT_LAT, longitude: DEFAULT_LNG, source: 'default', label: DEFAULT_LABEL, locationStatus: 'denied' });
   };
 

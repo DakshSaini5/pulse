@@ -769,7 +769,7 @@ export const ReportCenter: React.FC = () => {
                         <div className="space-y-3">
                           {matchedHospitals.length === 0 ? (
                             <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 py-4 text-center">
-                              Locating matching specialist clinics near {localStorage.getItem('pulse_city_name') || 'your area'}...
+                              Locating matching specialist clinics near your area...
                             </p>
                           ) : (
                             matchedHospitals.map(h => (

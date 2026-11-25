@@ -5,7 +5,8 @@ import io, { Socket } from 'socket.io-client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { isNativeApp, useKeyboardActive } from '@core/utils/platform';
-import { chatAPI } from '@core/services/api';
+import { validateSafeMarkdownUrl } from '@core/utils/utils';
+import { chatAPI, getAccessToken } from '@core/services/api';
 import { useNavigate } from 'react-router-dom';
 import { Preferences } from '@capacitor/preferences';
 import { App } from '@capacitor/app';
@@ -16,6 +17,7 @@ interface ChatMessage {
   text: string;
   isError?: boolean;
   status?: 'sending' | 'sent';
+  isStreaming?: boolean;
 }
 
 const CRISIS_PATTERNS = [
@@ -147,64 +149,13 @@ const ChatAssistant: React.FC = () => {
     return () => window.removeEventListener('pulse-ai:open', handleOpen);
   }, []);
 
-  // Load local chat cache on mount (Task 1)
+  // Purge any legacy plaintext medical chat cache on mount; keep chat history in memory only
   useEffect(() => {
-    const loadCache = async () => {
-      try {
-        let cached: string | null = null;
-        if (isNativeApp) {
-          const { value } = await Preferences.get({ key: 'pulse_chat_cache' });
-          cached = value;
-        } else {
-          cached = localStorage.getItem('pulse_chat_cache');
-        }
-        if (cached) {
-          const parsed = JSON.parse(cached) as ChatMessage[];
-          if (parsed && parsed.length > 0) {
-            // Force status: 'sent' for all historical cached messages
-            let sanitized = parsed.map(msg => ({
-              ...msg,
-              status: 'sent' as const
-            }));
-            
-            // Clean up unanswered user messages at the end of the history
-            while (sanitized.length > 0 && sanitized[sanitized.length - 1].role === 'user') {
-              console.log('[ChatAssistant] Cleaning up unanswered user message from cache:', sanitized[sanitized.length - 1]);
-              sanitized.pop();
-            }
-
-            setMessages(sanitized);
-          }
-        }
-      } catch (err) {
-        console.error('[ChatAssistant] Failed to load chat cache:', err);
-      }
-    };
-    loadCache();
+    try { localStorage.removeItem('pulse_chat_cache'); } catch {}
+    if (isNativeApp) {
+      Preferences.remove({ key: 'pulse_chat_cache' }).catch(() => {});
+    }
   }, []);
-
-  // Save latest 20 messages to cache on change (Task 1)
-  useEffect(() => {
-    const saveCache = async () => {
-      if (messages.length === 0) return;
-      try {
-        // Always save cached messages as 'sent'
-        const cleanMessages: ChatMessage[] = messages.slice(-20).map(msg => ({
-          ...msg,
-          status: 'sent' as const
-        }));
-        const serialized = JSON.stringify(cleanMessages);
-        if (isNativeApp) {
-          await Preferences.set({ key: 'pulse_chat_cache', value: serialized });
-        } else {
-          localStorage.setItem('pulse_chat_cache', serialized);
-        }
-      } catch (err) {
-        console.error('[ChatAssistant] Failed to save chat cache:', err);
-      }
-    };
-    saveCache();
-  }, [messages]);
 
   // App Backgrounding Socket Lifecycle Manager (Task 2)
   useEffect(() => {
@@ -256,7 +207,7 @@ const ChatAssistant: React.FC = () => {
       if (!url || url === 'undefined' || url.startsWith('/')) {
         url = 'https://pulse-production-f638.up.railway.app';
       }
-      const token = localStorage.getItem('pulse_token');
+      const token = getAccessToken();
 
       console.log('[ChatAssistant] Connecting socket to:', url);
       const socket = io(url as any, {
@@ -319,9 +270,9 @@ const ChatAssistant: React.FC = () => {
         clearWatchdog();
         const streamId = activeStreamIdRef.current;
         if (streamId) {
-          setMessages(prev => prev.map(msg => 
-            msg.id === streamId 
-              ? { ...msg, text: data.text, isError: data.isError } 
+          setMessages(prev => prev.map(msg =>
+            msg.id === streamId
+              ? { ...msg, text: data.text, isError: data.isError, isStreaming: false }
               : msg
           ));
         } else {
@@ -335,7 +286,8 @@ const ChatAssistant: React.FC = () => {
               role: 'model' as const,
               text: data.text,
               isError: data.isError,
-              status: 'sent' as const
+              status: 'sent' as const,
+              isStreaming: false
             }];
           });
         }
@@ -354,7 +306,8 @@ const ChatAssistant: React.FC = () => {
             id: resId,
             role: 'model' as const,
             text: '',
-            status: 'sent' as const
+            status: 'sent' as const,
+            isStreaming: true
           }
         ]);
       });
@@ -675,6 +628,10 @@ const ChatAssistant: React.FC = () => {
                         <span className="block text-[9px] text-blue-200 text-right mt-0.5 animate-pulse">Sending...</span>
                       )}
                     </div>
+                  ) : msg.isStreaming || activeStreamIdRef.current === msg.id ? (
+                    <div className="text-gray-200 text-sm whitespace-pre-wrap leading-relaxed">
+                      {msg.text}
+                    </div>
                   ) : (
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
@@ -690,13 +647,13 @@ const ChatAssistant: React.FC = () => {
                         hr: () => <hr className="border-white/10 my-2" />,
                         code: ({ children }) => <code className="bg-white/10 px-1 py-0.5 rounded text-blue-300 text-xs">{children}</code>,
                         a: ({ href, children }) => {
-                          const isInternal = href && href.startsWith('/');
-                          if (isInternal) {
+                          const validation = validateSafeMarkdownUrl(href);
+                          if (validation?.isInternal) {
                             return (
                               <button
                                 onClick={() => {
                                   setIsOpen(false);
-                                  navigate(href);
+                                  navigate(validation.safeHref);
                                 }}
                                 className="text-blue-400 font-bold hover:underline transition-colors cursor-pointer text-left bg-transparent border-none p-0 inline"
                               >
@@ -704,7 +661,20 @@ const ChatAssistant: React.FC = () => {
                               </button>
                             );
                           }
-                          return <a href={href} className="text-blue-400 font-bold hover:underline transition-colors">{children}</a>;
+                          if (validation?.isExternal) {
+                            return (
+                              <a
+                                href={validation.safeHref}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 font-bold hover:underline transition-colors"
+                              >
+                                {children}
+                              </a>
+                            );
+                          }
+                          // Render as safe text if URL scheme is untrusted/dangerous/protocol-relative
+                          return <span className="text-blue-400 font-medium">{children}</span>;
                         },
                       }}
                     >

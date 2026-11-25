@@ -82,7 +82,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
 });
 
 // GET /api/prescriptions/interactions (Guarded - check cross-prescription interactions)
-router.get('/interactions', authenticateToken, generalLimiter, async (req: AuthenticatedRequest, res: Response) => {
+router.get('/interactions', authenticateToken, documentAiLimiter, async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
   try {
     const analysisRecords = await prisma.prescriptionAnalysis.findMany({
@@ -318,7 +318,7 @@ router.post('/:id/verify', authenticateToken, documentAiLimiter, async (req: Aut
       return res.status(404).json({ message: 'Prescription record not found.' });
     }
 
-    const textToAnalyze = verifiedData?.rawText || pres.ocrResult?.rawText || '';
+    const textToAnalyze = String(verifiedData?.rawText || pres.ocrResult?.rawText || '').substring(0, 15000);
 
     let medicinesData: any[] = [];
     let totalTokensUsed = 0;
@@ -347,7 +347,8 @@ router.post('/:id/verify', authenticateToken, documentAiLimiter, async (req: Aut
       const analysis = parseResult.result;
       totalTokensUsed = parseResult.tokensUsed;
       
-      medicinesData = analysis.medicines.map((m: any) => ({
+      const medicinesList = (analysis && Array.isArray(analysis.medicines)) ? analysis.medicines : [];
+      medicinesData = medicinesList.map((m: any) => ({
         prescriptionId: id,
         medicineName: m.name,
         chemicalCompound: m.chemicalCompound || null,
@@ -360,48 +361,65 @@ router.post('/:id/verify', authenticateToken, documentAiLimiter, async (req: Aut
       }));
     }
 
-    // Wipe any existing partial mock analysis records
-    await prisma.prescriptionAnalysis.deleteMany({
-      where: { prescriptionId: id }
-    });
+    // Atomic transaction: lock prescription row FOR UPDATE to serialize concurrent verifications,
+    // then replace analysis records, update prescription status, and record AI usage.
+    const updated = await prisma.$transaction(async (tx) => {
+      const owned = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id" FROM "Prescription" WHERE "id" = ${id} AND "userId" = ${userId} FOR UPDATE;
+      `;
+      if (!owned || owned.length === 0) {
+        const notFound: any = new Error('Prescription record not found.');
+        notFound.isNotFound = true;
+        throw notFound;
+      }
 
-    await prisma.prescriptionAnalysis.createMany({
-      data: medicinesData
-    });
+      await tx.prescriptionAnalysis.deleteMany({
+        where: { prescriptionId: id }
+      });
 
-    // Update prescription metadata status
-    const updated = await prisma.prescription.update({
-      where: { id },
-      data: {
-        status: 'ANALYZED',
-        ocrResult: {
-          update: {
-            verifiedData: JSON.stringify(verifiedData),
-            verifiedAt: new Date(),
+      if (medicinesData.length > 0) {
+        await tx.prescriptionAnalysis.createMany({
+          data: medicinesData
+        });
+      }
+
+      const updatedPres = await tx.prescription.update({
+        where: { id },
+        data: {
+          status: 'ANALYZED',
+          ocrResult: {
+            update: {
+              verifiedData: JSON.stringify(verifiedData),
+              verifiedAt: new Date(),
+            },
           },
         },
-      },
-      include: {
-        ocrResult: true,
-        prescriptionAnalysis: true,
-      },
-    });
+        include: {
+          ocrResult: true,
+          prescriptionAnalysis: true,
+        },
+      });
 
-    // Log admin usage track with real token count
-    await prisma.aIUsage.create({
-      data: {
-        userId,
-        feature: 'PRESCRIPTION_GEMINI_ANALYSIS',
-        tokensUsed: totalTokensUsed || 620,
-        modelName: 'Gemini 2.5 Flash'
-      }
+      await tx.aIUsage.create({
+        data: {
+          userId,
+          feature: 'PRESCRIPTION_GEMINI_ANALYSIS',
+          tokensUsed: totalTokensUsed || 620,
+          modelName: 'Gemini 2.5 Flash'
+        }
+      });
+
+      return updatedPres;
     });
 
     return res.json({
       ...updated,
       fileUrl: buildSecureFileUrl('prescriptions', updated.id, userId),
     });
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.isNotFound) {
+      return res.status(404).json({ message: 'Prescription record not found.' });
+    }
     console.error('Verification failed:', err instanceof Error ? err.message : 'Unknown error');
     return res.status(500).json({ message: 'Error processing Gemini structured parameters.' });
   }

@@ -323,10 +323,23 @@ model OTPVerification {
   id        String   @id @default(uuid())
   email     String
   code      String
+  attempts  Int      @default(0)
   expiresAt DateTime
   createdAt DateTime @default(now())
 
   @@index([email])
+}
+
+model AccountLockout {
+  id             String    @id @default(uuid())
+  identifier     String    @unique // normalized email or phone
+  failedAttempts Int       @default(0)
+  lockedUntil    DateTime?
+  lastFailedAt   DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([identifier])
 }
 
 model AIChatMessage {

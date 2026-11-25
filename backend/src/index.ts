@@ -33,9 +33,12 @@ import chatRouter from './routes/chat';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Trust the first reverse proxy (Render, Cloudflare, etc.)
-// Required for rate limiting (x-forwarded-for) and HTTPS redirect (x-forwarded-proto) to work correctly
-app.set('trust proxy', 1);
+// Trust an explicit number of reverse proxy hops (default 1 for Render/Railway/Cloudflare).
+// Never use `trust proxy = true` (which blindly trusts all X-Forwarded-For hops).
+const trustProxyHops = process.env.TRUST_PROXY_HOPS !== undefined
+  ? parseInt(process.env.TRUST_PROXY_HOPS, 10)
+  : 1;
+app.set('trust proxy', Number.isFinite(trustProxyHops) && trustProxyHops >= 0 ? trustProxyHops : 1);
 
 // Validate all required environment variables at startup — fail fast and loudly in production
 const REQUIRED_ENV_VARS = ['JWT_SECRET', 'DATABASE_URL', 'GEMINI_API_KEY', 'SENDER_EMAIL', 'RESEND_API_KEY'];
@@ -54,27 +57,28 @@ const allowedOrigins = [
   'https://pulsehealthcare.in',
   'https://www.pulsehealthcare.in',
   'capacitor://localhost',
+  'ionic://localhost',
   'http://localhost',
   'https://localhost',
 ].filter(Boolean) as string[];
 
+export function isAllowedCorsOrigin(origin: string | undefined): boolean {
+  if (!origin) return true;
+  if (origin === 'null') return false;
+  const cleanOrigin = origin.replace(/\/$/, '');
+  if (allowedOrigins.includes(cleanOrigin)) return true;
+  if (/^https?:\/\/localhost(:\d+)?$/.test(cleanOrigin)) return true;
+  return false;
+}
+
 app.use(cors({
   origin: (origin, callback) => {
-    // In development, allow all origins to prevent local network or 127.0.0.1 testing issues
     if (process.env.NODE_ENV === 'development') {
       return callback(null, true);
     }
 
-    // In production, strictly enforce allowedOrigins only — no wildcard subdomains
-    const cleanOrigin = origin ? origin.replace(/\/$/, '') : '';
-    if (
-      !origin || 
-      origin === 'null' || 
-      allowedOrigins.includes(cleanOrigin) || 
-      cleanOrigin.startsWith('capacitor://') || 
-      cleanOrigin.startsWith('http://localhost') || 
-      cleanOrigin.startsWith('https://localhost')
-    ) {
+    // In production, strictly enforce allowedOrigins only — never allow 'null' or prefix-spoofed localhost
+    if (isAllowedCorsOrigin(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -84,6 +88,14 @@ app.use(cors({
 }));
 app.use(helmet({
   crossOriginResourcePolicy: false, // Allows browser Leaflet icons to load correctly
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'none'"],
+      baseUri: ["'none'"],
+      formAction: ["'none'"],
+      frameAncestors: ["'none'"],
+    },
+  },
   hsts: {
     maxAge: 31536000, // 1 year in seconds
     includeSubDomains: true,
@@ -133,7 +145,14 @@ app.get('/health', (req, res) => {
 // Centralized Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('[System Exception Caught]', err.message || err);
-  
+
+  if (err.isRateLimitOutage) {
+    return res.status(503).json({
+      error: err.message,
+      message: err.message,
+    });
+  }
+
   // Don't leak error details in production
   const isDev = process.env.NODE_ENV === 'development';
   res.status(err.status || 500).json({
@@ -149,7 +168,13 @@ process.on('unhandledRejection', (reason: any) => {
 
 process.on('uncaughtException', async (error: Error) => {
   console.error('[Uncaught Exception]', error);
-  // Graceful shutdown: close DB connections before exiting
+  // Graceful shutdown: close Redis and DB connections before exiting
+  try {
+    const { closeRedis } = await import('./config/redis');
+    await closeRedis();
+  } catch (e) {
+    console.error('[Shutdown] Error disconnecting Redis:', e);
+  }
   try {
     const { prisma } = await import('./db');
     await prisma.$disconnect();
@@ -168,16 +193,8 @@ const io = new SocketIOServer(httpServer, {
       if (process.env.NODE_ENV === 'development') {
         return callback(null, true);
       }
-      // Strictly enforce allowedOrigins for Socket.IO in production — no wildcard subdomains
-      const cleanOrigin = origin ? origin.replace(/\/$/, '') : '';
-      if (
-        !origin || 
-        origin === 'null' || 
-        allowedOrigins.includes(cleanOrigin) || 
-        cleanOrigin.startsWith('capacitor://') || 
-        cleanOrigin.startsWith('http://localhost') || 
-        cleanOrigin.startsWith('https://localhost')
-      ) {
+      // Strictly enforce allowedOrigins for Socket.IO in production — never allow 'null' or prefix-spoofed localhost
+      if (isAllowedCorsOrigin(origin)) {
         callback(null, true);
       } else {
         callback(new Error('Socket.IO CORS rejected'));
@@ -192,7 +209,17 @@ setupChatSocket(io);
 // Graceful shutdown on SIGTERM/SIGINT (container stop, Ctrl+C)
 const gracefulShutdown = async (signal: string) => {
   console.log(`\n[Shutdown] Received ${signal}. Shutting down gracefully...`);
+  try {
+    const { stopCloudinaryCleanupWorker } = await import('./routes/user');
+    await stopCloudinaryCleanupWorker();
+  } catch {}
   httpServer.close(async () => {
+    try {
+      const { closeRedis } = await import('./config/redis');
+      await closeRedis();
+    } catch (e) {
+      console.error('[Shutdown] Error disconnecting Redis:', e);
+    }
     try {
       const { prisma } = await import('./db');
       await prisma.$disconnect();
@@ -211,13 +238,31 @@ const gracefulShutdown = async (signal: string) => {
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
-// Listen
+// Listen & Initialize infrastructure
 if (process.env.NODE_ENV !== 'test') {
-  httpServer.listen(PORT, () => {
+  httpServer.listen(PORT, async () => {
     console.log(`====================================================`);
     console.log(`  💖 PULSE CORE SERVICE RUNNING ON PORT ${PORT}      `);
     console.log(`  🚀 API gateway: http://localhost:${PORT}/api        `);
     console.log(`====================================================`);
+
+    // Initialize Redis connection if configured
+    try {
+      const { initRedis } = await import('./config/redis');
+      await initRedis();
+    } catch (err: any) {
+      console.error('[Redis] Startup initialization error:', err?.message || err);
+    }
+
+    // Process any durable Cloudinary cleanup outbox items left over from prior restarts
+    // and start periodic retry worker
+    try {
+      const { processPendingCloudinaryCleanups, startCloudinaryCleanupWorker } = await import('./routes/user');
+      await processPendingCloudinaryCleanups();
+      startCloudinaryCleanupWorker();
+    } catch (err: any) {
+      console.error('[Cleanup Outbox] Startup recovery error:', err?.message || err);
+    }
   });
 }
 

@@ -1,18 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
-import { ZodSchema, ZodError } from 'zod';
 import { z } from 'zod';
 
 // -----------------------------------------------
-// Generic Zod Validation Middleware
+// Generic Zod Validation Middleware (Zod v4)
 // -----------------------------------------------
-export const validate = (schema: ZodSchema) => {
+export const validate = (schema: z.ZodType) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
       schema.parse(req.body);
       next();
     } catch (err) {
       if (err instanceof z.ZodError) {
-        const formattedErrors = (err as any).issues.map((e: any) => ({
+        const formattedErrors = err.issues.map((e) => ({
           field: e.path.join('.'),
           message: e.message,
         }));
@@ -118,10 +117,10 @@ export const changePasswordSchema = z.object({
 
 // UUID param validator (for route params like :id)
 export const uuidParamSchema = z.object({
-  id: z.string().uuid('Invalid ID format.'),
+  id: z.uuid('Invalid ID format.'),
 });
 
-export const validateParams = (schema: ZodSchema) => {
+export const validateParams = (schema: z.ZodType) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
       schema.parse(req.params);
@@ -130,7 +129,7 @@ export const validateParams = (schema: ZodSchema) => {
       if (err instanceof z.ZodError) {
         return res.status(400).json({
           message: 'Invalid request parameters.',
-          errors: (err as any).issues.map((e: any) => ({
+          errors: err.issues.map((e) => ({
             field: e.path.join('.'),
             message: e.message,
           })),
